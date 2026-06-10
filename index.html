@@ -61,7 +61,7 @@
 <body>
   <header>
     <h1>天籁现在置换 HEV，还是再开几年？</h1>
-    <p>用“未来总花费 = 旧车继续折旧 + 换车净现金流 + 油费 + 新车折旧 - 期末残值”的方式，比较未来 15 年内不同置换年份。折旧曲线已内置为贴近中国二手车市场的经验曲线；你只需要调价格、油耗、里程、油价、补贴等决策参数。</p>
+    <p>用“未来总花费 = 旧车继续折旧 + 换车净现金流 + 油费 + 新车折旧 - 期末残值”的方式，比较未来 <span class="js-horizon">15</span> 年内不同置换年份。折旧曲线已内置为贴近中国二手车市场的经验曲线；你只需要调价格、油耗、里程、油价、补贴等决策参数。</p>
   </header>
 
   <main>
@@ -77,7 +77,7 @@
           <div class="kpis">
             <div class="kpi"><small>智能建议</small><strong id="kpiDecision">-</strong><span id="kpiDecisionSub">-</span></div>
             <div class="kpi"><small>当前参数回本周期</small><strong id="kpiPayback">-</strong><span>按“现在换”相对“继续开”逐年比较</span></div>
-            <div class="kpi"><small>15年最优总花费</small><strong id="kpiBestCost">-</strong><span id="kpiBestSub">-</span></div>
+            <div class="kpi"><small><span class="js-horizon">15</span>年最优总花费</small><strong id="kpiBestCost">-</strong><span id="kpiBestSub">-</span></div>
             <div class="kpi"><small>现在换 vs 最优</small><strong id="kpiGap">-</strong><span>正数代表现在换多花钱</span></div>
           </div>
           <div id="recommend" class="recommend" style="margin-top:14px"></div>
@@ -86,7 +86,7 @@
         <div class="card chart-card">
           <h2>不同年里程下：置换年份 vs 未来总花费</h2>
           <canvas id="switchChart" width="1200" height="430"></canvas>
-          <p class="note">横轴 0 表示现在置换；1 表示再开 1 年后置换；“不换”表示整个测算期继续开天籁。曲线越低越省。</p>
+          <p class="note">横轴 0 表示现在置换；1 表示再开 1 年后置换；“不换”表示整个 <span class="js-horizon">15</span> 年测算期继续开天籁。曲线越低越省。</p>
         </div>
 
         <div class="two">
@@ -279,15 +279,16 @@ function drawChart(canvas, datasets, opts) {
   ctx.save(); ctx.translate(18, h / 2 + 70); ctx.rotate(-Math.PI / 2); ctx.fillText(opts.yLabel || '', 0, 0); ctx.restore();
 }
 
-function updateTable(rows, best) {
+function updateTable(rows, best, horizon) {
   const table = document.getElementById('resultTable');
-  table.innerHTML = '<thead><tr><th>方案</th><th>未来总花费</th><th>相对最优多花</th><th>说明</th></tr></thead>' +
+  table.innerHTML = `<thead><tr><th>方案</th><th>${horizon}年总花费</th><th>相对最优多花</th><th>说明</th></tr></thead>` +
     '<tbody>' + rows.map(r => `<tr style="${r === best ? 'background:#f0fdf4;font-weight:800' : ''}"><td>${r.label}</td><td>${money(r.cost)}</td><td>${money(r.cost - best.cost)}</td><td>${r === best ? '当前参数下最省钱' : ''}</td></tr>`).join('') + '</tbody>';
 }
 
 function update() {
   const c = cfg();
   Object.entries(params).forEach(([key, p]) => document.getElementById(`${key}Text`).textContent = p.value);
+  document.querySelectorAll('.js-horizon').forEach(el => { el.textContent = c.horizon; });
   const rows = allSwitchResults(c, c.annualKm);
   const best = rows.reduce((a,b) => a.cost < b.cost ? a : b);
   const now = rows.find(r => r.year === 0);
@@ -295,7 +296,7 @@ function update() {
   const pb = paybackYears(c, c.annualKm);
 
   document.getElementById('kpiDecision').textContent = best.year === 'never' ? '继续开' : best.year === 0 ? '现在换' : `第${best.year}年换`;
-  document.getElementById('kpiDecisionSub').textContent = `比现在换省 ${money(now.cost - best.cost)}，比不换省 ${money(never.cost - best.cost)}`;
+  document.getElementById('kpiDecisionSub').textContent = `按${c.horizon}年测算：比现在换省 ${money(now.cost - best.cost)}，比不换省 ${money(never.cost - best.cost)}`;
   document.getElementById('kpiPayback').textContent = pb ? `${pb.year}年` : `>${c.horizon}年`;
   document.getElementById('kpiBestCost').textContent = money(best.cost);
   document.getElementById('kpiBestSub').textContent = `${c.horizon}年、年里程${c.annualKm}万公里`;
@@ -305,13 +306,13 @@ function update() {
   rec.className = 'recommend' + (best.year === 'never' ? ' warn' : best.year === 0 ? '' : ' warn');
   const fuelSavingYear = annualFuelCost(c.annualKm, c.teanaFuel, c.fuelPrice) - annualFuelCost(c.annualKm, c.hevFuel, c.fuelPrice);
   const netNow = c.hevPrice - c.subsidy - c.teanaValue;
-  rec.innerHTML = `<b>结论：</b>${best.year === 0 ? '按当前参数，现在置换是经济账最优。' : best.year === 'never' ? '按当前参数，单纯为了省油不建议在测算期内置换。' : `按当前参数，最推荐再开 <b>${best.year}</b> 年后置换。`} 当前年省油约 <b>${money(fuelSavingYear)}</b>，现在换车净补差约 <b>${money(netNow)}</b>。${pb ? `如果你坚持现在换，约第 <b>${pb.year}</b> 年开始在累计成本上追平继续开。` : `如果现在换，在 ${c.horizon} 年内尚未用油费和残值差追平继续开。`} 注意：若补贴实际拿不到、HEV继续降价更快，推荐置换年份通常会后移；若年里程接近 2 万公里、油价上涨，推荐会前移。`;
+  rec.innerHTML = `<b>结论：</b>${best.year === 0 ? `按当前 ${c.horizon} 年测算，现在置换是经济账最优。` : best.year === 'never' ? `按当前 ${c.horizon} 年测算，单纯为了省油不建议在测算期内置换。` : `按当前 ${c.horizon} 年测算，最推荐再开 <b>${best.year}</b> 年后置换。`} 当前年省油约 <b>${money(fuelSavingYear)}</b>，现在换车净补差约 <b>${money(netNow)}</b>。${pb ? `如果你坚持现在换，约第 <b>${pb.year}</b> 年开始在累计成本上追平继续开。` : `如果现在换，在 ${c.horizon} 年内尚未用油费和残值差追平继续开。`} 注意：若补贴实际拿不到、HEV继续降价更快，推荐置换年份通常会后移；若年里程接近 2 万公里、油价上涨，推荐会前移。`;
 
   const series = mileageSeries.map((km, idx) => {
     const rs = allSwitchResults(c, km).filter(r => r.year !== 'never');
     return { name: `${km.toFixed(2)}万公里/年`, color: colors[idx], points: rs.map(r => ({ x: r.year, y: r.cost })) };
   });
-  drawChart(document.getElementById('switchChart'), series, { xLabel: '置换年份（年后）', yLabel: '未来总花费（万元）' });
+  drawChart(document.getElementById('switchChart'), series, { xLabel: '置换年份（年后）', yLabel: `未来${c.horizon}年总花费（万元）` });
 
   const keepPts = [], switchPts = [];
   for (let y = 1; y <= c.horizon; y++) {
@@ -334,7 +335,7 @@ function update() {
     { name: '锋兰达双擎残值', color: '#2563eb', points: deprPtsNew }
   ], { xLabel: '从现在起第几年', yLabel: '车辆价值（万元）' });
 
-  updateTable(rows, best);
+  updateTable(rows, best, c.horizon);
 }
 
 makeControls();
