@@ -61,7 +61,7 @@
 <body>
   <header>
     <h1>天籁现在置换 HEV，还是再开几年？</h1>
-    <p>用“未来总花费 = 旧车继续折旧 + 换车净现金流 + 油费 + 新车折旧 - 期末残值”的方式，比较未来 <span class="js-horizon">15</span> 年内不同置换年份。折旧曲线已内置为贴近中国二手车市场的经验曲线；你只需要调价格、油耗、里程、油价、补贴等决策参数。</p>
+    <p>用“未来总花费 = 旧车继续折旧 + 换车净现金流 + 油费 + 新车折旧 - 期末残值”的方式，比较未来 <span class="js-horizon">15</span> 年内不同置换年份。折旧曲线已内置为贴近中国二手车市场的经验曲线；新车从第 0 年起即计入“落地即二手”的一次性残值折损，你只需要调价格、油耗、里程、油价、补贴等决策参数。</p>
   </header>
 
   <main>
@@ -69,7 +69,7 @@
       <aside class="card panel">
         <h2>可调整参数</h2>
         <div class="controls" id="controls"></div>
-        <p class="note"><b>单位说明：</b>金额默认“万元”，年里程为“万公里/年”，油耗为“L/100km”。“HEV 每年降价”表示你如果晚买，同款/同级 HEV 的市场成交落地价每年下降比例，不是车辆购入后的二手折旧。</p>
+        <p class="note"><b>单位说明：</b>金额默认“万元”，年里程为“万公里/年”，油耗为“L/100km”。“HEV 每年降价”表示你如果晚买，同款/同级 HEV 的市场成交落地价每年下降比例，不是车辆购入后的二手折旧。锋兰达残值曲线从第 0 年就按“落地即二手”折损计入。</p>
       </aside>
 
       <section class="charts">
@@ -111,7 +111,7 @@
       <h2>模型口径与默认市场假设</h2>
       <ul class="note source-list">
         <li><span class="pill">旧车</span> 你的车按“2023 年 11 月上牌、天籁悦享版、当前 4.2 万公里”处理；当前卖价默认 8.5 万元。后续折旧不让你调参，采用 B 级燃油轿车在中国二手车市场常见的“前 5 年快、5 年后放缓、10 年后底价约 1.5 万”曲线。</li>
-        <li><span class="pill">新车</span> 目标车默认“丰田锋兰达 2.0L 智能电混双擎”，按市场成交落地价而非指导价，默认 13.5 万元；后续残值不让你调参，采用丰田混动在中国市场相对保值但 SUV 前几年仍快速折价的曲线。</li>
+        <li><span class="pill">新车</span> 目标车默认“丰田锋兰达 2.0L 智能电混双擎”，按市场成交落地价而非指导价，默认 13.5 万元；后续残值不让你调参，采用丰田混动在中国市场相对保值但 SUV 前几年仍快速折价的曲线，并在第 0 年先计入新车开票、上牌、交易价差带来的“落地即二手”残值折损。</li>
         <li><span class="pill">补贴</span> 武汉/湖北置换燃油车口径按“2.0L 及以下燃油乘用车置换补贴约 6%，封顶 1.3 万”理解；HEV 不等于绿牌新能源，页面默认补贴 0.7 万，可手动改成你实际能拿到的金额。</li>
         <li><span class="pill">理性边界</span> 模型只算经济账，不包含安全配置、NVH、空间偏好、维修风险、保险差异、贷款利息、停车充电便利性等主观收益或成本。</li>
       </ul>
@@ -168,8 +168,9 @@ function teanaFutureValue(currentValue, yearsFromNow, annualKm) {
 }
 
 // 锋兰达双擎：以中国丰田 HEV/SUV 常见残值百分比内置，不开放调参。
+// 第 0 年不是 100%：新车开出 4S 店后，开票、上牌、经销商二手收购价差会形成一次性“落地即二手”折损。
 function hevResidualRatio(ageYears) {
-  const curve = [1, .83, .74, .66, .59, .53, .48, .43, .39, .35, .32, .29, .265, .245, .225, .205];
+  const curve = [.92, .83, .74, .66, .59, .53, .48, .43, .39, .35, .32, .29, .265, .245, .225, .205];
   if (ageYears <= 15) return curve[ageYears];
   return Math.max(.12, curve[15] * Math.pow(.94, ageYears - 15));
 }
@@ -306,7 +307,7 @@ function update() {
   rec.className = 'recommend' + (best.year === 'never' ? ' warn' : best.year === 0 ? '' : ' warn');
   const fuelSavingYear = annualFuelCost(c.annualKm, c.teanaFuel, c.fuelPrice) - annualFuelCost(c.annualKm, c.hevFuel, c.fuelPrice);
   const netNow = c.hevPrice - c.subsidy - c.teanaValue;
-  rec.innerHTML = `<b>结论：</b>${best.year === 0 ? `按当前 ${c.horizon} 年测算，现在置换是经济账最优。` : best.year === 'never' ? `按当前 ${c.horizon} 年测算，单纯为了省油不建议在测算期内置换。` : `按当前 ${c.horizon} 年测算，最推荐再开 <b>${best.year}</b> 年后置换。`} 当前年省油约 <b>${money(fuelSavingYear)}</b>，现在换车净补差约 <b>${money(netNow)}</b>。${pb ? `如果你坚持现在换，约第 <b>${pb.year}</b> 年开始在累计成本上追平继续开。` : `如果现在换，在 ${c.horizon} 年内尚未用油费和残值差追平继续开。`} 注意：若补贴实际拿不到、HEV继续降价更快，推荐置换年份通常会后移；若年里程接近 2 万公里、油价上涨，推荐会前移。`;
+  rec.innerHTML = `<b>结论：</b>${best.year === 0 ? `按当前 ${c.horizon} 年测算，现在置换是经济账最优。` : best.year === 'never' ? `按当前 ${c.horizon} 年测算，单纯为了省油不建议在测算期内置换。` : `按当前 ${c.horizon} 年测算，最推荐再开 <b>${best.year}</b> 年后置换。`} 当前年省油约 <b>${money(fuelSavingYear)}</b>，现在换车净补差约 <b>${money(netNow)}</b>。${pb ? `如果你坚持现在换，约第 <b>${pb.year}</b> 年开始在累计成本上追平继续开。` : `如果现在换，在 ${c.horizon} 年内尚未用油费和残值差追平继续开。`} 已计入锋兰达第 0 年落地即二手残值约 <b>${money(c.hevPrice * hevResidualRatio(0))}</b>，相当于先折损 <b>${money(c.hevPrice * (1 - hevResidualRatio(0)))}</b>。注意：若补贴实际拿不到、HEV继续降价更快，推荐置换年份通常会后移；若年里程接近 2 万公里、油价上涨，推荐会前移。`;
 
   const series = mileageSeries.map((km, idx) => {
     const rs = allSwitchResults(c, km).filter(r => r.year !== 'never');
