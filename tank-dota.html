@@ -70,7 +70,7 @@
   <section class="hud top-left">
     <div class="top-card">
       <h1>坦克 DOTA：5v5 推塔大战</h1>
-      <div class="sub">三路推塔 + 大地图 + 1 玩家 9 AI。先拆掉敌方基地获胜；死亡后倒计时复活。</div>
+      <div class="sub">三路推塔 + 大地图 + 1 玩家 9 AI。视野已拉高；拖动开火按钮可手动转炮塔瞄准。</div>
       <div class="stats">
         <span>武器：<b id="weaponText">普通炮弹</b></span>
         <span>击破：<b id="kills">0</b></span>
@@ -87,7 +87,7 @@
     <div id="stick" class="stick"><div id="knob" class="knob"></div></div>
     <div class="buttons">
       <div id="switchBtn" class="btn switch">切换<br>武器</div>
-      <div id="fireBtn" class="btn fire">开火</div>
+      <div id="fireBtn" class="btn fire">开火<br>拖瞄</div>
       <div id="boostBtn" class="btn boost">爽玩<br>加速</div>
       <div id="lockBtn" class="btn">锁定<br>最近</div>
     </div>
@@ -99,13 +99,13 @@
       <p>不是传统坦克大战：你带领蓝方 5 台坦克，与红方 5 台 AI 在超大三路地图上推塔、拆基地。AI 会沿分路推进、绕开随机障碍，不会傻傻“日墙”。</p>
       <div class="legend">
         <span class="chip">左摇杆 / WASD：移动</span>
-        <span class="chip">开火 / 空格：射击</span>
+        <span class="chip">开火拖动：手动瞄准射击</span>
         <span class="chip">切换 / Q：普通、追踪、激光</span>
         <span class="chip">锁定 / E：选最近敌人</span>
       </div>
       <ul>
         <li><b>作弊爽玩：</b>玩家可随时切换三种弹药；追踪弹自动锁敌，激光瞬发、可穿墙、无飞行轨迹。</li>
-        <li><b>DOTA 规则：</b>每条路两座防御塔；摧毁对方基地获胜；坦克爆炸后会在己方基地复活。</li>
+        <li><b>DOTA 规则：</b>每条路两座防御塔；摧毁对方基地获胜；坦克爆炸后会在己方基地复活，但复活时间更长，方便形成推塔窗口。</li>
       </ul>
       <button id="startBtn">开始战斗</button>
     </div>
@@ -133,8 +133,8 @@
   };
   const weapons = [
     { key: 'normal', name: '普通炮弹', cooldown: .28, damage: 18, speed: 760, hint: '稳定连射' },
-    { key: 'homing', name: '追踪弹', cooldown: .48, damage: 28, speed: 560, hint: '锁定追踪' },
-    { key: 'laser', name: '激光', cooldown: .72, damage: 34, speed: 0, hint: '瞬发穿墙' }
+    { key: 'homing', name: '追踪弹', cooldown: .48, damage: 44, speed: 590, hint: '锁定追踪' },
+    { key: 'laser', name: '激光', cooldown: .72, damage: 62, speed: 0, hint: '瞬发穿墙' }
   ];
   const lanes = [
     [{x:245,y:2160},{x:400,y:1470},{x:560,y:860},{x:1170,y:500},{x:2000,y:300},{x:3355,y:240}],
@@ -143,9 +143,13 @@
   ];
 
   let dpr = 1, vw = 1, vh = 1, running = false, gameOver = false, last = performance.now();
-  let camera = { x: 0, y: 0 };
+  const VIEW_SCALE = 0.72;
+  const PLAYER_RESPAWN_SECONDS = 14;
+  const AI_RESPAWN_SECONDS = 18;
+  let camera = { x: 0, y: 0, w: 1, h: 1 };
   let tanks = [], towers = [], bullets = [], effects = [], obstacles = [], particles = [];
   let player, selectedWeapon = 0, kills = 0, joystick = { x: 0, y: 0 }, firing = false, boost = false, keys = new Set();
+  let manualAim = { active: false, angle: 0 };
   let bases = [];
 
   function resize() {
@@ -172,7 +176,7 @@
     const x = clamp(c.x, r.x - pad, r.x + r.w + pad), y = clamp(c.y, r.y - pad, r.y + r.h + pad);
     return Math.hypot(c.x - x, c.y - y) < c.r;
   }
-  function worldToScreen(p) { return { x: p.x - camera.x, y: p.y - camera.y }; }
+  function worldToScreen(p) { return { x: (p.x - camera.x) * VIEW_SCALE, y: (p.y - camera.y) * VIEW_SCALE }; }
 
   function randomObstacles() {
     const obs = [];
@@ -296,8 +300,13 @@
       const ky = (keys.has('KeyS') || keys.has('ArrowDown') ? 1 : 0) - (keys.has('KeyW') || keys.has('ArrowUp') ? 1 : 0);
       const vx = joystick.x || kx, vy = joystick.y || ky;
       if (Math.hypot(vx, vy) > .08) { t.angle = Math.atan2(vy, vx); moveUnit(t, vx, vy, dt); }
-      if (!t.target || t.target.dead || dist(t, t.target) > 1300) t.target = findTarget(t, 1000);
-      if (t.target) t.turret = angleTo(t, t.target); else t.turret = t.angle;
+      if (manualAim.active) {
+        t.target = null;
+        t.turret = manualAim.angle;
+      } else {
+        if (!t.target || t.target.dead || dist(t, t.target) > 1300) t.target = findTarget(t, 1180);
+        if (t.target) t.turret = angleTo(t, t.target); else t.turret = t.angle;
+      }
       if (firing || keys.has('Space')) shoot(t, weapons[selectedWeapon]);
       return;
     }
@@ -324,8 +333,8 @@
 
   function shoot(u, weapon) {
     if (u.cooldown > 0 || u.dead) return;
-    const target = u.target && !u.target.dead ? u.target : findTarget(u, 680);
-    const angle = target ? angleTo(u, target) : u.turret;
+    const target = manualAim.active && u.isPlayer ? null : (u.target && !u.target.dead ? u.target : findTarget(u, 760));
+    const angle = manualAim.active && u.isPlayer ? manualAim.angle : (target ? angleTo(u, target) : u.turret);
     u.turret = angle;
     u.cooldown = weapon.cooldown * (u.isPlayer && boost ? .55 : 1);
     if (weapon.key === 'laser') {
@@ -351,7 +360,7 @@
       explode(v.x, v.y, v.team);
       if (v.type === 'base') endGame(src.team === 'blue');
       else if (v.type === 'tower') effects.push({ kind:'text', text:'防御塔摧毁', x:v.x, y:v.y-60, life:1.2, max:1.2 });
-      else { v.respawn = v.isPlayer ? 5.5 : 7.5; if (src.isPlayer) kills++; }
+      else { v.respawn = v.isPlayer ? PLAYER_RESPAWN_SECONDS : AI_RESPAWN_SECONDS; if (src.isPlayer) kills++; }
     }
   }
   function explode(x, y, team) {
@@ -399,8 +408,10 @@
     updateDefenses(dt);
     effects.forEach(e => e.life -= dt); effects = effects.filter(e => e.life > 0);
     particles.forEach(p => { p.life -= dt; p.x += p.vx*dt; p.y += p.vy*dt; p.vx *= .96; p.vy *= .96; }); particles = particles.filter(p => p.life > 0);
-    camera.x = clamp((player?.x || 0) - vw / 2, 0, WORLD.w - vw);
-    camera.y = clamp((player?.y || 0) - vh / 2, 0, WORLD.h - vh);
+    camera.w = vw / VIEW_SCALE;
+    camera.h = vh / VIEW_SCALE;
+    camera.x = clamp((player?.x || 0) - camera.w / 2, 0, WORLD.w - camera.w);
+    camera.y = clamp((player?.y || 0) - camera.h / 2, 0, WORLD.h - camera.h);
     killsEl.textContent = kills;
     const bb = bases.find(b=>b.team==='blue'), rb = bases.find(b=>b.team==='red');
     baseHpEl.textContent = `${Math.ceil(bb.hp/bb.maxHp*100)}% / ${Math.ceil(rb.hp/rb.maxHp*100)}%`;
@@ -409,7 +420,7 @@
 
   function draw() {
     ctx.clearRect(0,0,vw,vh);
-    ctx.save(); ctx.translate(-camera.x, -camera.y);
+    ctx.save(); ctx.scale(VIEW_SCALE, VIEW_SCALE); ctx.translate(-camera.x, -camera.y);
     drawMap(ctx);
     towers.forEach(drawDefense);
     bases.forEach(drawDefense);
@@ -478,7 +489,7 @@
     for (const o of obstacles) { mctx.fillStyle='rgba(148,163,184,.35)'; mctx.fillRect(o.x*sx,o.y*sy,Math.max(1,o.w*sx),Math.max(1,o.h*sy)); }
     bases.concat(towers).forEach(d => { if(d.dead)return; mctx.fillStyle=d.team==='blue'?TEAM.blue.color:TEAM.red.color; mctx.fillRect(d.x*sx-3,d.y*sy-3,6,6); });
     tanks.forEach(t => { if(t.dead)return; mctx.fillStyle=t.team==='blue'?TEAM.blue.color:TEAM.red.color; mctx.beginPath(); mctx.arc(t.x*sx,t.y*sy,t.isPlayer?4:2.5,0,TAU); mctx.fill(); });
-    mctx.strokeStyle='rgba(250,204,21,.8)'; mctx.lineWidth=1; mctx.strokeRect(camera.x*sx,camera.y*sy,vw*sx,vh*sy);
+    mctx.strokeStyle='rgba(250,204,21,.8)'; mctx.lineWidth=1; mctx.strokeRect(camera.x*sx,camera.y*sy,camera.w*sx,camera.h*sy);
   }
 
   function loop(now) { const dt = Math.min(.05, (now - last) / 1000); last = now; update(dt); draw(); requestAnimationFrame(loop); }
@@ -489,8 +500,36 @@
   document.getElementById('lockBtn').onclick = lockNearest;
   document.getElementById('boostBtn').ontouchstart = document.getElementById('boostBtn').onmousedown = e => { e.preventDefault(); boost = true; };
   document.getElementById('boostBtn').ontouchend = document.getElementById('boostBtn').onmouseup = () => boost = false;
-  document.getElementById('fireBtn').ontouchstart = document.getElementById('fireBtn').onmousedown = e => { e.preventDefault(); firing = true; };
-  document.getElementById('fireBtn').ontouchend = document.getElementById('fireBtn').onmouseup = () => firing = false;
+
+  const fireBtn = document.getElementById('fireBtn');
+  function updateManualAim(clientX, clientY) {
+    if (!player || player.dead) return;
+    const r = fireBtn.getBoundingClientRect();
+    const cx = r.left + r.width / 2, cy = r.top + r.height / 2;
+    const dx = clientX - cx, dy = clientY - cy;
+    if (Math.hypot(dx, dy) > 10) {
+      manualAim.angle = Math.atan2(dy, dx);
+      manualAim.active = true;
+      player.turret = manualAim.angle;
+    }
+  }
+  fireBtn.addEventListener('pointerdown', e => {
+    e.preventDefault();
+    fireBtn.setPointerCapture(e.pointerId);
+    firing = true;
+    manualAim.active = false;
+    updateManualAim(e.clientX, e.clientY);
+  });
+  fireBtn.addEventListener('pointermove', e => {
+    if (fireBtn.hasPointerCapture(e.pointerId)) updateManualAim(e.clientX, e.clientY);
+  });
+  function releaseFire(e) {
+    if (e?.pointerId !== undefined && fireBtn.hasPointerCapture(e.pointerId)) fireBtn.releasePointerCapture(e.pointerId);
+    firing = false;
+    manualAim.active = false;
+  }
+  fireBtn.addEventListener('pointerup', releaseFire);
+  fireBtn.addEventListener('pointercancel', releaseFire);
 
   const stick = document.getElementById('stick'), knob = document.getElementById('knob');
   function setStick(clientX, clientY) {
