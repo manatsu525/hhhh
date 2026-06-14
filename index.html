@@ -110,11 +110,12 @@
     <section class="card panel">
       <h2>模型口径与默认市场假设</h2>
       <ul class="note source-list">
-        <li><span class="pill">旧车</span> 你的车按“2023 年 11 月上牌、天籁悦享版、当前 4.2 万公里”处理；当前卖价默认 8.5 万元。后续折旧不让你调参，采用 B 级燃油轿车在中国二手车市场常见的“前 5 年快、5 年后放缓、10 年后底价约 1.5 万”曲线。</li>
-        <li><span class="pill">新车</span> 目标车默认“丰田锋兰达 2.0L 智能电混双擎”，按市场成交落地价而非指导价，默认 13.5 万元；后续残值不让你调参，采用丰田混动在中国市场相对保值但 SUV 前几年仍快速折价的曲线，并在第 0 年先计入新车开票、上牌、交易价差带来的“落地即二手”残值折损。</li>
+        <li><span class="pill">旧车</span> 你的车按“2023 年 11 月上牌、天籁悦享版、当前 4.2 万公里”处理；当前卖价默认 8.5 万元。后续折旧不让你调参，联网核对 2026 年二手平台同款/近似车源后，当前 8.5 万约等于 2023 年购车价的 63%-65%；后续采用“已过首轮急跌、3-6 年仍较快、8 年后放缓、10 年后底价约 1.5 万”的曲线。</li>
+        <li><span class="pill">新车</span> 目标车默认“丰田锋兰达 2.0L 智能电混双擎”，按市场成交落地价而非指导价，默认 13.5 万元；后续残值不让你调参，联网核对 2026 年锋兰达双擎二手车源后，2024 年车约 9.3-9.4 万、2023 年车约 8.4 万，按 13.5 万落地价折算约为 69%/62%；据此下修前 3 年残值，并在第 0 年计入新车开票、上牌、交易价差带来的“落地即二手”折损。</li>
         <li><span class="pill">补贴</span> 武汉/湖北置换燃油车口径按“2.0L 及以下燃油乘用车置换补贴约 6%，封顶 1.3 万”理解；HEV 不等于绿牌新能源，页面默认补贴 0.7 万，可手动改成你实际能拿到的金额。</li>
         <li><span class="pill">理性边界</span> 模型只算经济账，不包含安全配置、NVH、空间偏好、维修风险、保险差异、贷款利息、停车充电便利性等主观收益或成本。</li>
       </ul>
+      <p class="note"><b>联网校准摘要：</b><span id="residualMarketNotes"></span></p>
     </section>
   </main>
 
@@ -152,25 +153,32 @@ function money(v) { return `${v.toFixed(2)}万`; }
 function pct(v) { return v / 100; }
 function pvFactor(year, r) { return 1 / Math.pow(1 + r, year); }
 
-// 天籁：从“当前二手卖价”向后推，不开放调参。
+// 联网核对口径（2026-06）：
+// 1) 天籁：同款 2022/2023 款 XL-TLS 悦享版公开车源约 8.5-11.6 万；当前 8.5 万更接近车商收购/快速成交口径。
+// 2) 锋兰达双擎：瓜子等平台显示 2024 年车约 9.3-9.4 万、2023 年车约 8.4 万；以 13.5 万落地价折算，2-3 年残值约 69%/62%。
+const residualMarketNotes = [
+  '天籁 2022款2.0L XL-TLS 悦享版：北京二手车市场 2024年/3.7万公里挂牌 11.58万；淘车车 2023年/7.88万公里车源。',
+  '锋兰达双擎：瓜子天水页 2024款双擎豪华版 2024年/2.16万公里约9.36万，2023款双擎领先版 2023年/1.26万公里约8.40万。',
+  '中国汽车流通协会/精真估月度保值率报告采用良好车况二手车销售价（B2C）计算，适合作为残值曲线校准口径。'
+];
+
+// 天籁：从“当前二手卖价”向后推，不开放调参。当前价格已是约 2.6 年车龄，因此只计算未来边际折旧。
 function teanaFutureValue(currentValue, yearsFromNow, annualKm) {
   let v = currentValue;
-  const startAge = 2.6; // 2023-11 到 2026-06 约 2.6 年
   for (let i = 1; i <= yearsFromNow; i++) {
-    const age = startAge + i;
-    let rate = age <= 3 ? 0.14 : age <= 5 ? 0.115 : age <= 8 ? 0.085 : age <= 12 ? 0.065 : 0.045;
+    const age = 2.6 + i; // 2023-11 到 2026-06 约 2.6 年
+    let rate = age <= 4 ? 0.11 : age <= 6 ? 0.095 : age <= 8 ? 0.075 : age <= 12 ? 0.06 : 0.04;
     const excessKm = Math.max(0, annualKm - 1.2);
-    rate += excessKm * 0.012;
+    rate += excessKm * 0.01;
     v *= (1 - rate);
   }
-  const floor = yearsFromNow > 10 ? 1.4 : 1.8;
+  const floor = yearsFromNow > 10 ? 1.45 : 1.8;
   return Math.max(floor, v);
 }
 
-// 锋兰达双擎：以中国丰田 HEV/SUV 常见残值百分比内置，不开放调参。
-// 第 0 年不是 100%：新车开出 4S 店后，开票、上牌、经销商二手收购价差会形成一次性“落地即二手”折损。
+// 锋兰达双擎：按联网车源下修早期残值。第 0 年不是 100%，计入“落地即二手”折损。
 function hevResidualRatio(ageYears) {
-  const curve = [.92, .83, .74, .66, .59, .53, .48, .43, .39, .35, .32, .29, .265, .245, .225, .205];
+  const curve = [.88, .77, .69, .62, .56, .505, .46, .415, .375, .34, .31, .285, .26, .24, .22, .20];
   if (ageYears <= 15) return curve[ageYears];
   return Math.max(.12, curve[15] * Math.pow(.94, ageYears - 15));
 }
@@ -288,6 +296,7 @@ function updateTable(rows, best, horizon) {
 
 function update() {
   const c = cfg();
+  document.getElementById('residualMarketNotes').textContent = residualMarketNotes.join(' ');
   Object.entries(params).forEach(([key, p]) => document.getElementById(`${key}Text`).textContent = p.value);
   document.querySelectorAll('.js-horizon').forEach(el => { el.textContent = c.horizon; });
   const rows = allSwitchResults(c, c.annualKm);
