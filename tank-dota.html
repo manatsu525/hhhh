@@ -70,7 +70,7 @@
   <section class="hud top-left">
     <div class="top-card">
       <h1>坦克 DOTA：5v5 推塔大战</h1>
-      <div class="sub">三路推塔 + 大地图 + 1 玩家 9 AI。视野已拉高；拖动开火按钮可手动转炮塔瞄准。</div>
+      <div class="sub">三路推塔 + 大地图 + 1 玩家 9 AI。视野已大幅拉高；地图通道更宽，AI 会绕障碍推进，追踪弹不会再穿墙。</div>
       <div class="stats">
         <span>武器：<b id="weaponText">普通炮弹</b></span>
         <span>击破：<b id="kills">0</b></span>
@@ -96,7 +96,7 @@
   <section id="start" class="start">
     <div class="start-card">
       <h1>坦克 DOTA</h1>
-      <p>不是传统坦克大战：你带领蓝方 5 台坦克，与红方 5 台 AI 在超大三路地图上推塔、拆基地。AI 会沿分路推进、绕开随机障碍，不会傻傻“日墙”。</p>
+      <p>不是传统坦克大战：你带领蓝方 5 台坦克，与红方 5 台 AI 在超大三路地图上推塔、拆基地。AI 会沿分路推进、绕开随机障碍；本版拓宽通道并加强脱困逻辑，减少“日墙”。</p>
       <div class="legend">
         <span class="chip">左摇杆 / WASD：移动</span>
         <span class="chip">开火拖动：手动瞄准射击</span>
@@ -104,7 +104,7 @@
         <span class="chip">锁定 / E：选最近敌人</span>
       </div>
       <ul>
-        <li><b>作弊爽玩：</b>玩家可随时切换三种弹药；追踪弹自动锁敌，激光瞬发、可穿墙、无飞行轨迹。</li>
+        <li><b>作弊爽玩：</b>玩家可随时切换三种弹药；追踪弹自动锁敌但会被墙体挡下，激光瞬发、可穿墙、无飞行轨迹。</li>
         <li><b>DOTA 规则：</b>每条路两座防御塔；摧毁对方基地获胜；坦克爆炸后会在己方基地复活，但复活时间更长，方便形成推塔窗口。</li>
       </ul>
       <button id="startBtn">开始战斗</button>
@@ -143,7 +143,7 @@
   ];
 
   let dpr = 1, vw = 1, vh = 1, running = false, gameOver = false, last = performance.now();
-  const VIEW_SCALE = 0.72;
+  const VIEW_SCALE = 0.54;
   const PLAYER_RESPAWN_SECONDS = 14;
   const AI_RESPAWN_SECONDS = 18;
   let camera = { x: 0, y: 0, w: 1, h: 1 };
@@ -178,19 +178,30 @@
   }
   function worldToScreen(p) { return { x: (p.x - camera.x) * VIEW_SCALE, y: (p.y - camera.y) * VIEW_SCALE }; }
 
+  function rectCenter(r) { return { x: r.x + r.w / 2, y: r.y + r.h / 2 }; }
+  function rectsNear(a, b, gap = 52) {
+    return a.x < b.x + b.w + gap && a.x + a.w + gap > b.x && a.y < b.y + b.h + gap && a.y + a.h + gap > b.y;
+  }
   function randomObstacles() {
     const obs = [];
-    const safe = p => {
-      if (dist(p, TEAM.blue.base) < 420 || dist(p, TEAM.red.base) < 420) return false;
-      for (const lane of lanes) for (const wp of lane) if (dist(p, wp) < 135) return false;
-      return true;
+    const laneClearance = 130;
+    const safe = r => {
+      const c = rectCenter(r);
+      if (dist(c, TEAM.blue.base) < 520 || dist(c, TEAM.red.base) < 520) return false;
+      for (const lane of lanes) {
+        for (let i = 0; i < lane.length - 1; i++) {
+          if (distanceToSegment(c, lane[i], lane[i + 1]) < laneClearance + Math.max(r.w, r.h) * .35) return false;
+        }
+        for (const wp of lane) if (dist(c, wp) < 230) return false;
+      }
+      return !obs.some(o => rectsNear(o, r, 58));
     };
-    for (let i = 0; i < 84; i++) {
-      const w = rand(70, 170), h = rand(55, 150);
+    for (let i = 0; i < 54; i++) {
+      const w = rand(56, 128), h = rand(46, 112);
       let r, tries = 0;
       do { r = { x: rand(180, WORLD.w - 250), y: rand(150, WORLD.h - 220), w, h }; tries++; }
-      while (tries < 80 && !safe({ x: r.x + w/2, y: r.y + h/2 }));
-      if (tries < 80) obs.push(r);
+      while (tries < 140 && !safe(r));
+      if (tries < 140) obs.push(r);
     }
     return obs;
   }
@@ -269,18 +280,22 @@
     }
   }
 
-  function avoidVector(unit, desired) {
+  function avoidVector(unit, desired, waypoint) {
     let ax = 0, ay = 0;
     for (const o of obstacles) {
       const cx = clamp(unit.x, o.x, o.x + o.w), cy = clamp(unit.y, o.y, o.y + o.h);
       const dx = unit.x - cx, dy = unit.y - cy, d = Math.hypot(dx, dy);
-      if (d < 118) {
-        const force = (118 - Math.max(1, d)) / 118;
-        ax += (dx || -desired.y) / Math.max(1, d) * force * 1.9;
-        ay += (dy || desired.x) / Math.max(1, d) * force * 1.9;
+      if (d < 150) {
+        const force = (150 - Math.max(1, d)) / 150;
+        ax += (dx || -desired.y) / Math.max(1, d) * force * 2.7;
+        ay += (dy || desired.x) / Math.max(1, d) * force * 2.7;
       }
-      const ahead = { x: unit.x + desired.x * 110, y: unit.y + desired.y * 110, r: unit.r + 8 };
-      if (circleRectHit(ahead, o, 10)) { ax += -desired.y * .9; ay += desired.x * .9; }
+      const ahead = { x: unit.x + desired.x * 150, y: unit.y + desired.y * 150, r: unit.r + 14 };
+      if (circleRectHit(ahead, o, 14)) {
+        const side = waypoint ? Math.sign((waypoint.x - unit.x) * -desired.y + (waypoint.y - unit.y) * desired.x) || 1 : 1;
+        ax += -desired.y * side * 1.35;
+        ay += desired.x * side * 1.35;
+      }
     }
     return { x: desired.x + ax, y: desired.y + ay };
   }
@@ -295,6 +310,9 @@
       return;
     }
     t.cooldown = Math.max(0, t.cooldown - dt);
+    const moved = dist(t, t.lastPos);
+    t.stuckTimer = moved < 4 ? t.stuckTimer + dt : 0;
+    if (moved >= 4) t.lastPos = { x: t.x, y: t.y };
     if (t.isPlayer) {
       const kx = (keys.has('KeyD') || keys.has('ArrowRight') ? 1 : 0) - (keys.has('KeyA') || keys.has('ArrowLeft') ? 1 : 0);
       const ky = (keys.has('KeyS') || keys.has('ArrowDown') ? 1 : 0) - (keys.has('KeyW') || keys.has('ArrowUp') ? 1 : 0);
@@ -316,7 +334,7 @@
     if (target) {
       t.turret = angleTo(t, target);
       if (dist(t, target) > 330) {
-        const a = angleTo(t, target), desired = avoidVector(t, {x:Math.cos(a), y:Math.sin(a)});
+        const a = angleTo(t, target), desired = avoidVector(t, {x:Math.cos(a), y:Math.sin(a)}, target);
         t.angle = Math.atan2(desired.y, desired.x); moveUnit(t, desired.x, desired.y, dt);
       }
       shoot(t, weapons[0]);
@@ -324,10 +342,18 @@
       const lane = lanes[t.laneIndex];
       const wp = lane[t.waypoint];
       const a = angleTo(t, wp);
-      const desired = avoidVector(t, { x: Math.cos(a), y: Math.sin(a) });
+      const desired = avoidVector(t, { x: Math.cos(a), y: Math.sin(a) }, wp);
+      if (t.stuckTimer > .65) {
+        const side = t.id.charCodeAt(t.id.length - 1) % 2 ? 1 : -1;
+        desired.x += -Math.sin(a) * side * 2.2;
+        desired.y += Math.cos(a) * side * 2.2;
+      }
       t.angle = Math.atan2(desired.y, desired.x);
       moveUnit(t, desired.x, desired.y, dt);
-      if (dist(t, wp) < 90) t.waypoint = clamp(t.waypoint + TEAM[t.team].dir, 0, lane.length - 1);
+      if (t.stuckTimer > 1.8 || dist(t, wp) < 90) {
+        t.stuckTimer = 0;
+        t.waypoint = clamp(t.waypoint + TEAM[t.team].dir, 0, lane.length - 1);
+      }
     }
   }
 
@@ -376,7 +402,11 @@
       b.x += Math.cos(b.angle) * b.speed * dt;
       b.y += Math.sin(b.angle) * b.speed * dt;
       if (b.x < 0 || b.y < 0 || b.x > WORLD.w || b.y > WORLD.h) b.life = 0;
-      if (!b.homing && obstacles.some(o => pointInRect(b, o, 0))) { b.life = 0; effects.push({kind:'hit', x:b.x, y:b.y, life:.15, max:.15}); continue; }
+      if (obstacles.some(o => circleRectHit({ x:b.x, y:b.y, r:b.r }, o, 0))) {
+        b.life = 0;
+        effects.push({kind:'hit', x:b.x, y:b.y, life:.15, max:.15});
+        continue;
+      }
       for (const e of enemiesOf(b.team)) {
         if (dist(b, e) < b.r + (e.r || 35)) { damage(e, b.damage, b.owner); b.life = 0; break; }
       }
