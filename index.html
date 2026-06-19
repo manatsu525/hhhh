@@ -69,7 +69,7 @@
       <aside class="card panel">
         <h2>可调整参数</h2>
         <div class="controls" id="controls"></div>
-        <p class="note"><b>单位说明：</b>金额默认“万元”，年里程为“万公里/年”，油耗为“L/100km”。“HEV 每年降价”表示你如果晚买，同款/同级 HEV 的市场成交落地价每年下降比例，不是车辆购入后的二手折旧。锋兰达残值曲线从第 0 年就按“落地即二手”折损计入。</p>
+        <p class="note"><b>单位说明：</b>金额默认“万元”，年里程为“万公里/年”，油耗为“L/100km”。“HEV 每年降价”表示你如果晚买，同款/同级 HEV 的市场成交落地价每年下降比例，不是车辆购入后的二手折旧。锋兰达残值曲线从第 0 年就按“落地即二手”折损计入；计算二手残值时会先从落地价中扣除购置税、保险、上牌等不形成车身残值的费用。</p>
       </aside>
 
       <section class="charts">
@@ -111,7 +111,7 @@
       <h2>模型口径与默认市场假设</h2>
       <ul class="note source-list">
         <li><span class="pill">旧车</span> 你的车按“2023 年 11 月上牌、天籁悦享版、当前 4.2 万公里”处理；当前卖价默认 8.5 万元。后续折旧不让你调参，联网核对 2026 年二手平台同款/近似车源后，当前 8.5 万约等于 2023 年购车价的 63%-65%；后续采用“已过首轮急跌、3-6 年仍较快、8 年后放缓、10 年后底价约 1.5 万”的曲线。</li>
-        <li><span class="pill">新车</span> 目标车默认“丰田锋兰达 2.0L 智能电混双擎”，按市场成交落地价而非指导价，默认 13.5 万元；后续残值不让你调参，联网核对 2026 年锋兰达双擎二手车源后，2024 年车约 9.3-9.4 万、2023 年车约 8.4 万，按 13.5 万落地价折算约为 69%/62%；据此下修前 3 年残值，并在第 0 年计入新车开票、上牌、交易价差带来的“落地即二手”折损。</li>
+        <li><span class="pill">新车</span> 目标车默认“丰田锋兰达 2.0L 智能电混双擎”，按市场成交落地价而非指导价，默认 13.5 万元；后续残值不让你调参，联网核对 2026 年锋兰达双擎二手车源后，2024 年车约 9.3-9.4 万、2023 年车约 8.4 万，按 13.5 万落地价折算约为 69%/62%；据此下修前 3 年残值，并在第 0 年计入新车开票、上牌、交易价差带来的“落地即二手”折损。计算二手残值时，先按默认 11.5% 扣除购置税、保险、上牌等税险费用，使残值基数从“落地价”回到更接近“可进入二手交易的车身价值”。</li>
         <li><span class="pill">补贴</span> 武汉/湖北置换燃油车口径按“2.0L 及以下燃油乘用车置换补贴约 6%，封顶 1.3 万”理解；HEV 不等于绿牌新能源，页面默认补贴 0.7 万，可手动改成你实际能拿到的金额。</li>
         <li><span class="pill">理性边界</span> 模型只算经济账，不包含安全配置、NVH、空间偏好、维修风险、保险差异、贷款利息、停车充电便利性等主观收益或成本。</li>
       </ul>
@@ -123,6 +123,7 @@
 const params = {
   teanaValue: { label: '天籁当前可卖价', value: 8.5, min: 7, max: 13, step: 0.1, unit: '万元' },
   hevPrice: { label: '锋兰达双擎市场落地价', value: 13.5, min: 10, max: 20, step: 0.1, unit: '万元' },
+  hevNonResidualFeeRatio: { label: '锋兰达税险等非残值占比', value: 11.5, min: 6, max: 18, step: 0.1, unit: '%' },
   subsidy: { label: '当前置换补贴', value: 0.7, min: 0, max: 1.5, step: 0.01, unit: '万元' },
   subsidyYears: { label: '补贴可持续年数', value: 1, min: 0, max: 5, step: 1, unit: '年' },
   annualKm: { label: '你的年里程', value: 1.4, min: 1, max: 2, step: 0.05, unit: '万公里/年' },
@@ -156,9 +157,11 @@ function pvFactor(year, r) { return 1 / Math.pow(1 + r, year); }
 // 联网核对口径（2026-06）：
 // 1) 天籁：同款 2022/2023 款 XL-TLS 悦享版公开车源约 8.5-11.6 万；当前 8.5 万更接近车商收购/快速成交口径。
 // 2) 锋兰达双擎：瓜子等平台显示 2024 年车约 9.3-9.4 万、2023 年车约 8.4 万；以 13.5 万落地价折算，2-3 年残值约 69%/62%。
+// 3) 税险等非残值费用：车辆购置税通常按不含增值税车价的 10% 计算；太平洋汽车 2026 款锋兰达双擎豪华版示例为裸车 15.98 万、必要花费 1.5952 万、商业保险 0.5161 万、全款总价 18.0913 万，税险等约占落地价 11.7%。默认按 11.5% 从残值计算基数中剔除。
 const residualMarketNotes = [
   '天籁 2022款2.0L XL-TLS 悦享版：北京二手车市场 2024年/3.7万公里挂牌 11.58万；淘车车 2023年/7.88万公里车源。',
   '锋兰达双擎：瓜子天水页 2024款双擎豪华版 2024年/2.16万公里约9.36万，2023款双擎领先版 2023年/1.26万公里约8.40万。',
+  '车辆购置税通常按不含增值税计税价格的 10% 计算；太平洋汽车 2026款锋兰达双擎豪华版示例显示，裸车15.98万、必要花费1.5952万、商业保险0.5161万、全款总价18.0913万，税险等约占落地价11.7%。',
   '中国汽车流通协会/精真估月度保值率报告采用良好车况二手车销售价（B2C）计算，适合作为残值曲线校准口径。'
 ];
 
@@ -185,6 +188,10 @@ function hevResidualRatio(ageYears) {
 
 function hevPurchasePriceAtYear(basePrice, year, priceDropRate) {
   return basePrice * Math.pow(1 - priceDropRate, year);
+}
+
+function hevResidualBase(purchaseLandingPrice, nonResidualFeeRatio) {
+  return purchaseLandingPrice * (1 - nonResidualFeeRatio);
 }
 
 function annualFuelCost(kmWan, fuelL100, fuelPrice) {
@@ -214,7 +221,8 @@ function calcCostForSwitchYear(switchYear, cfg, annualKm) {
 
   for (let y = switchYear + 1; y <= N; y++) cost += hevFuelAnnual * pvFactor(y, r);
   const hevAgeAtEnd = N - switchYear;
-  const terminalHev = purchase * hevResidualRatio(hevAgeAtEnd) * pvFactor(N, r);
+  const residualBase = hevResidualBase(purchase, pct(cfg.hevNonResidualFeeRatio));
+  const terminalHev = residualBase * hevResidualRatio(hevAgeAtEnd) * pvFactor(N, r);
   cost -= terminalHev;
   return cost;
 }
@@ -316,7 +324,7 @@ function update() {
   rec.className = 'recommend' + (best.year === 'never' ? ' warn' : best.year === 0 ? '' : ' warn');
   const fuelSavingYear = annualFuelCost(c.annualKm, c.teanaFuel, c.fuelPrice) - annualFuelCost(c.annualKm, c.hevFuel, c.fuelPrice);
   const netNow = c.hevPrice - c.subsidy - c.teanaValue;
-  rec.innerHTML = `<b>结论：</b>${best.year === 0 ? `按当前 ${c.horizon} 年测算，现在置换是经济账最优。` : best.year === 'never' ? `按当前 ${c.horizon} 年测算，单纯为了省油不建议在测算期内置换。` : `按当前 ${c.horizon} 年测算，最推荐再开 <b>${best.year}</b> 年后置换。`} 当前年省油约 <b>${money(fuelSavingYear)}</b>，现在换车净补差约 <b>${money(netNow)}</b>。${pb ? `如果你坚持现在换，约第 <b>${pb.year}</b> 年开始在累计成本上追平继续开。` : `如果现在换，在 ${c.horizon} 年内尚未用油费和残值差追平继续开。`} 已计入锋兰达第 0 年落地即二手残值约 <b>${money(c.hevPrice * hevResidualRatio(0))}</b>，相当于先折损 <b>${money(c.hevPrice * (1 - hevResidualRatio(0)))}</b>。注意：若补贴实际拿不到、HEV继续降价更快，推荐置换年份通常会后移；若年里程接近 2 万公里、油价上涨，推荐会前移。`;
+  rec.innerHTML = `<b>结论：</b>${best.year === 0 ? `按当前 ${c.horizon} 年测算，现在置换是经济账最优。` : best.year === 'never' ? `按当前 ${c.horizon} 年测算，单纯为了省油不建议在测算期内置换。` : `按当前 ${c.horizon} 年测算，最推荐再开 <b>${best.year}</b> 年后置换。`} 当前年省油约 <b>${money(fuelSavingYear)}</b>，现在换车净补差约 <b>${money(netNow)}</b>。${pb ? `如果你坚持现在换，约第 <b>${pb.year}</b> 年开始在累计成本上追平继续开。` : `如果现在换，在 ${c.horizon} 年内尚未用油费和残值差追平继续开。`} 已计入锋兰达税险等非残值费用 <b>${c.hevNonResidualFeeRatio.toFixed(1)}%</b>，残值计算基数约 <b>${money(hevResidualBase(c.hevPrice, pct(c.hevNonResidualFeeRatio)))}</b>；第 0 年落地即二手真实残值约 <b>${money(hevResidualBase(c.hevPrice, pct(c.hevNonResidualFeeRatio)) * hevResidualRatio(0))}</b>，相当于从落地价先折损 <b>${money(c.hevPrice - hevResidualBase(c.hevPrice, pct(c.hevNonResidualFeeRatio)) * hevResidualRatio(0))}</b>。注意：若补贴实际拿不到、HEV继续降价更快，推荐置换年份通常会后移；若年里程接近 2 万公里、油价上涨，推荐会前移。`;
 
   const series = mileageSeries.map((km, idx) => {
     const rs = allSwitchResults(c, km).filter(r => r.year !== 'never');
@@ -338,11 +346,11 @@ function update() {
   const deprPtsOld = [], deprPtsNew = [];
   for (let y = 0; y <= c.horizon; y++) {
     deprPtsOld.push({ x: y, y: teanaFutureValue(c.teanaValue, y, c.annualKm) });
-    deprPtsNew.push({ x: y, y: c.hevPrice * hevResidualRatio(y) });
+    deprPtsNew.push({ x: y, y: hevResidualBase(c.hevPrice, pct(c.hevNonResidualFeeRatio)) * hevResidualRatio(y) });
   }
   drawChart(document.getElementById('deprChart'), [
     { name: '天籁未来卖价', color: '#ef4444', points: deprPtsOld },
-    { name: '锋兰达双擎残值', color: '#2563eb', points: deprPtsNew }
+    { name: '锋兰达双擎真实残值', color: '#2563eb', points: deprPtsNew }
   ], { xLabel: '从现在起第几年', yLabel: '车辆价值（万元）' });
 
   updateTable(rows, best, c.horizon);
