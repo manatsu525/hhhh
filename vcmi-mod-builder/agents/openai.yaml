@@ -1,0 +1,4 @@
+interface:
+  display_name: "VCMI Mod Builder"
+  short_description: "Build Android-ready VCMI mods."
+  default_prompt: "Create a standalone Android-installable VCMI mod from my requirements."
