@@ -350,7 +350,8 @@
     const $$ = (s, el = document) => [...el.querySelectorAll(s)];
 
     const state = {
-      items: [],
+      items: [],       // full result from last search (all sources)
+      lastData: null,  // last /api/search payload for meta
       tasks: [],
       loading: false,
       pollTimer: null,
@@ -408,47 +409,38 @@
       return $$('input[name="src"]:checked').map(i => i.value);
     }
 
-    async function doSearch(keyword) {
-      const sources = selectedSources();
-      if (!sources.length) {
-        toast("请至少选择一个来源", "err");
+    /** Client-side filter: checkbox toggles list without re-searching. */
+    function applySourceFilter() {
+      if (!state.lastData) {
+        $("#resultBody").innerHTML = `<tr><td colspan="6"><div class="empty"><strong>还没有结果</strong>搜索或加载近期更新试试</div></td></tr>`;
         return;
       }
-      state.loading = true;
-      $("#searchBtn").disabled = true;
-      $("#resultBody").innerHTML = `<tr><td colspan="6"><div class="loading"><span class="spinner"></span>正在聚合搜索…</div></td></tr>`;
-      $("#searchMeta").innerHTML = `<span class="loading" style="padding:0"><span class="spinner"></span>请求中</span>`;
+      const selected = selectedSources();
+      const selectedSet = new Set(selected);
+      const allItems = state.items || [];
+      const items = allItems.filter(it => selectedSet.has(it.source));
 
-      try {
-        const params = new URLSearchParams();
-        if (keyword) params.set("q", keyword);
-        params.set("source", sources.join(","));
-        const res = await fetch("/api/search?" + params.toString());
-        if (!res.ok) throw new Error(await res.text());
-        const data = await res.json();
-        state.items = data.items || [];
-        renderResults(data);
-      } catch (e) {
-        $("#resultBody").innerHTML = `<tr><td colspan="6"><div class="empty"><strong>搜索失败</strong>${esc(e.message)}</div></td></tr>`;
-        $("#searchMeta").innerHTML = `<span class="err-text">${esc(e.message)}</span>`;
-        toast("搜索失败: " + e.message, "err");
-      } finally {
-        state.loading = false;
-        $("#searchBtn").disabled = false;
-      }
-    }
-
-    function renderResults(data) {
-      const items = data.items || [];
-      const srcMeta = (data.sources || []).map(s => {
+      // Per-source counts from full cache; dim unchecked in meta
+      const srcMeta = (state.lastData.sources || []).map(s => {
+        const on = selectedSet.has(s.source);
         const err = s.error ? ` <span class="err-text">失败</span>` : "";
-        return `<span class="src-chip"><span class="dot dot-${esc(s.source)}"></span>${esc(s.source_name)} ${s.count}${err}</span>`;
+        const style = on ? "" : ' style="opacity:.4;text-decoration:line-through"';
+        return `<span class="src-chip"${style}><span class="dot dot-${esc(s.source)}"></span>${esc(s.source_name)} ${s.count}${err}</span>`;
       }).join("");
-      const kw = data.keyword ? `关键词「${esc(data.keyword)}」` : "近期更新";
-      $("#searchMeta").innerHTML = `<span>${kw} · 共 <b style="color:var(--text)">${items.length}</b> 条</span>${srcMeta}`;
+      const kw = state.lastData.keyword
+        ? `关键词「${esc(state.lastData.keyword)}」`
+        : "近期更新";
+      const note = selected.length < 3 && allItems.length
+        ? ` · 显示 <b style="color:var(--text)">${items.length}</b> / ${allItems.length}`
+        : ` · 共 <b style="color:var(--text)">${items.length}</b> 条`;
+      $("#searchMeta").innerHTML = `<span>${kw}${note}</span>${srcMeta}`;
 
+      if (!selected.length) {
+        $("#resultBody").innerHTML = `<tr><td colspan="6"><div class="empty"><strong>未选择来源</strong>勾选上方网站以显示结果</div></td></tr>`;
+        return;
+      }
       if (!items.length) {
-        $("#resultBody").innerHTML = `<tr><td colspan="6"><div class="empty"><strong>没有找到结果</strong>换个关键词试试</div></td></tr>`;
+        $("#resultBody").innerHTML = `<tr><td colspan="6"><div class="empty"><strong>没有找到结果</strong>换个关键词或勾选其它来源试试</div></td></tr>`;
         return;
       }
 
@@ -473,12 +465,41 @@
       }).join("");
 
       $$(".dl-btn").forEach(btn => {
-        btn.addEventListener("click", () => addFromItem(+btn.dataset.idx, btn));
+        btn.addEventListener("click", () => addFromItem(items[+btn.dataset.idx], btn));
       });
     }
 
-    async function addFromItem(idx, btn) {
-      const it = state.items[idx];
+    async function doSearch(keyword) {
+      // Always query all three sites so checkbox toggles can filter instantly
+      // without needing another network search.
+      state.loading = true;
+      $("#searchBtn").disabled = true;
+      $("#resultBody").innerHTML = `<tr><td colspan="6"><div class="loading"><span class="spinner"></span>正在聚合搜索…</div></td></tr>`;
+      $("#searchMeta").innerHTML = `<span class="loading" style="padding:0"><span class="spinner"></span>请求中</span>`;
+
+      try {
+        const params = new URLSearchParams();
+        if (keyword) params.set("q", keyword);
+        params.set("source", "dmhy,acgrip,nyaa");
+        const res = await fetch("/api/search?" + params.toString());
+        if (!res.ok) throw new Error(await res.text());
+        const data = await res.json();
+        state.items = data.items || [];
+        state.lastData = data;
+        applySourceFilter();
+      } catch (e) {
+        state.items = [];
+        state.lastData = null;
+        $("#resultBody").innerHTML = `<tr><td colspan="6"><div class="empty"><strong>搜索失败</strong>${esc(e.message)}</div></td></tr>`;
+        $("#searchMeta").innerHTML = `<span class="err-text">${esc(e.message)}</span>`;
+        toast("搜索失败: " + e.message, "err");
+      } finally {
+        state.loading = false;
+        $("#searchBtn").disabled = false;
+      }
+    }
+
+    async function addFromItem(it, btn) {
       if (!it) return;
       const uri = it.magnet || it.torrent_url;
       if (!uri) {
@@ -524,6 +545,10 @@
     $("#latestBtn").addEventListener("click", () => {
       $("#q").value = "";
       doSearch("");
+    });
+    // Instant list filter when toggling source checkboxes
+    $$('input[name="src"]').forEach(cb => {
+      cb.addEventListener("change", () => applySourceFilter());
     });
 
     // Downloads

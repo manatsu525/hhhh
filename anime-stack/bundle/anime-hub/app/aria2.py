@@ -54,6 +54,22 @@ class Aria2Client:
     async def get_version(self) -> Dict[str, Any]:
         return await self.call("aria2.getVersion")
 
+    # Extra public/ACG trackers: seed magnet/torrent files often only list dead trackers
+    # (e.g. open.acgtracker.com). Injecting these lets aria2 find peers much faster.
+    DEFAULT_BT_TRACKERS = (
+        "http://nyaa.tracker.wf:7777/announce,"
+        "http://tracker.mywaifu.best:6969/announce,"
+        "http://t.nyaatracker.com/announce,"
+        "udp://tracker.torrent.eu.org:451/announce,"
+        "udp://open.stealth.si:80/announce,"
+        "udp://exodus.desync.com:6969/announce,"
+        "udp://tracker.opentrackr.org:1337/announce,"
+        "udp://tracker.moeking.me:6969/announce,"
+        "http://tracker.openbittorrent.com:80/announce,"
+        "udp://opentor.net:6969,"
+        "http://open.acgtracker.com:1096/announce"
+    )
+
     async def add_uri(
         self,
         uri: str,
@@ -67,8 +83,13 @@ class Aria2Client:
             "min-split-size": "1M",
             "bt-enable-lpd": "true",
             "bt-save-metadata": "true",
-            "seed-time": "0",
+            "bt-load-saved-metadata": "true",
+            # Seed until share ratio reaches 10%, then stop (saves upload bandwidth)
+            "seed-ratio": "0.1",
             "bt-max-peers": "128",
+            "bt-tracker": self.DEFAULT_BT_TRACKERS,
+            "bt-tracker-connect-timeout": "10",
+            "bt-tracker-timeout": "10",
             "follow-torrent": "true",
             "check-integrity": "false",
             "file-allocation": "none",
