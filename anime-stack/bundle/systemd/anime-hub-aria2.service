@@ -1,0 +1,47 @@
+[Unit]
+Description=Anime Hub aria2 BT downloader
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=simple
+User=root
+Group=root
+EnvironmentFile=-/etc/anime-hub.env
+ExecStart=/usr/bin/aria2c \
+  --enable-rpc \
+  --rpc-listen-all=false \
+  --rpc-listen-port=${ARIA2_RPC_PORT} \
+  --rpc-secret=${ARIA2_RPC_SECRET} \
+  --rpc-allow-origin-all=true \
+  --dir=${DOWNLOAD_DIR} \
+  --continue=true \
+  --max-concurrent-downloads=10 \
+  --max-connection-per-server=16 \
+  --split=16 \
+  --min-split-size=1M \
+  --bt-enable-lpd=true \
+  --bt-max-peers=128 \
+  --bt-save-metadata=true \
+  --bt-hash-check-seed=true \
+  --seed-time=0 \
+  --seed-ratio=0.0 \
+  --follow-torrent=true \
+  --file-allocation=none \
+  --check-integrity=false \
+  --auto-file-renaming=true \
+  --allow-overwrite=false \
+  --user-agent=AnimeHub/1.0 \
+  --summary-interval=0 \
+  --console-log-level=warn \
+  --log=${APP_DIR}/logs/aria2.log \
+  --log-level=notice \
+  --save-session=${APP_DIR}/session/aria2.session \
+  --save-session-interval=30 \
+  --input-file=${APP_DIR}/session/aria2.session
+Restart=on-failure
+RestartSec=3
+LimitNOFILE=65535
+
+[Install]
+WantedBy=multi-user.target

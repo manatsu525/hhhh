@@ -1,0 +1,211 @@
+"""Anime Hub — aggregate anime torrent search + aria2 download manager."""
+from __future__ import annotations
+
+from typing import Optional
+
+from fastapi import FastAPI, HTTPException, Query
+from fastapi.responses import FileResponse
+from pydantic import BaseModel, Field
+
+from .aria2 import Aria2Error, TASK_KEYS, aria2, normalize_task
+from .config import DOWNLOAD_DIR, PORT, SOURCES, STATIC_DIR
+from .sources import search_all, search_source
+
+app = FastAPI(title="Anime Hub", version="1.0.0", docs_url="/api/docs")
+
+
+class SearchResponse(BaseModel):
+    keyword: str
+    items: list
+    total: int
+    sources: list
+    errors: dict
+
+
+class AddDownloadBody(BaseModel):
+    magnet: Optional[str] = Field(None, description="magnet:?xt=...")
+    torrent_url: Optional[str] = Field(None, description="http(s) torrent URL")
+    uri: Optional[str] = Field(None, description="generic URI (magnet/torrent/http)")
+    name: Optional[str] = None
+
+
+class GidBody(BaseModel):
+    gid: str
+
+
+@app.get("/api/health")
+async def health():
+    ok = await aria2.ping()
+    return {
+        "ok": True,
+        "aria2": ok,
+        "download_dir": str(DOWNLOAD_DIR),
+        "port": PORT,
+    }
+
+
+@app.get("/api/sources")
+async def list_sources():
+    return {
+        "sources": [
+            {"id": k, "name": v["name"], "color": v["color"], "site": v["site"]}
+            for k, v in SOURCES.items()
+        ]
+    }
+
+
+@app.get("/api/search")
+async def api_search(
+    q: str = Query("", description="search keyword; empty = latest"),
+    source: Optional[str] = Query(None, description="comma-separated: dmhy,acgrip,nyaa"),
+):
+    sources = None
+    if source:
+        sources = [s.strip() for s in source.split(",") if s.strip()]
+        bad = [s for s in sources if s not in SOURCES]
+        if bad:
+            raise HTTPException(400, f"unknown source(s): {bad}")
+    result = await search_all(q, sources)
+    return result
+
+
+@app.get("/api/search/{source_id}")
+async def api_search_one(source_id: str, q: str = Query("")):
+    if source_id not in SOURCES:
+        raise HTTPException(404, f"unknown source: {source_id}")
+    return await search_source(source_id, q)
+
+
+@app.get("/api/downloads")
+async def list_downloads():
+    try:
+        active = await aria2.tell_active(TASK_KEYS)
+        waiting = await aria2.tell_waiting(0, 1000, TASK_KEYS)
+        stopped = await aria2.tell_stopped(0, 1000, TASK_KEYS)
+        stat = await aria2.get_global_stat()
+    except Exception as e:
+        raise HTTPException(503, f"aria2 unavailable: {e}") from e
+
+    tasks = [normalize_task(t) for t in (active + waiting + stopped)]
+    # de-dupe by gid (prefer active); hide pure "removed" shell entries
+    seen = set()
+    unique = []
+    for t in tasks:
+        if t["gid"] in seen:
+            continue
+        if t.get("status") == "removed":
+            continue
+        seen.add(t["gid"])
+        unique.append(t)
+
+    return {
+        "tasks": unique,
+        "stat": {
+            "download_speed": int(stat.get("downloadSpeed") or 0),
+            "upload_speed": int(stat.get("uploadSpeed") or 0),
+            "num_active": int(stat.get("numActive") or 0),
+            "num_waiting": int(stat.get("numWaiting") or 0),
+            "num_stopped": int(stat.get("numStopped") or 0),
+        },
+    }
+
+
+@app.post("/api/downloads")
+async def add_download(body: AddDownloadBody):
+    uri = (body.uri or body.magnet or body.torrent_url or "").strip()
+    if not uri:
+        raise HTTPException(400, "magnet / torrent_url / uri is required")
+
+    # basic validation
+    lower = uri.lower()
+    if not (
+        lower.startswith("magnet:")
+        or lower.startswith("http://")
+        or lower.startswith("https://")
+    ):
+        raise HTTPException(400, "unsupported URI scheme (use magnet: or http(s):)")
+
+    opts = {}
+    if body.name:
+        # only works for some protocols; harmless otherwise
+        opts["out"] = body.name
+
+    try:
+        gid = await aria2.add_uri(uri, opts or None)
+    except Aria2Error as e:
+        raise HTTPException(400, f"aria2 error: {e}") from e
+    except Exception as e:
+        raise HTTPException(503, f"aria2 unavailable: {e}") from e
+
+    return {"ok": True, "gid": gid, "uri": uri[:200]}
+
+
+@app.post("/api/downloads/{gid}/pause")
+async def pause_download(gid: str):
+    try:
+        await aria2.pause(gid)
+        return {"ok": True, "gid": gid, "action": "pause"}
+    except Aria2Error as e:
+        raise HTTPException(400, str(e)) from e
+
+
+@app.post("/api/downloads/{gid}/resume")
+async def resume_download(gid: str):
+    try:
+        await aria2.unpause(gid)
+        return {"ok": True, "gid": gid, "action": "resume"}
+    except Aria2Error as e:
+        raise HTTPException(400, str(e)) from e
+
+
+@app.delete("/api/downloads/{gid}")
+async def remove_download(gid: str, delete_result: bool = Query(True)):
+    """Remove a task. Active/waiting: remove; stopped: remove result."""
+    try:
+        try:
+            status = await aria2.tell_status(gid, ["status"])
+            st = status.get("status")
+        except Aria2Error:
+            st = None
+
+        if st in ("active", "waiting", "paused"):
+            try:
+                await aria2.remove(gid)
+            except Aria2Error:
+                await aria2.call("aria2.forceRemove", [gid])
+        # Always try to clear from result list
+        if delete_result:
+            try:
+                await aria2.remove_result(gid)
+            except Aria2Error:
+                pass
+        return {"ok": True, "gid": gid, "action": "remove"}
+    except Aria2Error as e:
+        raise HTTPException(400, str(e)) from e
+    except Exception as e:
+        raise HTTPException(503, str(e)) from e
+
+@app.post("/api/downloads/purge")
+async def purge_completed():
+    try:
+        await aria2.purge_download_result()
+        return {"ok": True}
+    except Exception as e:
+        raise HTTPException(503, str(e)) from e
+
+
+@app.get("/api/downloads/{gid}")
+async def get_download(gid: str):
+    try:
+        task = await aria2.tell_status(gid, TASK_KEYS)
+        return normalize_task(task)
+    except Aria2Error as e:
+        raise HTTPException(404, str(e)) from e
+
+
+@app.get("/")
+async def index():
+    index_file = STATIC_DIR / "index.html"
+    if not index_file.exists():
+        raise HTTPException(404, "frontend not found")
+    return FileResponse(index_file)
