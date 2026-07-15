@@ -218,6 +218,36 @@
     .st-complete { background: rgba(88,166,255,.15); color: var(--accent2); }
     .st-error, .st-removed { background: rgba(248,81,73,.15); color: var(--err); }
 
+    .crumb {
+      display: inline-flex; align-items: center; gap: 4px; flex-wrap: wrap;
+      font-size: .85rem;
+    }
+    .crumb a, .crumb button.linkish {
+      background: none; border: 0; color: var(--accent2); cursor: pointer;
+      padding: 0; font: inherit; text-decoration: none;
+    }
+    .crumb a:hover, .crumb button.linkish:hover { text-decoration: underline; }
+    .crumb .sep { color: var(--muted); margin: 0 2px; }
+    .file-icon { font-size: 1.05rem; opacity: .85; }
+    .name-link { color: var(--text); font-weight: 600; cursor: pointer; background: none; border: 0; padding: 0; font: inherit; text-align: left; }
+    .name-link:hover { color: var(--accent2); text-decoration: underline; }
+    .drop {
+      position: relative; display: inline-block;
+    }
+    .drop-menu {
+      display: none; position: absolute; right: 0; top: 100%; z-index: 20;
+      min-width: 150px; margin-top: 4px; padding: 4px;
+      background: var(--bg2); border: 1px solid var(--border); border-radius: 8px;
+      box-shadow: var(--shadow);
+    }
+    .drop.open .drop-menu { display: block; }
+    .drop-menu button {
+      display: block; width: 100%; text-align: left; border: 0; background: transparent;
+      color: var(--text); padding: 8px 10px; border-radius: 6px; cursor: pointer; font-size: .82rem;
+    }
+    .drop-menu button:hover { background: var(--bg3); }
+    .drop-menu button.danger { color: var(--err); }
+
     .toast-wrap {
       position: fixed; right: 16px; bottom: 16px; z-index: 1000;
       display: flex; flex-direction: column; gap: 8px; max-width: min(420px, calc(100vw - 32px));
@@ -305,7 +335,7 @@
     <section class="panel" id="panel-downloads">
       <div class="card">
         <div class="dl-toolbar">
-          <button class="btn btn-sm" type="button" id="refreshDl">刷新</button>
+          <button class="btn btn-sm" type="button" id="refreshDl">刷新任务</button>
           <button class="btn btn-sm btn-warn" type="button" id="purgeDl">清理已完成记录</button>
           <div class="stat" id="globalStat">
             <span>↓ <b id="gDl">0 B/s</b></span>
@@ -326,12 +356,40 @@
                 <th style="width:90px">状态</th>
                 <th style="width:160px">进度</th>
                 <th style="width:100px">速度</th>
-                <th style="width:90px">做种</th>
-                <th style="width:150px">操作</th>
+                <th style="width:70px">做种</th>
+                <th style="width:220px">操作</th>
               </tr>
             </thead>
             <tbody id="dlBody">
               <tr><td colspan="6"><div class="empty"><strong>暂无下载任务</strong>从搜索页添加，或粘贴磁力链</div></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Local files under download dir -->
+      <div class="card" style="margin-top:14px;">
+        <div class="dl-toolbar" style="border-bottom:1px solid var(--border);">
+          <strong style="font-size:.95rem;">下载目录文件</strong>
+          <span class="muted" style="font-size:.82rem;" id="filesRootLabel">/home/share</span>
+          <button class="btn btn-sm" type="button" id="refreshFiles">刷新文件</button>
+        </div>
+        <div class="meta-row" id="filesBreadcrumb" style="gap:6px;">
+          <span class="muted">加载中…</span>
+        </div>
+        <div class="table-wrap">
+          <table class="list">
+            <thead>
+              <tr>
+                <th style="width:44px"></th>
+                <th>名称</th>
+                <th style="width:110px">大小</th>
+                <th style="width:150px">修改时间</th>
+                <th style="width:100px">操作</th>
+              </tr>
+            </thead>
+            <tbody id="filesBody">
+              <tr><td colspan="5"><div class="empty"><strong>暂无文件</strong></div></td></tr>
             </tbody>
           </table>
         </div>
@@ -355,6 +413,8 @@
       tasks: [],
       loading: false,
       pollTimer: null,
+      filesPath: "",   // relative path under download dir
+      filesRoot: "/home/share",
     };
 
     function toast(msg, type = "ok") {
@@ -401,7 +461,10 @@
         $$(".panel").forEach(p => p.classList.remove("active"));
         btn.classList.add("active");
         $(`#panel-${btn.dataset.tab}`).classList.add("active");
-        if (btn.dataset.tab === "downloads") loadDownloads();
+        if (btn.dataset.tab === "downloads") {
+          loadDownloads();
+          loadFiles(state.filesPath);
+        }
       });
     });
 
@@ -597,6 +660,7 @@
         const canPause = t.status === "active" || t.status === "waiting";
         const canResume = t.status === "paused";
         const err = t.error_message ? `<div class="sub err-text">${esc(t.error_message)}</div>` : "";
+        const doneish = t.status === "complete" || t.status === "error" || (t.progress >= 100);
         return `<tr>
           <td class="title-cell">
             <div class="t">${esc(t.name)}</div>
@@ -614,7 +678,13 @@
             <div class="actions">
               ${canPause ? `<button class="btn btn-sm btn-warn act-pause" data-gid="${esc(t.gid)}">暂停</button>` : ""}
               ${canResume ? `<button class="btn btn-sm btn-ok act-resume" data-gid="${esc(t.gid)}">继续</button>` : ""}
-              <button class="btn btn-sm btn-danger act-rm" data-gid="${esc(t.gid)}">删除</button>
+              <div class="drop">
+                <button class="btn btn-sm btn-danger drop-toggle" type="button">删除 ▾</button>
+                <div class="drop-menu">
+                  <button type="button" class="act-rm" data-gid="${esc(t.gid)}" data-files="0">仅删任务记录</button>
+                  <button type="button" class="act-rm danger" data-gid="${esc(t.gid)}" data-files="1">${doneish ? "删记录 + 本地文件" : "取消任务 + 删已下文件"}</button>
+                </div>
+              </div>
             </div>
           </td>
         </tr>`;
@@ -622,8 +692,23 @@
 
       $$(".act-pause").forEach(b => b.addEventListener("click", () => act(b.dataset.gid, "pause")));
       $$(".act-resume").forEach(b => b.addEventListener("click", () => act(b.dataset.gid, "resume")));
-      $$(".act-rm").forEach(b => b.addEventListener("click", () => removeTask(b.dataset.gid)));
+      $$(".drop-toggle").forEach(b => {
+        b.addEventListener("click", (e) => {
+          e.stopPropagation();
+          const drop = b.closest(".drop");
+          $$(".drop").forEach(d => { if (d !== drop) d.classList.remove("open"); });
+          drop.classList.toggle("open");
+        });
+      });
+      $$(".act-rm").forEach(b => b.addEventListener("click", () => {
+        removeTask(b.dataset.gid, b.dataset.files === "1");
+        b.closest(".drop")?.classList.remove("open");
+      }));
     }
+
+    document.addEventListener("click", () => {
+      $$(".drop.open").forEach(d => d.classList.remove("open"));
+    });
 
     async function act(gid, action) {
       try {
@@ -639,28 +724,37 @@
       }
     }
 
-    async function removeTask(gid) {
-      if (!confirm("确定从任务列表中移除该任务？（不会删除已下载文件）")) return;
+    async function removeTask(gid, deleteFiles) {
+      const msg = deleteFiles
+        ? "确定删除该任务，并同时删除本地已下载文件？此操作不可恢复。"
+        : "确定仅从任务列表移除？（保留本地文件）";
+      if (!confirm(msg)) return;
       try {
-        const res = await fetch(`/api/downloads/${encodeURIComponent(gid)}`, { method: "DELETE" });
-        if (!res.ok) {
-          const d = await res.json().catch(() => ({}));
-          throw new Error(d.detail || res.statusText);
+        const q = deleteFiles ? "?delete_files=true" : "";
+        const res = await fetch(`/api/downloads/${encodeURIComponent(gid)}${q}`, { method: "DELETE" });
+        const d = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error(d.detail || res.statusText);
+        if (deleteFiles) {
+          const n = d.files?.count ?? 0;
+          const errN = (d.files?.errors || []).length;
+          toast(errN ? `已删任务，清理 ${n} 项（有 ${errN} 个警告）` : `已删任务并清理 ${n} 个本地项`);
+          loadFiles(state.filesPath);
+        } else {
+          toast("已移除任务记录");
         }
-        toast("已移除任务");
         loadDownloads();
       } catch (e) {
         toast(e.message, "err");
       }
     }
 
-    $("#refreshDl").addEventListener("click", loadDownloads);
+    $("#refreshDl").addEventListener("click", () => { loadDownloads(); loadFiles(state.filesPath); });
     $("#purgeDl").addEventListener("click", async () => {
-      if (!confirm("清理所有已完成/错误的任务记录？")) return;
+      if (!confirm("清理所有已完成/错误的任务记录？（不删除本地文件）")) return;
       try {
         const res = await fetch("/api/downloads/purge", { method: "POST" });
         if (!res.ok) throw new Error(await res.text());
-        toast("已清理");
+        toast("已清理记录");
         loadDownloads();
       } catch (e) {
         toast(e.message, "err");
@@ -684,14 +778,113 @@
       if (e.key === "Enter") { e.preventDefault(); submitMagnet(); }
     });
 
+    // ---- Local files browser ----
+    function fmtMtime(ts) {
+      if (!ts) return "-";
+      const d = new Date(ts * 1000);
+      const p = (x) => String(x).padStart(2, "0");
+      return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
+    }
+
+    function renderBreadcrumb(path, rootLabel) {
+      const parts = (path || "").split("/").filter(Boolean);
+      let html = `<span class="crumb"><button type="button" class="linkish crumb-go" data-path="">${esc(rootLabel || "root")}</button>`;
+      let acc = "";
+      parts.forEach((part, i) => {
+        acc = acc ? acc + "/" + part : part;
+        html += `<span class="sep">/</span>`;
+        if (i === parts.length - 1) {
+          html += `<span>${esc(part)}</span>`;
+        } else {
+          html += `<button type="button" class="linkish crumb-go" data-path="${esc(acc)}">${esc(part)}</button>`;
+        }
+      });
+      html += `</span>`;
+      $("#filesBreadcrumb").innerHTML = html;
+      $$(".crumb-go").forEach(b => b.addEventListener("click", () => loadFiles(b.dataset.path || "")));
+    }
+
+    async function loadFiles(path) {
+      state.filesPath = path || "";
+      try {
+        const res = await fetch("/api/files?path=" + encodeURIComponent(state.filesPath));
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error(data.detail || res.statusText);
+        state.filesRoot = data.root || state.filesRoot;
+        $("#filesRootLabel").textContent = data.root || "";
+        renderBreadcrumb(data.path || "", data.root || "root");
+        renderFiles(data);
+      } catch (e) {
+        $("#filesBody").innerHTML = `<tr><td colspan="5"><div class="empty"><strong>无法列出文件</strong>${esc(e.message)}</div></td></tr>`;
+        $("#filesBreadcrumb").innerHTML = `<span class="err-text">${esc(e.message)}</span>`;
+      }
+    }
+
+    function renderFiles(data) {
+      const entries = data.entries || [];
+      const rows = [];
+      if (data.path) {
+        rows.push(`<tr>
+          <td class="file-icon">↩</td>
+          <td colspan="3"><button type="button" class="name-link files-up" data-path="${esc(data.parent || "")}">..</button>
+            <span class="sub muted">上级目录</span></td>
+          <td></td>
+        </tr>`);
+      }
+      if (!entries.length && !data.path) {
+        $("#filesBody").innerHTML = `<tr><td colspan="5"><div class="empty"><strong>目录为空</strong></div></td></tr>`;
+        return;
+      }
+      entries.forEach(ent => {
+        const icon = ent.is_dir ? "📁" : "📄";
+        const size = ent.is_dir ? "-" : fmtBytes(ent.size || 0);
+        const nameBtn = ent.is_dir
+          ? `<button type="button" class="name-link files-enter" data-path="${esc(ent.path)}">${esc(ent.name)}</button>`
+          : `<span class="t">${esc(ent.name)}</span>`;
+        const delBtn = ent.protected
+          ? `<span class="muted" style="font-size:.78rem">保护</span>`
+          : `<button class="btn btn-sm btn-danger files-del" type="button" data-path="${esc(ent.path)}" data-dir="${ent.is_dir ? "1" : "0"}" data-name="${esc(ent.name)}">删除</button>`;
+        rows.push(`<tr>
+          <td class="file-icon">${icon}</td>
+          <td class="title-cell">${nameBtn}${ent.protected ? ' <span class="sub muted">系统/安装目录</span>' : ""}</td>
+          <td class="mono muted">${size}</td>
+          <td class="mono muted">${fmtMtime(ent.mtime)}</td>
+          <td>${delBtn}</td>
+        </tr>`);
+      });
+      $("#filesBody").innerHTML = rows.join("");
+      $$(".files-enter").forEach(b => b.addEventListener("click", () => loadFiles(b.dataset.path)));
+      $$(".files-up").forEach(b => b.addEventListener("click", () => loadFiles(b.dataset.path || "")));
+      $$(".files-del").forEach(b => b.addEventListener("click", () => deleteLocalFile(b.dataset.path, b.dataset.dir === "1", b.dataset.name)));
+    }
+
+    async function deleteLocalFile(path, isDir, name) {
+      const label = name || path;
+      const msg = isDir
+        ? `确定删除文件夹「${label}」及其全部内容？不可恢复。`
+        : `确定删除文件「${label}」？不可恢复。`;
+      if (!confirm(msg)) return;
+      try {
+        const res = await fetch("/api/files?path=" + encodeURIComponent(path), { method: "DELETE" });
+        const d = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error(d.detail || res.statusText);
+        toast("已删除 " + label);
+        loadFiles(state.filesPath);
+        loadDownloads();
+      } catch (e) {
+        toast(e.message, "err");
+      }
+    }
+
+    $("#refreshFiles").addEventListener("click", () => loadFiles(state.filesPath));
+
     // Poll downloads when tab visible
     function startPoll() {
       if (state.pollTimer) clearInterval(state.pollTimer);
       state.pollTimer = setInterval(() => {
         if ($("#panel-downloads").classList.contains("active")) {
-          loadDownloads();
+          loadDownloads(); // tasks only; files browser is manual refresh to avoid jump while browsing
         } else {
-          // light badge update
           fetch("/api/downloads").then(r => r.ok ? r.json() : null).then(d => {
             if (d) {
               state.tasks = d.tasks || [];
@@ -707,11 +900,13 @@
       try {
         const h = await fetch("/api/health").then(r => r.json());
         if (!h.aria2) toast("警告：aria2 未连接，下载功能不可用", "err");
+        if (h.download_dir) state.filesRoot = h.download_dir;
       } catch {
         toast("后端健康检查失败", "err");
       }
       doSearch("");
       loadDownloads();
+      loadFiles("");
       startPoll();
     })();
   </script>

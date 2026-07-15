@@ -9,6 +9,7 @@ from pydantic import BaseModel, Field
 
 from .aria2 import Aria2Error, TASK_KEYS, aria2, normalize_task
 from .config import DOWNLOAD_DIR, PORT, SOURCES, STATIC_DIR
+from .files import delete_path, delete_task_files, list_dir
 from .sources import search_all, search_source
 
 app = FastAPI(title="Anime Hub", version="1.0.0", docs_url="/api/docs")
@@ -31,6 +32,10 @@ class AddDownloadBody(BaseModel):
 
 class GidBody(BaseModel):
     gid: str
+
+
+class DeleteFileBody(BaseModel):
+    path: str = Field(..., description="relative path under download dir")
 
 
 @app.get("/api/health")
@@ -159,14 +164,28 @@ async def resume_download(gid: str):
 
 
 @app.delete("/api/downloads/{gid}")
-async def remove_download(gid: str, delete_result: bool = Query(True)):
-    """Remove a task. Active/waiting: remove; stopped: remove result."""
+async def remove_download(
+    gid: str,
+    delete_result: bool = Query(True),
+    delete_files: bool = Query(False, description="also delete local download files"),
+):
+    """Remove a task. Optionally delete on-disk files (completed or partial)."""
+    file_result = None
     try:
+        status = None
+        st = None
         try:
-            status = await aria2.tell_status(gid, ["status"])
+            status = await aria2.tell_status(gid, TASK_KEYS)
             st = status.get("status")
         except Aria2Error:
             st = None
+
+        # Capture paths before removing from aria2
+        if delete_files and status:
+            try:
+                file_result = delete_task_files(status)
+            except Exception as e:
+                file_result = {"deleted": [], "errors": [str(e)], "count": 0}
 
         if st in ("active", "waiting", "paused"):
             try:
@@ -179,11 +198,20 @@ async def remove_download(gid: str, delete_result: bool = Query(True)):
                 await aria2.remove_result(gid)
             except Aria2Error:
                 pass
-        return {"ok": True, "gid": gid, "action": "remove"}
+
+        # If we couldn't read status earlier, nothing to delete on disk was done
+        return {
+            "ok": True,
+            "gid": gid,
+            "action": "remove",
+            "delete_files": delete_files,
+            "files": file_result,
+        }
     except Aria2Error as e:
         raise HTTPException(400, str(e)) from e
     except Exception as e:
         raise HTTPException(503, str(e)) from e
+
 
 @app.post("/api/downloads/purge")
 async def purge_completed():
@@ -201,6 +229,43 @@ async def get_download(gid: str):
         return normalize_task(task)
     except Aria2Error as e:
         raise HTTPException(404, str(e)) from e
+
+
+# ---------- Download directory file browser ----------
+
+
+@app.get("/api/files")
+async def api_list_files(path: str = Query("", description="relative path under download dir")):
+    try:
+        return list_dir(path)
+    except FileNotFoundError as e:
+        raise HTTPException(404, str(e)) from e
+    except NotADirectoryError as e:
+        raise HTTPException(400, str(e)) from e
+    except PermissionError as e:
+        raise HTTPException(403, str(e)) from e
+    except ValueError as e:
+        raise HTTPException(400, str(e)) from e
+
+
+@app.delete("/api/files")
+async def api_delete_file(path: str = Query(..., description="relative path under download dir")):
+    try:
+        return delete_path(path)
+    except FileNotFoundError as e:
+        raise HTTPException(404, str(e)) from e
+    except PermissionError as e:
+        raise HTTPException(403, str(e)) from e
+    except ValueError as e:
+        raise HTTPException(400, str(e)) from e
+    except OSError as e:
+        raise HTTPException(500, f"delete failed: {e}") from e
+
+
+@app.post("/api/files/delete")
+async def api_delete_file_post(body: DeleteFileBody):
+    """POST variant for clients that prefer JSON body."""
+    return await api_delete_file(path=body.path)
 
 
 @app.get("/")
