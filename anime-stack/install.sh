@@ -167,11 +167,22 @@ ensure_share_dir() {
   fi
   mkdir -p "$FILEBROWSER_DB_DIR"
   chown -R filebrowser:filebrowser "$FILEBROWSER_DB_DIR"
-  # share dir: group filebrowser can rwx; others none
+  # share dir: group filebrowser can rwx; setgid so aria2 (Group=filebrowser) nests inherit
+  # 2775: owner+group rwx, sticky setgid — FB can delete downloads created by aria2
   chown root:filebrowser "$SHARE_DIR" 2>/dev/null || chown filebrowser:filebrowser "$SHARE_DIR"
-  chmod 775 "$SHARE_DIR" || true
-  # setgid so new files inherit group (helps FB see aria2 downloads)
-  chmod g+s "$SHARE_DIR" || true
+  chmod 2775 "$SHARE_DIR" || true
+  # Fix already-downloaded trees so File Browser is not 403 on delete
+  if id filebrowser >/dev/null 2>&1; then
+    find "$SHARE_DIR" -mindepth 1 \
+      \( -name 'anime-hub' -o -name 'anime-stack' -o -name 'anime-stack-credentials.txt' \) -prune -o \
+      -exec chown root:filebrowser {} + 2>/dev/null || true
+    find "$SHARE_DIR" -mindepth 1 \
+      \( -name 'anime-hub' -o -name 'anime-stack' -o -name 'anime-stack-credentials.txt' \) -prune -o \
+      -type d -exec chmod 2775 {} + 2>/dev/null || true
+    find "$SHARE_DIR" -mindepth 1 \
+      \( -name 'anime-hub' -o -name 'anime-stack' -o -name 'anime-stack-credentials.txt' \) -prune -o \
+      -type f -exec chmod 664 {} + 2>/dev/null || true
+  fi
 }
 
 init_filebrowser_db() {
