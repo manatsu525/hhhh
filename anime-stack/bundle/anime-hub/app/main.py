@@ -4,12 +4,12 @@ from __future__ import annotations
 from typing import Optional
 
 from fastapi import FastAPI, HTTPException, Query
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, StreamingResponse
 from pydantic import BaseModel, Field
 
 from .aria2 import Aria2Error, TASK_KEYS, aria2, normalize_task
 from .config import DOWNLOAD_DIR, PORT, SOURCES, STATIC_DIR
-from .files import delete_path, delete_task_files, list_dir
+from .files import delete_path, delete_task_files, list_dir, resolve_under_root
 from .sources import search_all, search_source
 
 app = FastAPI(title="Anime Hub", version="1.0.0", docs_url="/api/docs")
@@ -266,6 +266,68 @@ async def api_delete_file(path: str = Query(..., description="relative path unde
 async def api_delete_file_post(body: DeleteFileBody):
     """POST variant for clients that prefer JSON body."""
     return await api_delete_file(path=body.path)
+
+
+@app.get("/api/files/download")
+async def api_download_file(path: str = Query(..., description="relative path under download dir")):
+    """Download a file, or zip a directory, to the browser."""
+    import io
+    import zipfile
+    from urllib.parse import quote
+
+    try:
+        target = resolve_under_root(path)
+    except ValueError as e:
+        raise HTTPException(400, str(e)) from e
+
+    if not target.exists():
+        raise HTTPException(404, f"not found: {path}")
+
+    # Block downloading credential files
+    name_lower = target.name.lower()
+    if "credential" in name_lower or name_lower.endswith(".env"):
+        raise HTTPException(403, "refusing to download credential/secret files")
+
+    if target.is_file():
+        # Force download with original filename (UTF-8 friendly)
+        headers = {
+            "Content-Disposition": f"attachment; filename*=UTF-8''{quote(target.name)}"
+        }
+        return FileResponse(
+            path=str(target),
+            filename=target.name,
+            media_type="application/octet-stream",
+            headers=headers,
+        )
+
+    if target.is_dir():
+        # Stream a zip of the folder (skip protected install dirs if zipping root-ish)
+        buf = io.BytesIO()
+        base = target
+        with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED) as zf:
+            for fp in base.rglob("*"):
+                if not fp.is_file():
+                    continue
+                # skip credentials inside tree
+                if "credential" in fp.name.lower():
+                    continue
+                arc = str(fp.relative_to(base.parent))
+                try:
+                    zf.write(fp, arcname=arc)
+                except OSError:
+                    continue
+        buf.seek(0)
+        zip_name = f"{target.name}.zip"
+        headers = {
+            "Content-Disposition": f"attachment; filename*=UTF-8''{quote(zip_name)}"
+        }
+        return StreamingResponse(
+            buf,
+            media_type="application/zip",
+            headers=headers,
+        )
+
+    raise HTTPException(400, "unsupported path type")
 
 
 @app.get("/")

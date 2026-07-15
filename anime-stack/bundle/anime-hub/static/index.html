@@ -137,6 +137,8 @@
     .err-text { color: var(--err); }
 
     .table-wrap { overflow-x: auto; }
+    /* allow delete dropdowns to escape the scroll box */
+    .table-wrap.allow-drop { overflow: visible; }
     table.list {
       width: 100%; border-collapse: collapse; font-size: .9rem;
     }
@@ -235,10 +237,17 @@
       position: relative; display: inline-block;
     }
     .drop-menu {
-      display: none; position: absolute; right: 0; top: 100%; z-index: 20;
-      min-width: 150px; margin-top: 4px; padding: 4px;
+      display: none; position: absolute; right: 0; z-index: 80;
+      min-width: 168px; padding: 4px;
       background: var(--bg2); border: 1px solid var(--border); border-radius: 8px;
       box-shadow: var(--shadow);
+      /* open upward so last-row menus aren't clipped by page bottom */
+      bottom: calc(100% + 4px);
+      top: auto;
+    }
+    .drop.drop-down .drop-menu {
+      top: calc(100% + 4px);
+      bottom: auto;
     }
     .drop.open .drop-menu { display: block; }
     .drop-menu button {
@@ -247,7 +256,7 @@
     }
     .drop-menu button:hover { background: var(--bg3); }
     .drop-menu button.danger { color: var(--err); }
-
+    .card { overflow: visible; }
     .toast-wrap {
       position: fixed; right: 16px; bottom: 16px; z-index: 1000;
       display: flex; flex-direction: column; gap: 8px; max-width: min(420px, calc(100vw - 32px));
@@ -348,7 +357,7 @@
           <input id="magnetInput" type="text" placeholder="粘贴 magnet:?xt=... 或 torrent 链接，回车或点添加" />
           <button class="btn btn-primary" type="button" id="addMagnetBtn">添加任务</button>
         </div>
-        <div class="table-wrap">
+        <div class="table-wrap allow-drop">
           <table class="list">
             <thead>
               <tr>
@@ -385,7 +394,7 @@
                 <th>名称</th>
                 <th style="width:110px">大小</th>
                 <th style="width:150px">修改时间</th>
-                <th style="width:100px">操作</th>
+                <th style="width:180px">操作</th>
               </tr>
             </thead>
             <tbody id="filesBody">
@@ -841,6 +850,8 @@
         const nameBtn = ent.is_dir
           ? `<button type="button" class="name-link files-enter" data-path="${esc(ent.path)}">${esc(ent.name)}</button>`
           : `<span class="t">${esc(ent.name)}</span>`;
+        // download always allowed except credentials-like protected names we still allow zip of folders
+        const dlBtn = `<a class="btn btn-sm btn-ok" href="/api/files/download?path=${encodeURIComponent(ent.path)}" download title="${ent.is_dir ? "打包下载文件夹" : "下载到本地"}">下载</a>`;
         const delBtn = ent.protected
           ? `<span class="muted" style="font-size:.78rem">保护</span>`
           : `<button class="btn btn-sm btn-danger files-del" type="button" data-path="${esc(ent.path)}" data-dir="${ent.is_dir ? "1" : "0"}" data-name="${esc(ent.name)}">删除</button>`;
@@ -849,7 +860,7 @@
           <td class="title-cell">${nameBtn}${ent.protected ? ' <span class="sub muted">系统/安装目录</span>' : ""}</td>
           <td class="mono muted">${size}</td>
           <td class="mono muted">${fmtMtime(ent.mtime)}</td>
-          <td>${delBtn}</td>
+          <td><div class="actions">${dlBtn}${delBtn}</div></td>
         </tr>`);
       });
       $("#filesBody").innerHTML = rows.join("");
