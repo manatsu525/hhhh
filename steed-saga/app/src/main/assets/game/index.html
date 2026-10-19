@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<title>铁骑征途</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div id="app">
+  <canvas id="cv"></canvas>
+
+  <div id="hud" class="hidden">
+    <div class="topbar" id="hudInfo"></div>
+    <div class="sidebtns">
+      <button id="btnWait" title="原地等待">⏳</button>
+      <button id="btnSpeed">⏩×1</button>
+      <button id="btnCenter">🎯</button>
+    </div>
+    <div class="bottombar">
+      <button id="btnParty">⚔<span>队伍</span></button>
+      <button id="btnChar">👤<span>人物</span></button>
+      <button id="btnInv">🎒<span>物品</span></button>
+      <button id="btnFac">🏳<span>势力</span></button>
+      <button id="btnLog">📜<span>日志</span></button>
+      <button id="btnCamp">⛺<span>营地</span></button>
+    </div>
+  </div>
+
+  <div id="title" class="screen hidden">
+    <div class="tbox">
+      <div class="logo">⚔ 铁骑征途 ⚔</div>
+      <div class="sub">群雄割据 · 六国争霸</div>
+      <button class="big" id="tNew">新的征程</button>
+      <button id="tContinue">继续（自动存档）</button>
+      <button id="tLoad">读取存档</button>
+      <button id="tHelp">游戏说明</button>
+      <div class="foot">骑马与砍杀风格的单机策略动作游戏 · 无需联网</div>
+    </div>
+  </div>
+
+  <div id="create" class="screen hidden"></div>
+  <div id="loading" class="screen hidden"><div class="loadtxt">正在生成大陆……</div></div>
+
+  <div id="ui"></div>
+  <div id="toasts"></div>
+</div>
+<script src="js/util.js"></script>
+<script src="js/data.js"></script>
+<script src="js/world.js"></script>
+<script src="js/mapview.js"></script>
+<script src="js/battle.js"></script>
+<script src="js/battleui.js"></script>
+<script src="js/ui.js"></script>
+<script src="js/game.js"></script>
+<script src="js/main.js"></script>
+</body>
+</html>
