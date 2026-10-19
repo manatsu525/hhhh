@@ -202,6 +202,11 @@ MV.onTap = function (sx, sy) {
 
 // ---------------- 绘制 ----------------
 MV.draw = function () {
+  const ctx = MV.ctx;
+  ctx.save();
+  try { MV.drawInner(); } finally { ctx.restore(); }
+};
+MV.drawInner = function () {
   const cv = MV.cv, ctx = MV.ctx, c = MV.cam;
   const pp = W.player();
   if (MV.follow && pp && performance.now() - MV.lastPan > 600) {
@@ -232,11 +237,20 @@ MV.draw = function () {
   if (MV.marker) {
     let mx = MV.marker.x, my = MV.marker.y;
     if (MV.marker.party) { const p = W.P(MV.marker.party); if (p) { mx = p.x; my = p.y; } }
-    const a = 1 - (now - MV.marker.t) / 1500;
+    const a = U.clamp(1 - (now - MV.marker.t) / 1500, 0, 1);
     if (a > 0 && mx != null) {
       ctx.strokeStyle = `rgba(255,230,120,${a})`; ctx.lineWidth = 2.5 * k;
       ctx.beginPath(); ctx.arc(mx, my, (8 + (1 - a) * 10) * k, 0, 7); ctx.stroke();
     }
+  }
+  // 赏金任务目标：持续闪烁的红圈
+  const q = G.player.quest && W.P(G.player.quest.partyId);
+  if (q) {
+    const ph = (now % 1200) / 1200;
+    ctx.strokeStyle = `rgba(255,90,60,${0.9 - ph * 0.6})`; ctx.lineWidth = 2.5 * k;
+    ctx.beginPath(); ctx.arc(q.x, q.y, (10 + ph * 12) * k, 0, 7); ctx.stroke();
+    ctx.font = `${12 * k}px sans-serif`; ctx.textAlign = 'center'; ctx.fillStyle = '#ffd36b';
+    ctx.fillText('📜赏金', q.x, q.y - 18 * k);
   }
   // 玩家路径
   if (pp && pp.moving) {

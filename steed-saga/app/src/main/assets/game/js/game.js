@@ -296,7 +296,6 @@ Game.tavern = function (s) {
       const reward = 120 + W.count(best.troops) * 18;
       opts.push({ label: '📜 打听赏金任务', note: `附近有${best.name}出没`, fn: () => UI.confirm('赏金任务', `酒馆老板：「一伙${best.name}（${W.partySize(best)}人）正在附近劫掠，就在${Game.dirText(s, best)}。消灭他们，商会会付你 ${reward} 金。」`, () => {
         pl.quest = { partyId: best.id, reward, name: best.name, from: s.id };
-        MV.marker = { party: best.id, t: performance.now() + 2500 };
         W.log(`接受任务：消灭 ${best.name}，赏金 ${reward}。`);
         Game.tavern(s);
       }, () => Game.tavern(s)) });

@@ -788,6 +788,7 @@ W.daily = function () {
     for (let i = 0; i < n; i++) { const st = U.pick(pp.troops); if (st) W.removeTroops(pp.troops, st.id, 1); }
     W.log(`士气低落，有 ${n} 名士兵逃跑了。`);
   }
+  if (pl.quest && !W.P(pl.quest.partyId)) { W.log(`📜 赏金目标「${pl.quest.name}」已被其他人消灭，任务取消。`); pl.quest = null; }
   // 伤员恢复
   const heal = 0.12 + W.pskill('firstaid') * 0.04;
   pp.troops.forEach(st => { if (st.w > 0) st.w = Math.max(0, st.w - Math.max(1, Math.round(st.w * heal))); });
