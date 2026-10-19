@@ -30,7 +30,7 @@ BUI.build = function () {
     </div>
     <div class="bmenu hidden" id="bMenuPanel">
       <h3>战斗菜单</h3>
-      <div class="bmhelp">左侧摇杆移动/骑马转向；<b>攻击</b>：近战点击挥砍（自动锁定前方敌人），远程按住瞄准、松开射击；骑乘骑枪高速时按住攻击＝<b>骑枪冲刺</b>；<b>格挡</b>按住防御前方攻击。顶部按钮给部队下令。</div>
+      <div class="bmhelp">左侧摇杆移动/骑马转向；<b>攻击</b>：近战点击挥砍（自动锁定前方敌人），远程按住瞄准、松开射击，<b>按住攻击键再向任意方向拖动</b>即可朝该方向瞄准（骑射可以向侧面、后方射击）；骑乘骑枪高速时按住攻击＝<b>骑枪冲刺</b>；<b>格挡</b>按住防御前方攻击。顶部按钮给部队下令。</div>
       <button id="bmResume">继续战斗</button>
       <button id="bmRetreat">撤退（损失部分士兵）</button>
     </div>`;
@@ -71,7 +71,26 @@ BUI.build = function () {
     const up = e => { el.classList.remove('down'); off && off(); };
     el.addEventListener('pointerup', up); el.addEventListener('pointercancel', up);
   };
-  hold($('bAtk'), () => { B.input.attack = true; B.input.attackPressed = true; }, () => { B.input.attack = false; });
+  // 攻击键：按下攻击；按住后拖动手指可朝拖动方向瞄准（骑射可射向任意方向）
+  const atk = $('bAtk');
+  let aid = null, sx = 0, sy = 0;
+  atk.addEventListener('pointerdown', e => {
+    e.preventDefault(); atk.setPointerCapture(e.pointerId); atk.classList.add('down');
+    aid = e.pointerId; sx = e.clientX; sy = e.clientY;
+    B.input.attack = true; B.input.attackPressed = true; B.input.aimActive = false;
+  });
+  atk.addEventListener('pointermove', e => {
+    if (e.pointerId !== aid) return;
+    const dx = e.clientX - sx, dy = e.clientY - sy, d = Math.hypot(dx, dy);
+    if (d > 14) { B.input.aimActive = true; B.input.ax = dx / d; B.input.ay = dy / d; }
+  });
+  const atkUp = e => {
+    if (e.pointerId !== aid) return;
+    aid = null; atk.classList.remove('down');
+    B.input.attack = false;
+    setTimeout(() => { if (aid === null) B.input.aimActive = false; }, 60);
+  };
+  atk.addEventListener('pointerup', atkUp); atk.addEventListener('pointercancel', atkUp);
   hold($('bBlk'), () => { B.input.block = true; }, () => { B.input.block = false; });
   hold($('bSw'), () => { B.input.switchPressed = true; });
   root.querySelectorAll('[data-sel]').forEach(b => b.addEventListener('pointerdown', e => {

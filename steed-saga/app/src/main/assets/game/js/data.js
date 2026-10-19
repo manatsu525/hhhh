@@ -364,3 +364,47 @@ D.RANKS = [
   { renown: 300, name: '威名远扬' }, { renown: 600, name: '一代名将' }, { renown: 1000, name: '传奇英雄' },
 ];
 D.rankName = r => { let n = D.RANKS[0].name; for (const k of D.RANKS) if (r >= k.renown) n = k.name; return n; };
+
+// ---------------- 同伴（NPC） ----------------
+// 同伴之间不会争吵：没有任何同伴互斥/抱怨的机制
+D.HEROES = [
+  { id: 'bors', name: '博尔斯', title: '退伍老兵', desc: '雄狮王国的退伍军士，盾墙战术的行家。', level: 6, cost: 400,
+    attrs: { str: 13, agi: 8, int: 6, cha: 6 }, skills: { ironflesh: 3, powerstrike: 3, shield: 3, athletics: 2, trainer: 3 },
+    eq: { melee: 'arming', shield: 'kite_shield', head: 'nasal', body: 'mail_shirt', legs: 'leather_boots' } },
+  { id: 'lina', name: '莉娜', title: '游方医者', desc: '走遍六国的女医师，能把垂死的伤兵救回来。', level: 3, cost: 300,
+    attrs: { str: 6, agi: 8, int: 13, cha: 7 }, skills: { surgery: 4, firstaid: 4, athletics: 2 },
+    eq: { melee: 'knife', ranged: 'hunting_bow', body: 'robe', legs: 'leather_boots' } },
+  { id: 'temur', name: '铁木', title: '草原射手', desc: '汗国流亡的神射手，马背上百步穿杨。', level: 7, cost: 600,
+    attrs: { str: 10, agi: 14, int: 6, cha: 5 }, skills: { horsearchery: 4, powerdraw: 3, riding: 4, pathfinding: 2 },
+    eq: { melee: 'sabre', ranged: 'nomad_bow', head: 'steppe_helm', body: 'leather_jerkin', legs: 'leather_boots', horse: 'steppe_horse' } },
+  { id: 'ragna', name: '拉格娜', title: '持盾少女', desc: '霜狼部族的女战士，挥舞战斧无所畏惧。', level: 5, cost: 450,
+    attrs: { str: 12, agi: 10, int: 5, cha: 6 }, skills: { ironflesh: 2, powerstrike: 3, shield: 2, athletics: 3 },
+    eq: { melee: 'war_axe', ranged: 'throw_axe', shield: 'round_shield', head: 'spangen', body: 'leather_jerkin', legs: 'leather_boots' } },
+  { id: 'marco', name: '马可', title: '落魄商人', desc: '山岭共和国的商人，生意失败后想重振家业。', level: 2, cost: 250,
+    attrs: { str: 6, agi: 6, int: 11, cha: 12 }, skills: { trade: 4, leadership: 2, looting: 2 },
+    eq: { melee: 'falchion', ranged: 'light_xbow', head: 'kettle', body: 'gambeson', legs: 'leather_boots' } },
+  { id: 'yusuf', name: '优素福', title: '沙漠向导', desc: '熟悉每一条商路与小径的向导。', level: 4, cost: 350,
+    attrs: { str: 8, agi: 10, int: 11, cha: 6 }, skills: { pathfinding: 4, tactics: 2, riding: 2 },
+    eq: { melee: 'scimitar', ranged: 'javelin', shield: 'leather_shield', head: 'turban_helm', body: 'robe', legs: 'leather_boots', horse: 'desert_horse' } },
+  { id: 'edmund', name: '埃德蒙', title: '无地骑士', desc: '失去封地的骑士，渴望重新赢得荣誉。', level: 9, cost: 900,
+    attrs: { str: 14, agi: 10, int: 6, cha: 9 }, skills: { riding: 4, powerstrike: 4, ironflesh: 3, leadership: 2, shield: 2 },
+    eq: { melee: 'lance', shield: 'heater', head: 'bascinet', body: 'hauberk', legs: 'mail_chausses', horse: 'hunter' } },
+  { id: 'vasha', name: '瓦莎', title: '林中猎人', desc: '白桦森林里长大的猎人，长弓从不虚发。', level: 5, cost: 400,
+    attrs: { str: 11, agi: 12, int: 7, cha: 5 }, skills: { powerdraw: 4, athletics: 3, looting: 2, pathfinding: 2 },
+    eq: { melee: 'hatchet', ranged: 'long_bow', head: 'fur_helm', body: 'leather_jerkin', legs: 'leather_boots' } },
+  { id: 'orin', name: '奥林', title: '流亡学者', desc: '读过兵书的学者，擅长谋划战局与操练新兵。', level: 3, cost: 300,
+    attrs: { str: 6, agi: 7, int: 14, cha: 8 }, skills: { tactics: 4, trainer: 3, surgery: 1, prisoner: 2 },
+    eq: { melee: 'shortsword', ranged: 'light_xbow', body: 'gambeson', legs: 'leather_boots' } },
+  { id: 'gunnar', name: '贡纳尔', title: '狂战士', desc: '只知道向前冲的巨汉，双手巨斧所向披靡。', level: 8, cost: 700,
+    attrs: { str: 16, agi: 9, int: 4, cha: 5 }, skills: { ironflesh: 4, powerstrike: 5, athletics: 3 },
+    eq: { melee: 'great_axe', head: 'spangen', body: 'mail_shirt', legs: 'mail_chausses' } },
+  { id: 'selin', name: '瑟琳', title: '轻骑斥候', desc: '苏丹国的轻骑兵，来去如风，擅长掠夺。', level: 5, cost: 450,
+    attrs: { str: 9, agi: 13, int: 7, cha: 6 }, skills: { riding: 4, looting: 3, horsearchery: 2, pathfinding: 2 },
+    eq: { melee: 'scimitar', ranged: 'short_bow', shield: 'leather_shield', head: 'turban_helm', body: 'leather_jerkin', legs: 'leather_boots', horse: 'courser' } },
+  { id: 'aldric', name: '奥德里克', title: '雇佣兵队长', desc: '久经沙场的佣兵头子，带兵很有一套。', level: 10, cost: 1000,
+    attrs: { str: 13, agi: 10, int: 9, cha: 12 }, skills: { leadership: 4, tactics: 3, trainer: 3, powerstrike: 3, ironflesh: 2 },
+    eq: { melee: 'master_sword', shield: 'heater', head: 'bascinet', body: 'brigandine', legs: 'mail_chausses', horse: 'warhorse' } },
+];
+D.HERO = {};
+D.HEROES.forEach(h => (D.HERO[h.id] = h));
+D.heroWage = h => 10 + h.level * 3;

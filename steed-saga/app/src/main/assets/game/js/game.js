@@ -180,7 +180,7 @@ Game.market = function (s) {
   const goods = s.type === 'village' ? D.GOODS.filter(g => g.food || D.PRODUCE[s.cult].cheap.includes(g.id)) : D.GOODS;
   const render = () => {
     const pl = G.player;
-    let html = `<div class="sumline">金币 ${U.fmt(pl.gold)} · 货物 ${W.cargoCount()}/${W.cargoLimit()} · 🍞=食物（每份供30人·天）<small>（交易技能 ${pl.skills.trade}）</small></div>`;
+    let html = `<div class="sumline">金币 ${U.fmt(pl.gold)} · 货物 ${W.cargoCount()}/${W.cargoLimit()} · 🍞=食物（每份供30人·天）<small>（交易技能 ${W.pskill('trade')}）</small></div>`;
     html += '<table class="tbl"><tr><th>商品</th><th>买价</th><th>卖价</th><th>持有</th><th></th></tr>';
     goods.forEach(g => {
       const bp = W.buyPrice(s, g.id), sp = W.sellPrice(s, g.id);
@@ -280,6 +280,11 @@ Game.tavern = function (s) {
       pl.gold += val; pp.prisoners = []; UI.toast(`获得赎金 ${val} 金`); Game.tavern(s);
     } });
   }
+  W.heroAt(s.id).forEach(h => {
+    const d = W.heroDef(h);
+    text += `<br>角落里坐着一位${d.title}：${h.name}。`;
+    opts.push({ label: `🧑 与${d.title}${h.name}交谈`, note: `Lv${h.level} 招募 ${W.heroHireCost(h)} 金`, fn: () => Game.heroTalk(h, s) });
+  });
   // 任务
   const q = pl.quest;
   if (q && W.P(q.partyId)) text += `<br><br>📜 当前任务：消灭 ${q.name}（赏金 ${q.reward}）`;
@@ -301,6 +306,15 @@ Game.tavern = function (s) {
   opts.push({ label: '👂 打听消息', fn: () => UI.alert('传闻', Game.rumor(), () => Game.tavern(s)) });
   opts.push({ label: '返回', fn: () => Game.openSettlement(s.id) });
   UI.menu({ title: `${s.name}·酒馆`, art: '🍺', text, options: opts });
+};
+Game.heroTalk = function (h, s) {
+  const d = W.heroDef(h), pl = G.player, cost = W.heroHireCost(h);
+  const sk = Object.keys(h.skills).filter(k => h.skills[k] > 0).map(k => `${D.SKILLS.find(x => x.id === k).name}${h.skills[k]}`).join(' ');
+  const full = W.partySize(W.player()) >= W.partyLimit() + 1;
+  UI.menu({ title: h.name, art: '🧑', text: `「${d.desc}如果你需要人手，我可以跟你走。」<br><br>${d.title} · 等级 ${h.level} · 生命 ${W.heroMaxHpOf(h)}<br>擅长：${sk}<br>装备：${Object.values(h.eq).filter(Boolean).map(id => D.ITEMS[id].name).join('、')}<br>每周薪水 ${D.heroWage(h)} 金`, options: [
+    { label: `「欢迎加入！」`, note: full ? '队伍已满' : `${cost} 金`, disabled: pl.gold < cost || full, fn: () => { pl.gold -= cost; W.hireHero(h); UI.toast(`${h.name} 加入了你的队伍`); Game.tavern(s); } },
+    { label: '「以后再说吧。」', fn: () => Game.tavern(s) },
+  ] });
 };
 Game.dirText = function (from, p) {
   const a = Math.atan2(p.y - from.y, p.x - from.x);
@@ -528,7 +542,7 @@ Game.realBattle = function (ctx) {
   ctx.before = Game.snapshotStrength(ctx);
   Game.screen = 'battle';
   B.start({
-    mode: ctx.siege ? 'siege' : 'field', biome: W.TER_BIOME[ter] || 'plains', teams: [team0, team1],
+    mode: ctx.siege ? 'siege' : 'field', biome: W.TER_BIOME[ter] || 'plains', teams: [team0, team1], heroes: W.companions(),
     siegeAttacker: ctx.siege ? (ctx.defending ? 1 : 0) : null, title: ctx.siege ? (ctx.defending ? '守住城墙！' : '攻上城墙！') : '战斗开始！',
     onEnd: res => { Game.screen = 'map'; Game.applyRealResult(ctx, res); },
   });
@@ -549,6 +563,12 @@ Game.applyRealResult = function (ctx, res) {
     if (f.team === 1 && f.wounded) enemyFallen.push(f.troopId);
   });
   pl.hpFrac = U.clamp(res.playerHpFrac, 0.1, 1);
+  (res.heroHp || []).forEach(([id, f]) => {
+    const h = G.heroes.find(x => x.id === id);
+    if (!h) return;
+    h.hpFrac = U.clamp(f, 0.1, 1);
+    if (res.heroKills[id]) W.giveHeroXp(h, res.heroKills[id] * 25);
+  });
   pl.kills += res.kills;
   W.giveXp(res.killList.reduce((a, id) => a + D.TROOPS[id].tier * 25, 0));
   if (res.winner === 0) Game.victory(ctx, enemyFallen, res.fallen.filter(f => f.team === 1).map(f => f.troopId));
@@ -562,10 +582,10 @@ Game.autoBattle = function (ctx) {
   if (ctx.siege) (ctx.defending ? A : Bl).push(ctx.siege.garrison);
   const enemyBefore = {};
   Bl.forEach(l => l.forEach(st => (enemyBefore[st.id] = (enemyBefore[st.id] || 0) + st.w)));
-  const tac = 1 + pl.skills.tactics * 0.07;
+  const tac = 1 + W.pskill('tactics') * 0.07;
   const res = W.autoResolve(A, Bl, {
     bonusA: tac * (ctx.siege && ctx.defending ? 1.5 : ctx.siege ? 0.8 : 1), bonusB: ctx.siege && !ctx.defending ? 1.5 : 1,
-    heroA: W.heroStrength(), woundA: 0.35 + pl.skills.surgery * 0.05, woundB: 0.5,
+    heroA: W.heroStrength(), dmgMulA: 0.5, woundA: 0.35 + W.pskill('surgery') * 0.05, woundB: 0.5,
   });
   const lost = res.cas[0], killed = res.cas[1];
   const lostTxt = Object.keys(lost).map(k => `${D.TROOPS[k].name} 阵亡${lost[k].killed}/受伤${lost[k].wounded}`).join('<br>') || '无';
@@ -585,16 +605,17 @@ Game.victory = function (ctx, woundedEnemies, fallenEnemies) {
   const xpEach = Math.min(90, Math.round(str * 7 / nTroops));
   pp.troops.forEach(st => (st.xp += xpEach * (st.n - st.w)));
   W.giveXp(str * 6 + 40);
+  W.companions().forEach(h => W.giveHeroXp(h, str * 5 + 30));
   const isLord = ctx.enemies.some(e => e.kind === 'lord');
   const ren = Math.max(1, Math.round(Math.sqrt(str) * 1.4 + (isLord ? 5 : 0) + (ctx.siege ? 15 : 0)));
   W.addRenown(ren);
   pl.battlesWon++; pl.recentWin = 12;
   pl.morale = Math.min(100, pl.morale + 6);
   // 战利品
-  let gold = Math.round(ctx.enemies.reduce((a, e) => a + (e.gold || 0), 0) * (0.5 + pl.skills.looting * 0.05) + fallenEnemies.length * U.ri(2, 6));
+  let gold = Math.round(ctx.enemies.reduce((a, e) => a + (e.gold || 0), 0) * (0.5 + W.pskill('looting') * 0.05) + fallenEnemies.length * U.ri(2, 6));
   pl.gold += gold;
   const loot = [];
-  const lootChance = 0.05 + pl.skills.looting * 0.02;
+  const lootChance = 0.05 + W.pskill('looting') * 0.02;
   fallenEnemies.forEach(id => {
     if (loot.length >= 10 || Math.random() > lootChance) return;
     const eq = D.TROOPS[id].eq;
@@ -693,6 +714,7 @@ Game.defeat = function (ctx, retreat) {
   pl.gold -= lostGold;
   pp.prisoners = [];
   pl.hpFrac = 0.2;
+  W.companions().forEach(h => (h.hpFrac = 0.2));
   pl.morale = Math.max(0, pl.morale - 20);
   const hours = U.ri(24, 60);
   W.log(`你在战斗中被击败并被俘虏了。`);
@@ -798,6 +820,7 @@ Game.campMenu = function () {
   const pl = G.player;
   UI.menu({ title: '营地', art: '⛺', noClose: false, text: `${W.dateStr()} · ${U.esc(pl.name)}`, options: [
     { label: '⏳ 扎营等待 6 小时', fn: () => Game.wait(6, { title: '扎营' }) },
+    { label: '⌨ 控制台（作弊）', fn: () => UI.consolePanel() },
     { label: '🛏 扎营休息 24 小时', fn: () => Game.wait(24, { title: '扎营休息' }) },
     { label: '💾 保存游戏', fn: () => Game.saveMenu() },
     { label: '📂 读取存档', fn: () => Game.loadMenu(false) },
@@ -823,7 +846,10 @@ Game.loadMenu = function (fromTitle) {
   UI.menu({ title: '读取存档', options: opts });
 };
 Game.settings = function () {
-  UI.menu({ title: '设置', text: `战斗规模：同时在场 ${G.battleSize} 人（手机性能较弱时调低）<br>大地图速度：×${G.speed}`, options: [
+  UI.menu({ title: '设置', text: `战斗规模：同时在场 ${G.battleSize} 人（手机性能较弱时调低）<br>战斗速度：×${G.battleSpeed}（越小越慢，更容易反应）<br>大地图速度：×${G.speed}`, options: [
+    { label: '战斗速度 ×0.5（很慢）', fn: () => { G.battleSpeed = 0.5; Game.settings(); } },
+    { label: '战斗速度 ×0.7（默认）', fn: () => { G.battleSpeed = 0.7; Game.settings(); } },
+    { label: '战斗速度 ×1.0（原速）', fn: () => { G.battleSpeed = 1; Game.settings(); } },
     { label: '战斗规模 40', fn: () => { G.battleSize = 40; Game.settings(); } },
     { label: '战斗规模 70', fn: () => { G.battleSize = 70; Game.settings(); } },
     { label: '战斗规模 100', fn: () => { G.battleSize = 100; Game.settings(); } },
@@ -835,7 +861,10 @@ Game.help = function () {
   UI.open('游戏说明', `
   <h4>大地图</h4>点击地面移动，点击城镇/城堡/村庄前往并进入，点击部队追击或交谈。拖动平移，双指缩放。时间只在你移动或等待时流逝。
   <h4>经营队伍</h4>在村庄招募志愿兵，在酒馆雇佣佣兵。战斗获得的经验可以在「队伍」中升级士兵（不同分支：步兵/远程/骑兵）。注意食物（🍞）、士气与每周军饷。
-  <h4>战斗</h4>左侧摇杆移动；「攻击」近战点击挥砍，远程按住瞄准、松开射击；骑马手持骑枪高速冲锋时按住攻击即为「骑枪冲刺」，伤害随马速大增。「格挡」按住防御正面攻击。顶部选择兵种并下令：坚守（在你所在位置列阵）/ 跟随 / 冲锋。
+  <h4>战斗</h4>左侧摇杆移动；「攻击」近战点击挥砍，远程按住瞄准、松开射击，按住攻击键再拖动可向任意方向瞄准（骑射可侧射、后射）；骑马手持骑枪高速冲锋时按住攻击即为「骑枪冲刺」，伤害随马速大增。「格挡」按住防御正面攻击。顶部选择兵种并下令：坚守（在你所在位置列阵）/ 跟随 / 冲锋。
+  <h4>同伴（NPC）</h4>城镇酒馆里会遇到各具特长的同伴，招募后与你并肩作战、升级成长，并可在「同伴」面板中加点、换装。队伍技能（外科、急救、寻路、战术、教练、交易、掠夺）取你和同伴中最高的一项。同伴之间不会争吵。
+  <h4>控制台</h4>「营地 → 控制台」可以作弊：加钱、升级加点、招兵、拿物品装备、粮食消耗0、招募同伴、无敌、远程无限弹药。
+  <h4>难度</h4>你只受到 1/4 伤害，你的部队只受到 1/2 伤害。战斗速度可在「营地 → 设置」中调整（默认 ×0.7）。
   <h4>贸易</h4>每个地区都有便宜的特产和紧缺的商品，低买高卖赚取差价。
   <h4>争霸</h4>积累声望后向国王申请成为雇佣兵或封臣；或独立攻城，建立自己的王国。攻城需要先建造攻城梯。占领所有城镇即可统一大陆。
   <h4>存档</h4>存档只保存在本应用的私有空间里，卸载应用时会被系统一并删除，不会留下任何文件。`, { wide: true });

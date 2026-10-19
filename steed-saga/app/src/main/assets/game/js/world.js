@@ -69,7 +69,7 @@ W.newGame = function (opts) {
   const rnd = U.mulberry(seed + 99);
   G = {
     version: 1, seed, time: 8, nextId: 1, log: [], battles: [], settlements: [], lords: [], parties: [],
-    factions: {}, war: {}, battleSize: 70, speed: 1, quests: [],
+    factions: {}, war: {}, battleSize: 70, speed: 1, quests: [], cheats: {}, battleSpeed: 0.7,
   };
   // 势力
   const ids = D.FACTIONS.map(f => f.id).concat(['player']);
@@ -142,6 +142,7 @@ W.newGame = function (opts) {
   G.settlements.filter(s => s.type === 'town').forEach(s => W.spawnCaravan(s));
   // 匪徒
   for (let i = 0; i < 26; i++) W.spawnBandit();
+  W.initHeroes();
 
   // 玩家
   const bg = D.BACKGROUNDS.find(b => b.id === opts.bg) || D.BACKGROUNDS[0];
@@ -250,8 +251,42 @@ W.partyStrength = function (p) {
   if (p.lordId) s += 6;
   return s;
 };
-W.heroStrength = () => 4 + G.player.level * 0.6 * G.player.hpFrac;
-W.partySize = p => W.count(p.troops) + (p.kind === 'player' || p.lordId ? 1 : 0);
+W.heroStrength = () => 4 + G.player.level * 0.6 * G.player.hpFrac + W.companions().reduce((a, h) => a + 3 + h.level * 0.5 * h.hpFrac, 0);
+W.partySize = p => W.count(p.troops) + (p.kind === 'player' ? 1 + W.companions().length : p.lordId ? 1 : 0);
+
+// ---------------- 同伴（NPC） ----------------
+W.initHeroes = function () {
+  const towns = G.settlements.filter(s => s.type === 'town');
+  G.heroes = D.HEROES.map(h => {
+    const skills = {}; D.SKILLS.forEach(k => (skills[k.id] = h.skills[k.id] || 0));
+    return { id: h.id, name: h.name, level: h.level, xp: h.level > 1 ? W.xpForLevel(h.level - 1) : 0, attrs: Object.assign({}, h.attrs), skills,
+      eq: Object.assign({}, h.eq), hpFrac: 1, attrPts: 0, skillPts: 0, hired: false, where: U.pick(towns).id };
+  });
+};
+W.companions = () => (G && G.heroes ? G.heroes.filter(h => h.hired) : []);
+W.heroAt = sid => (G.heroes || []).filter(h => !h.hired && h.where === sid);
+W.heroDef = h => D.HERO[h.id];
+W.heroMaxHpOf = h => 55 + h.attrs.str + h.skills.ironflesh * 4 + h.level;
+W.heroHireCost = h => D.HERO[h.id].cost + h.level * 20;
+// 队伍技能：取你和同伴中最高的一项（骑砍规则）
+W.pskill = function (id) {
+  let v = G.player.skills[id] || 0;
+  for (const h of W.companions()) if ((h.skills[id] || 0) > v) v = h.skills[id];
+  return v;
+};
+W.giveHeroXp = function (h, xp) {
+  h.xp += Math.round(xp);
+  while (h.xp >= W.xpForLevel(h.level)) { h.level++; h.attrPts++; h.skillPts++; W.log(`⭐ 同伴 ${h.name} 升到了 ${h.level} 级。`); }
+};
+W.hireHero = function (h) {
+  h.hired = true; h.where = null; h.hpFrac = Math.max(h.hpFrac, 0.5);
+  W.log(`🤝 ${h.name} 加入了你的队伍。`);
+};
+W.dismissHero = function (h) {
+  h.hired = false;
+  h.where = U.pick(G.settlements.filter(s => s.type === 'town')).id;
+  W.log(`${h.name} 离开了队伍，据说去了 ${W.S(h.where).name}。`);
+};
 W.partyLimit = function () {
   const pl = G.player;
   return 10 + pl.skills.leadership * 5 + pl.attrs.cha + Math.floor(pl.renown / 25);
@@ -321,10 +356,10 @@ W.basePriceMul = function (s, gid) {
   const pr = D.PRODUCE[s.cult];
   return pr.cheap.includes(gid) ? 0.6 : pr.dear.includes(gid) ? 1.55 : 1;
 };
-W.buyPrice = (s, gid) => Math.max(1, Math.round(D.GOOD[gid].price * s.prices[gid] * (1.1 - G.player.skills.trade * 0.012)));
-W.sellPrice = (s, gid) => Math.max(1, Math.round(D.GOOD[gid].price * s.prices[gid] * (0.9 + G.player.skills.trade * 0.012)));
-W.itemBuyPrice = it => Math.round(it.price * (1.15 - G.player.skills.trade * 0.015));
-W.itemSellPrice = it => Math.round(it.price * (0.4 + G.player.skills.trade * 0.02));
+W.buyPrice = (s, gid) => Math.max(1, Math.round(D.GOOD[gid].price * s.prices[gid] * (1.1 - W.pskill('trade') * 0.012)));
+W.sellPrice = (s, gid) => Math.max(1, Math.round(D.GOOD[gid].price * s.prices[gid] * (0.9 + W.pskill('trade') * 0.012)));
+W.itemBuyPrice = it => Math.round(it.price * (1.15 - W.pskill('trade') * 0.015));
+W.itemSellPrice = it => Math.round(it.price * (0.4 + W.pskill('trade') * 0.02));
 W.cargoCount = () => Object.values(G.player.goods).reduce((a, b) => a + b, 0);
 W.cargoLimit = () => 40 + (G.player.eq.horse ? 10 : 0);
 
@@ -351,7 +386,7 @@ W.partySpeed = function (p) {
   const wounded = list.reduce((a, s) => a + s.w, 0);
   base = 5.2 + (mounted / total) * 1.1 - Math.min(1.8, n / 55) - (wounded / total) * 0.6;
   if (p.kind === 'player') {
-    base *= 1 + G.player.skills.pathfinding * 0.03;
+    base *= 1 + W.pskill('pathfinding') * 0.03;
     if (G.player.eq.horse && n <= 2) base += 0.7;
     const cargo = W.cargoCount();
     if (cargo > W.cargoLimit()) base *= 0.75;
@@ -503,6 +538,7 @@ W.autoResolve = function (Alists, Blists, opts) {
     let dmgB = sa * U.rr(0.04, 0.09) * (opts.bonusA || 1);
     let dmgA = sb * U.rr(0.04, 0.09) * (opts.bonusB || 1);
     while (dmgB > 0) { const k = killOne(Blists, 1, opts.woundB != null ? opts.woundB : 0.45); if (!k) break; dmgB -= k; }
+    dmgA *= opts.dmgMulA || 1;
     while (dmgA > 0) { const k = killOne(Alists, 0, opts.woundA != null ? opts.woundA : 0.45); if (!k) break; dmgA -= k; }
     if (sideStr(Blists) <= 0) return { winner: 0, cas };
     if (sideStr(Alists) <= 0) return { winner: 1, cas };
@@ -731,7 +767,7 @@ W.daily = function () {
   const pl = G.player, pp = W.player();
   // 食物
   const size = W.partySize(pp);
-  pl.foodAcc += size;
+  if (!G.cheats.noFood) pl.foodAcc += size;
   let ate = true;
   while (pl.foodAcc >= D.SERVINGS_PER_FOOD) {
     const foods = D.GOODS.filter(g => g.food && pl.goods[g.id] > 0);
@@ -742,8 +778,8 @@ W.daily = function () {
   }
   // 士气
   const variety = D.GOODS.filter(g => g.food && pl.goods[g.id] > 0).length;
-  let target = 55 + pl.skills.leadership * 6 + variety * 4 - Math.floor(W.count(pp.troops) / 4) + (pl.recentWin || 0);
-  if (!ate) { target -= 40; W.log('⚠ 队伍断粮了！士气大幅下降。'); }
+  let target = 55 + pl.skills.leadership * 6 + (G.cheats.noFood ? 12 : variety * 4) - Math.floor(W.count(pp.troops) / 4) + (pl.recentWin || 0);
+  if (!ate && !G.cheats.noFood) { target -= 40; W.log('⚠ 队伍断粮了！士气大幅下降。'); }
   if (pl.unpaid) target -= 25;
   pl.morale = U.clamp(Math.round(pl.morale + (target - pl.morale) * 0.3), 0, 100);
   pl.recentWin = Math.max(0, (pl.recentWin || 0) - 3);
@@ -753,11 +789,12 @@ W.daily = function () {
     W.log(`士气低落，有 ${n} 名士兵逃跑了。`);
   }
   // 伤员恢复
-  const heal = 0.12 + pl.skills.firstaid * 0.04;
+  const heal = 0.12 + W.pskill('firstaid') * 0.04;
   pp.troops.forEach(st => { if (st.w > 0) st.w = Math.max(0, st.w - Math.max(1, Math.round(st.w * heal))); });
-  pl.hpFrac = Math.min(1, pl.hpFrac + 0.15 + pl.skills.firstaid * 0.03);
+  pl.hpFrac = Math.min(1, pl.hpFrac + 0.15 + W.pskill('firstaid') * 0.03);
+  W.companions().forEach(h => (h.hpFrac = Math.min(1, h.hpFrac + 0.15 + W.pskill('firstaid') * 0.03)));
   // 教练
-  if (pl.skills.trainer > 0) pp.troops.forEach(st => (st.xp += pl.skills.trainer * 4 * st.n));
+  if (W.pskill('trainer') > 0) pp.troops.forEach(st => (st.xp += W.pskill('trainer') * 4 * st.n));
   // AI 部队补员/升级
   G.parties.forEach(p => {
     if (p.kind !== 'lord') return;
@@ -810,6 +847,7 @@ W.weeklyWages = function () {
   const pp = W.player();
   let w = pp.troops.reduce((a, st) => a + D.troopWage(D.TROOPS[st.id]) * st.n, 0);
   G.settlements.forEach(s => { if (s.owner === 'player' && s.type !== 'village') w += s.garrison.reduce((a, st) => a + D.troopWage(D.TROOPS[st.id]) * st.n, 0) * 0.5; });
+  w += W.companions().reduce((a, h) => a + D.heroWage(h), 0);
   return Math.round(w * (1 - G.player.skills.leadership * 0.05));
 };
 W.fiefIncome = function (s) {
@@ -831,6 +869,8 @@ W.weekly = function () {
     }
   });
   if (pl.status === 'merc') income += W.mercPay();
+  const towns = G.settlements.filter(s => s.type === 'town');
+  (G.heroes || []).forEach(h => { if (!h.hired && U.chance(0.5)) h.where = U.pick(towns).id; });
   const wages = W.weeklyWages();
   pl.gold += income;
   if (pl.gold >= wages) { pl.gold -= wages; pl.unpaid = false; }
@@ -957,6 +997,9 @@ W.load = function (slot) {
   G = JSON.parse(data);
   W.genTerrain(G.seed);
   if (G.player.kingdomName) D.FAC.player.name = G.player.kingdomName;
+  if (!G.heroes) W.initHeroes();
+  if (!G.cheats) G.cheats = {};
+  if (!G.battleSpeed) G.battleSpeed = 0.7;
   W.pendingEvent = null;
   return true;
 };

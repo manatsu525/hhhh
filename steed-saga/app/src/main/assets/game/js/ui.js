@@ -82,7 +82,7 @@ UI.updateHud = function () {
   const days = Math.max(0, Math.floor(foodServ / Math.max(1, W.partySize(pp))));
   const status = { free: '自由人', merc: `${W.facName(pl.liege)}雇佣兵`, vassal: `${W.facName(pl.liege)}封臣`, king: `${pl.kingdomName}之王` }[pl.status];
   const html = `<span>📅 ${W.dateStr()}</span><span>💰 ${U.fmt(pl.gold)}</span><span>⚔ ${W.partySize(pp)}/${W.partyLimit() + 1}</span>` +
-    `<span class="${days < 2 ? 'warn' : ''}">🍞 ${days}天</span><span class="${pl.morale < 30 ? 'warn' : ''}">😊 ${pl.morale}</span>` +
+    `<span class="${days < 2 && !G.cheats.noFood ? 'warn' : ''}">🍞 ${G.cheats.noFood ? '∞' : days + '天'}</span><span class="${pl.morale < 30 ? 'warn' : ''}">😊 ${pl.morale}</span>` +
     `<span>❤ ${Math.round(pl.hpFrac * 100)}%</span><span class="hide-s">🏳 ${status}</span><span class="hide-s">⭐ ${pl.renown}</span>`;
   if (html !== UI.hudCache) { document.getElementById('hudInfo').innerHTML = html; UI.hudCache = html; }
   const wb = document.getElementById('btnWait');
@@ -100,6 +100,7 @@ UI.partyPanel = function () {
     let html = `<div class="sumline">人数 ${W.partySize(pp)}/${W.partyLimit() + 1} · 战力 ${Math.round(W.partyStrength(pp))} · 每周军饷 ${W.weeklyWages()} 金 · 士气 ${pl.morale} · 速度 ${W.partySpeed(pp).toFixed(1)}</div>`;
     html += '<table class="tbl"><tr><th>兵种</th><th>数量</th><th>经验</th><th>升级</th><th></th></tr>';
     html += `<tr><td><b>${U.esc(pl.name)}</b> <small>（你）Lv${pl.level}</small></td><td>1</td><td>-</td><td>-</td><td></td></tr>`;
+    W.companions().forEach(c => (html += `<tr><td><b>${c.name}</b> <small>同伴 Lv${c.level}</small></td><td>1${c.hpFrac < 0.5 ? ' <small class="warn">(伤)</small>' : ''}</td><td>-</td><td>-</td><td></td></tr>`));
     pp.troops.forEach((st, i) => {
       const t = D.TROOPS[st.id];
       const need = D.troopUpgradeXp(t);
@@ -286,4 +287,149 @@ W.mercPay = () => 40 + W.count(W.player().troops) * 4;
 UI.logPanel = function () {
   const html = G.log.map(l => `<div class="logrow"><small>${W.dateStr(l.t)}</small> ${U.esc(l.msg)}</div>`).join('') || '<div class="dim">暂无记录</div>';
   UI.open('编年史', html, { wide: true });
+};
+
+// ---------------- 同伴面板 ----------------
+UI.heroPanel = function () {
+  const h = UI.open('同伴', '', { wide: true });
+  let cur = 0;
+  const render = () => {
+    const list = W.companions();
+    const pl = G.player;
+    if (!list.length) { h.setContent('<div class="dim">你还没有同伴。在城镇的酒馆里可以遇到愿意追随你的人（每周会换地方）。<br>同伴会和你一起出战、升级，他们的技能可以作为整支队伍的技能（例如外科、寻路、战术、教练、交易）。同伴之间相处融洽，不会争吵。</div>'); return; }
+    cur = Math.min(cur, list.length - 1);
+    const c = list[cur];
+    let html = '<div class="btnrow tabs">' + list.map((x, i) => `<button class="sb tab ${i === cur ? 'on' : ''}" data-i="${i}">${x.name} Lv${x.level}</button>`).join('') + '</div>';
+    html += `<div class="sumline">${W.heroDef(c).title} · 等级 ${c.level} · 经验 ${c.xp}/${W.xpForLevel(c.level)} · 生命 ${Math.round(W.heroMaxHpOf(c) * c.hpFrac)}/${W.heroMaxHpOf(c)} · 每周薪水 ${D.heroWage(c)} 金</div>`;
+    html += `<div class="cols"><div><h4>属性 <small>点数 ${c.attrPts}</small></h4>`;
+    D.ATTRS.forEach(a => (html += `<div class="statrow"><span>${a.name}</span><b>${c.attrs[a.id]}</b>${c.attrPts > 0 ? `<button class="sb ha" data-a="${a.id}">+</button>` : '<span></span>'}<small></small></div>`));
+    html += `<h4>技能 <small>点数 ${c.skillPts}</small></h4>`;
+    D.SKILLS.forEach(s => {
+      const v = c.skills[s.id] || 0, cap = Math.min(10, Math.floor(c.attrs[s.attr] / 3));
+      if (!v && !c.skillPts) return;
+      html += `<div class="statrow"><span>${s.name}</span><b>${v}</b>${c.skillPts > 0 && v < cap ? `<button class="sb hs" data-s="${s.id}">+</button>` : '<span></span>'}<small>${s.desc}</small></div>`;
+    });
+    html += '</div><div><h4>装备 <small>（从你的背包给同伴换装）</small></h4>';
+    ['melee', 'ranged', 'shield', 'head', 'body', 'legs', 'horse'].forEach(sl => {
+      const it = c.eq[sl] && D.ITEMS[c.eq[sl]];
+      const cands = pl.inv.map((id, i) => [id, i]).filter(([id]) => D.ITEMS[id].slot === sl);
+      html += `<div class="eqrow"><span class="slot">${D.SLOT_NAMES[sl]}</span>${it ? `<b>${it.name}</b>` : '<span class="dim">空</span>'}` +
+        (it ? `<button class="sb hun" data-s="${sl}">卸下</button>` : '') +
+        cands.map(([id, i]) => `<button class="sb heq" data-i="${i}">换:${D.ITEMS[id].name}</button>`).join('') + '</div>';
+    });
+    html += `</div></div><div class="btnrow"><button class="sb hdis">让 ${c.name} 离队</button></div>`;
+    h.setContent(html);
+    const q = (s, f) => h.body.querySelectorAll(s).forEach(b => (b.onclick = () => { f(b); render(); }));
+    q('.tab', b => (cur = +b.dataset.i));
+    q('.ha', b => { c.attrs[b.dataset.a]++; c.attrPts--; if (b.dataset.a === 'int') c.skillPts++; });
+    q('.hs', b => { c.skills[b.dataset.s]++; c.skillPts--; });
+    q('.hun', b => { if (pl.inv.length >= 40) { UI.toast('背包已满'); return; } pl.inv.push(c.eq[b.dataset.s]); c.eq[b.dataset.s] = null; });
+    q('.heq', b => {
+      const i = +b.dataset.i, id = pl.inv[i], it = D.ITEMS[id];
+      pl.inv.splice(i, 1);
+      if (c.eq[it.slot]) pl.inv.push(c.eq[it.slot]);
+      c.eq[it.slot] = id;
+    });
+    q('.hdis', () => UI.confirm('离队', `确定让 ${c.name} 离开队伍吗？（之后可以在酒馆再次招募）`, () => { W.dismissHero(c); render(); }));
+  };
+  render();
+};
+
+// ---------------- 控制台（作弊） ----------------
+UI.findTroop = q => {
+  const all = Object.values(D.TROOPS);
+  return all.find(t => t.id === q || t.name === q) || all.find(t => t.name.includes(q) || t.id.includes(q));
+};
+UI.findItem = q => {
+  const all = Object.values(D.ITEMS).filter(i => i.cult !== 'arena');
+  return all.find(i => i.id === q || i.name === q) || all.find(i => i.name.includes(q) || i.id.includes(q));
+};
+UI.findHero = q => (G.heroes || []).find(h => h.id === q || h.name === q || h.name.includes(q));
+UI.cheat = function (line) {
+  const pl = G.player, pp = W.player(), ch = G.cheats;
+  const [cmd, ...rest] = line.trim().split(/\s+/);
+  const arg = rest.join(' ');
+  const num = (d) => { const n = parseInt(rest[rest.length - 1], 10); return isNaN(n) ? d : n; };
+  const onoff = (k, name) => { ch[k] = rest[0] ? /^(on|1|开)$/.test(rest[0]) : !ch[k]; return `${name}：${ch[k] ? '开启' : '关闭'}`; };
+  switch ((cmd || '').toLowerCase()) {
+    case 'gold': case '金币': pl.gold += num(1000); return `金币 +${num(1000)}，现在 ${pl.gold}`;
+    case 'level': case '升级': { const n = num(1); for (let i = 0; i < n; i++) W.giveXp(W.xpForLevel(pl.level) - pl.xp); return `升级到 ${pl.level} 级`; }
+    case 'attr': case '属性': pl.attrPts += num(5); return `属性点 +${num(5)}`;
+    case 'skill': case '技能': pl.skillPts += num(5); return `技能点 +${num(5)}`;
+    case 'renown': case '声望': pl.renown += num(100); return `声望 +${num(100)}`;
+    case 'troop': case '招兵': {
+      const n = /\d+$/.test(arg) ? num(10) : 10;
+      const name = arg.replace(/\s*\d+$/, '');
+      const t = UI.findTroop(name);
+      if (!t) return `找不到兵种：${name}`;
+      W.addTroops(pp, t.id, n); return `招募 ${n} 名 ${t.name}`;
+    }
+    case 'item': case '物品': {
+      const it = UI.findItem(arg);
+      if (!it) return `找不到物品：${arg}`;
+      pl.inv.push(it.id); return `获得 ${it.name}（已放入背包）`;
+    }
+    case 'equip': case '装备': {
+      const it = UI.findItem(arg);
+      if (!it) return `找不到物品：${arg}`;
+      if (pl.eq[it.slot]) pl.inv.push(pl.eq[it.slot]);
+      pl.eq[it.slot] = it.id; return `已装备 ${it.name}`;
+    }
+    case 'food': case '粮食': return onoff('noFood', '粮食消耗为0');
+    case 'god': case '无敌': return onoff('god', '无敌');
+    case 'ammo': case '弹药': return onoff('infAmmo', '远程无限弹药');
+    case 'npc': case '同伴': {
+      const list = arg === 'all' || arg === '全部' ? G.heroes.filter(h => !h.hired) : [UI.findHero(arg)].filter(Boolean);
+      if (!list.length) return `找不到同伴：${arg}（可用：${G.heroes.map(h => h.name).join('、')}）`;
+      list.forEach(h => W.hireHero(h)); return `招募同伴：${list.map(h => h.name).join('、')}`;
+    }
+    case 'heal': case '治疗':
+      pl.hpFrac = 1; W.companions().forEach(h => (h.hpFrac = 1)); pp.troops.forEach(st => (st.w = 0)); return '全员伤势痊愈';
+    case 'help': case '帮助': case '':
+      return 'gold 数量 · level 级数 · attr 点数 · skill 点数 · renown 数量 · troop 兵种名 数量 · item 物品名 · equip 物品名 · food [on/off] · god [on/off] · ammo [on/off] · npc 名字/all · heal';
+  }
+  return `未知命令：${cmd}（输入 help 查看）`;
+};
+UI.consolePanel = function () {
+  const ch = G.cheats;
+  const troops = Object.values(D.TROOPS).filter(t => t.fac !== 'neutral' || t.id.startsWith('merc'));
+  const items = Object.values(D.ITEMS).filter(i => i.cult !== 'arena');
+  const opt = (v, t) => `<option value="${v}">${t}</option>`;
+  const html = `<div class="console">
+    <div class="btnrow"><input id="cIn" placeholder="输入命令，如 gold 5000 / troop 雄狮骑士 20 / help" style="flex:1;min-width:200px"><button class="sb" id="cRun">执行</button></div>
+    <div class="clog" id="cLog"></div>
+    <h4>快捷</h4>
+    <div class="btnrow">
+      <button class="sb q" data-c="gold 1000">+1000金</button><button class="sb q" data-c="gold 10000">+10000金</button>
+      <button class="sb q" data-c="level 1">升1级</button><button class="sb q" data-c="level 5">升5级</button>
+      <button class="sb q" data-c="attr 5">+5属性点</button><button class="sb q" data-c="skill 5">+5技能点</button>
+      <button class="sb q" data-c="renown 100">+100声望</button><button class="sb q" data-c="heal">全员治疗</button>
+    </div>
+    <div class="btnrow">
+      <button class="sb tg" data-c="food" data-k="noFood">粮食消耗0：${ch.noFood ? '开' : '关'}</button>
+      <button class="sb tg" data-c="god" data-k="god">无敌：${ch.god ? '开' : '关'}</button>
+      <button class="sb tg" data-c="ammo" data-k="infAmmo">无限弹药：${ch.infAmmo ? '开' : '关'}</button>
+    </div>
+    <h4>招兵</h4>
+    <div class="btnrow"><select id="cTroop">${troops.map(t => opt(t.id, `${t.fac === 'bandit' ? '匪' : t.fac === 'neutral' ? '佣' : D.FAC[t.fac].short} T${t.tier} ${t.name}`)).join('')}</select>
+      <button class="sb tr" data-n="1">+1</button><button class="sb tr" data-n="10">+10</button><button class="sb tr" data-n="50">+50</button></div>
+    <h4>物品与装备</h4>
+    <div class="btnrow"><select id="cItem">${['melee', 'ranged', 'shield', 'head', 'body', 'legs', 'horse'].map(sl => `<optgroup label="${D.SLOT_NAMES[sl]}">${items.filter(i => i.slot === sl).map(i => opt(i.id, `${i.name}（${i.price}金）`)).join('')}</optgroup>`).join('')}</select>
+      <button class="sb it" data-c="item">放入背包</button><button class="sb it" data-c="equip">直接装备</button></div>
+    <h4>招募同伴（NPC）</h4>
+    <div class="btnrow"><select id="cHero">${G.heroes.map(h => opt(h.id, `${h.name}（${W.heroDef(h).title} Lv${h.level}）${h.hired ? '✓' : ''}`)).join('')}</select>
+      <button class="sb" id="cHire">招募</button><button class="sb q" data-c="npc all">全部招募</button></div>
+  </div>`;
+  const h = UI.open('控制台', html, { wide: true });
+  const $ = s => h.body.querySelector(s);
+  const out = msg => { const d = U.el('div', '', U.esc(msg)); $('#cLog').prepend(d); };
+  const run = c => out(UI.cheat(c));
+  $('#cRun').onclick = () => { run($('#cIn').value); $('#cIn').value = ''; };
+  $('#cIn').addEventListener('keydown', e => { if (e.key === 'Enter') $('#cRun').onclick(); });
+  h.body.querySelectorAll('.q').forEach(b => (b.onclick = () => run(b.dataset.c)));
+  h.body.querySelectorAll('.tg').forEach(b => (b.onclick = () => { run(b.dataset.c); b.textContent = b.textContent.replace(/：.*/, '：' + (G.cheats[b.dataset.k] ? '开' : '关')); }));
+  h.body.querySelectorAll('.tr').forEach(b => (b.onclick = () => { const t = D.TROOPS[$('#cTroop').value]; W.addTroops(W.player(), t.id, +b.dataset.n); out(`招募 ${b.dataset.n} 名 ${t.name}`); }));
+  h.body.querySelectorAll('.it').forEach(b => (b.onclick = () => run(`${b.dataset.c} ${$('#cItem').value}`)));
+  $('#cHire').onclick = () => run(`npc ${$('#cHero').value}`);
+  out('输入 help 查看全部命令');
 };

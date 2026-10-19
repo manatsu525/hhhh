@@ -10,6 +10,7 @@ Main.init = function () {
   window.addEventListener('resize', Main.resize);
   document.getElementById('btnParty').onclick = () => !Game.blocked() && UI.partyPanel();
   document.getElementById('btnChar').onclick = () => !Game.blocked() && UI.charPanel();
+  document.getElementById('btnHero').onclick = () => !Game.blocked() && UI.heroPanel();
   document.getElementById('btnInv').onclick = () => !Game.blocked() && UI.invPanel();
   document.getElementById('btnFac').onclick = () => !Game.blocked() && UI.factionPanel();
   document.getElementById('btnLog').onclick = () => !Game.blocked() && UI.logPanel();

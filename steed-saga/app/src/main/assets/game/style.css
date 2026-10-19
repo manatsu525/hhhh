@@ -19,7 +19,7 @@ input { font-size: 16px; padding: 6px 8px; border-radius: 6px; border: 1px solid
 .sidebtns button.on { background: #b07a2a; box-shadow: 0 0 8px #ffcc66; }
 .bottombar { position: absolute; bottom: 0; left: 50%; transform: translateX(-50%); display: flex; gap: 5px; padding: 5px 6px calc(5px + env(safe-area-inset-bottom));
   background: rgba(20,12,4,0.72); border-radius: 10px 10px 0 0; }
-.bottombar button { display: flex; flex-direction: column; align-items: center; width: 60px; height: 50px; padding: 2px; font-size: 18px; line-height: 1.1; }
+.bottombar button { display: flex; flex-direction: column; align-items: center; width: 56px; height: 50px; padding: 2px; font-size: 18px; line-height: 1.1; }
 .bottombar button span { font-size: 12px; }
 
 /* 标题与创建 */
@@ -83,10 +83,14 @@ h4 { margin: 10px 0 5px; color: #e8c88a; }
 .price { color: #ffd36b; font-size: 13px; }
 .rels { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 13px; }
 .dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 5px; }
+select { font-size: 14px; padding: 5px; border-radius: 6px; border: 1px solid #a8844f; background: #2a1e12; color: #fff; max-width: 100%; }
+.console .btnrow { margin-top: 4px; align-items: center; }
+.clog { max-height: 90px; overflow-y: auto; background: rgba(0,0,0,0.35); border-radius: 6px; padding: 4px 8px; margin-top: 6px; font-size: 12.5px; color: #cfe8c0; }
+.tabs .tab.on { background: #b07a2a; }
 .logrow { padding: 3px 0; border-bottom: 1px solid rgba(255,255,255,0.05); font-size: 13px; }
 .logrow small { color: #a08a6a; }
 
-#toasts { position: absolute; left: 50%; bottom: 72px; transform: translateX(-50%); display: flex; flex-direction: column; align-items: center; gap: 4px; pointer-events: none; z-index: 50; }
+#toasts { position: absolute; left: 50%; bottom: 6px; transform: translateX(-50%); display: flex; flex-direction: column; align-items: center; gap: 4px; pointer-events: none; z-index: 50; }
 .toast { background: rgba(20,12,4,0.88); border: 1px solid #a8844f; padding: 5px 12px; border-radius: 6px; font-size: 13px; transition: opacity 0.5s; max-width: 90vw; text-align: center; }
 .toast.out { opacity: 0; }
 

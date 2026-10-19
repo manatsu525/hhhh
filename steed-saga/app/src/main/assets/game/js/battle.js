@@ -2,7 +2,7 @@
 // ============ 实时战斗引擎（俯视角，骑砍式战斗） ============
 const B = {
   active: false, units: [], proj: [], fx: [], texts: [], feed: [], obstacles: [], walls: [],
-  input: { mx: 0, my: 0, attack: false, attackPressed: false, block: false, switchPressed: false },
+  input: { mx: 0, my: 0, attack: false, attackPressed: false, block: false, switchPressed: false, aimActive: false, ax: 0, ay: 0 },
   orders: [{ inf: 'hold', arc: 'hold', cav: 'hold' }], sel: 'all', timeScale: 1, zoom: 1,
 };
 B.TEAM_COLORS = ['#3d7be0', '#d23c3c', '#e0a030', '#30b070', '#a050d0', '#30b0c0', '#d070a0', '#909030'];
@@ -25,7 +25,8 @@ B.start = function (cfg) {
   B.orders = [{ inf: 'hold', arc: 'hold', cav: 'hold' }, null];
   B.anchors = [{}, {}];
   B.sel = 'all';
-  B.input = { mx: 0, my: 0, attack: false, attackPressed: false, block: false, switchPressed: false };
+  B.input = { mx: 0, my: 0, attack: false, attackPressed: false, block: false, switchPressed: false, aimActive: false, ax: 0, ay: 0 };
+  B.heroDown = {}; B.heroKills = {};
   B.nextId = 1;
   B.FW = B.mode === 'arena' ? 760 : 1700; B.FH = B.mode === 'arena' ? 760 : B.mode === 'siege' ? 960 : 1100;
   B.fallen = []; B.escaped = [];
@@ -63,6 +64,12 @@ B.start = function (cfg) {
     pl.x = sp.x; pl.y = sp.y + (pl.horse ? 60 : 40); pl.face = sp.face; pl.aim = sp.face;
   }
   B.addUnit(pl);
+  (cfg.heroes || []).forEach((h, i) => {
+    const u = B.makeCompanion(h);
+    const sp = B.spawnPoint(0);
+    u.x = pl.x + (i % 2 ? 1 : -1) * (30 + Math.floor(i / 2) * 26); u.y = pl.y + 14; u.face = sp.face; u.aim = sp.face;
+    B.addUnit(u);
+  });
   B.cam = { x: pl.x, y: pl.y };
   B.active = true;
   B.msg(cfg.title || '战斗开始！', 3);
@@ -209,6 +216,34 @@ B.makePlayer = function () {
   u.hsp = u.horse ? u.horse.spd * (1 + pl.skills.riding * 0.02) : 0;
   return u;
 };
+B.makeCompanion = function (h) {
+  const eq = h.eq;
+  const u = B.baseUnit(0);
+  u.heroId = h.id; u.name = h.name; u.owner = 'hero:' + h.id; u.tier = 5; u.fac = null;
+  u.melee = D.ITEMS[eq.melee] || D.ITEMS.knife;
+  u.ranged = eq.ranged ? D.ITEMS[eq.ranged] : null;
+  u.shield = eq.shield && u.melee.hands === 1 ? D.ITEMS[eq.shield] : null;
+  u.shieldHp = u.shield ? u.shield.hp : 0;
+  u.horse = eq.horse && B.mode !== 'siege' ? D.ITEMS[eq.horse] : null;
+  u.horseHp = u.horse ? u.horse.hp : 0;
+  u.armor = { h: eq.head ? D.ITEMS[eq.head].armor : 0, b: eq.body ? D.ITEMS[eq.body].armor : 0, l: eq.legs ? D.ITEMS[eq.legs].armor : 0 };
+  u.maxHp = W.heroMaxHpOf(h);
+  u.hp = Math.max(u.maxHp * 0.35, u.maxHp * h.hpFrac);
+  u.skill = Math.min(6, 2 + h.level / 4);
+  u.kind = u.horse && u.ranged && u.ranged.mount ? 'ha' : u.ranged && !eq.shield && !u.horse ? 'arc' : u.horse ? 'cav' : 'inf';
+  u.group = u.horse ? 'cav' : u.kind === 'arc' ? 'arc' : 'inf';
+  u.prefRanged = (u.kind === 'arc' || u.kind === 'ha') && !!u.ranged;
+  u.ammo = u.ranged ? u.ranged.ammo : 0;
+  u.mode = u.prefRanged && B.canUseRanged(u) ? 'ranged' : 'melee';
+  u.speedFoot = 76 * (1 + h.skills.athletics * 0.04);
+  u.dmgMul = 1 + h.skills.powerstrike * 0.08 + h.attrs.str * 0.005;
+  u.rangedMul = 1 + h.skills.powerdraw * 0.1;
+  u.atkSpd = 1 + h.attrs.agi * 0.01;
+  u.maneuver = u.horse ? u.horse.man * (1 + h.skills.riding * 0.05) : 0;
+  u.hsp = u.horse ? u.horse.spd * (1 + h.skills.riding * 0.02) : 0;
+  u.haSkill = h.skills.horsearchery;
+  return u;
+};
 B.arenaKit = function () {
   const kits = [
     { melee: D.ITEMS.wood_sword, shield: D.ITEMS.arena_shield },
@@ -290,7 +325,7 @@ B.update = function (dtReal) {
   if (!B.active || B.paused) return;
   const steps = B.timeScale > 1 ? B.timeScale : 1;
   for (let s = 0; s < steps; s++) {
-    let dt = Math.min(dtReal, 0.05);
+    let dt = Math.min(dtReal, 0.05) * (G.battleSpeed || 0.7);
     B.step(dt);
     if (!B.active) return;
   }
@@ -349,7 +384,8 @@ B.controlPlayer = function (u, dt) {
     if (inp.attack && u.melee.couch && fast && (u.state === 'idle' || u.state === 'block')) {
       u.couch = true; u.state = 'idle'; u.aim = u.face;
     } else if (inp.attackPressed && u.state === 'idle') {
-      const t = B.pickTarget(u, u.melee.reach * 1.8 + 20, u.horse ? 2.3 : 1.25, u.horse ? u.face : u.face);
+      const want = inp.aimActive ? Math.atan2(inp.ay, inp.ax) : u.face;
+      const t = B.pickTarget(u, u.melee.reach * 1.8 + 20, inp.aimActive ? 0.9 : u.horse ? 2.6 : 1.25, want);
       if (t) { u.atkTarget = t; u.aim = Math.atan2(t.y - u.y, t.x - u.x); if (!u.horse) u.face = u.aim; }
       else { u.atkTarget = null; u.aim = u.face; }
       B.beginSwing(u);
@@ -359,14 +395,15 @@ B.controlPlayer = function (u, dt) {
     if (inp.attack && (u.state === 'idle' || u.state === 'aim')) {
       if (u.state === 'idle') { u.state = 'aim'; u.aimT = 0; }
       u.aimT += dt;
-      const t = B.pickTarget(u, u.ranged.range, u.horse ? 2.0 : 0.75, u.horse ? u.face : u.face);
+      // 拖动攻击键可向任意方向瞄准；骑乘时不拖动则自动瞄准四周最近的敌人
+      const want = inp.aimActive ? Math.atan2(inp.ay, inp.ax) : null;
+      const t = want != null ? B.pickTarget(u, u.ranged.range, 0.45, want)
+        : u.horse ? B.pickTarget(u, u.ranged.range, Math.PI, u.aim) : B.pickTarget(u, u.ranged.range, 0.75, u.face);
       u.aimTarget = t;
-      if (t) {
-        const lead = B.leadAngle(u, t);
-        u.aim = U.rotTo(u.aim, lead, dt * 8);
-        if (!u.horse) u.face = u.aim;
-      } else if (!u.horse) u.aim = u.face;
-      else u.aim = U.rotTo(u.aim, u.face, dt * 4);
+      if (t) u.aim = U.rotTo(u.aim, B.leadAngle(u, t), dt * 9);
+      else if (want != null) u.aim = U.rotTo(u.aim, want, dt * 10);
+      else if (!u.horse) u.aim = u.face;
+      if (!u.horse) u.face = u.aim;
     } else if (!inp.attack && u.state === 'aim') {
       const need = u.ranged.kind === 'xbow' ? 0.15 : 0.3;
       if (u.aimT >= need && u.loaded) B.shoot(u, U.clamp(u.aimT / (u.ranged.kind === 'xbow' ? 0.5 : u.ranged.reload * 0.75), 0.3, 1));
@@ -393,11 +430,12 @@ B.pickTarget = function (u, range, arc, face) {
   }
   return best;
 };
-B.leadAngle = function (u, t) {
+B.leadAngle = function (u, t, lead) {
   const spd = B.PROJ_SPEED[u.ranged.kind];
   const d = Math.hypot(t.x - u.x, t.y - u.y);
   const tt = d / spd;
-  return Math.atan2(t.y + t.vy * tt * 0.9 - u.y, t.x + t.vx * tt * 0.9 - u.x);
+  const k = lead == null ? 0.9 : lead;
+  return Math.atan2(t.y + t.vy * tt * k - u.y, t.x + t.vx * tt * k - u.x);
 };
 
 // ---------------- 动作 ----------------
@@ -496,18 +534,24 @@ B.damage = function (o, raw, dt, src) {
   if (r < 0.15) { arm = o.armor.h; mul = 1.25; } else if (r < 0.8) arm = o.armor.b; else { arm = o.armor.l; mul = 0.85; }
   const k = B.DT[dt] || B.DT.cut;
   let eff = Math.max(0, raw - arm * k.soak * U.rr(0.5, 1)) * (1 - Math.min(0.65, arm * k.red * U.rr(0.6, 1)));
-  eff = Math.max(dt === 'blunt' ? 2 : 1, eff * mul);
+  eff = Math.max(dt === 'blunt' ? 2 : 1, eff * mul) * B.dmgTakenMul(o);
   o.hp -= eff;
   if (src && src.isPlayer) B.text(o.x, o.y - 16, '' + Math.round(eff), '#ffe070');
-  if (o.isPlayer) B.text(o.x, o.y - 16, '-' + Math.round(eff), '#ff6060');
+  if (o.isPlayer && eff > 0) B.text(o.x, o.y - 16, '-' + Math.max(1, Math.round(eff)), '#ff6060');
   B.blood(o.x, o.y, eff);
   // 受击打断
   if (o.state === 'windup' && eff > 6) { o.state = 'recover'; o.st = 0.25; }
   if (o.state === 'aim' && eff > 6) { o.state = 'idle'; o.aimT = 0; }
   if (o.hp <= 0) B.fall(o, dt, src);
 };
+// 玩家只受 1/4 伤害，玩家部队（含同伴）只受 1/2 伤害
+B.dmgTakenMul = function (o) {
+  if (o.isPlayer) return G.cheats && G.cheats.god ? 0 : 0.25;
+  if (o.team === 0 && (o.owner === 'player' || o.heroId)) return 0.5;
+  return 1;
+};
 B.damageHorse = function (o, raw, src) {
-  const eff = Math.max(1, raw - o.horse.armor * 0.4) * (1 - Math.min(0.5, o.horse.armor * 0.008));
+  const eff = Math.max(1, raw - o.horse.armor * 0.4) * (1 - Math.min(0.5, o.horse.armor * 0.008)) * B.dmgTakenMul(o);
   o.horseHp -= eff;
   B.blood(o.x, o.y, eff);
   if (src && src.isPlayer) B.text(o.x, o.y - 16, '' + Math.round(eff), '#ffc080');
@@ -531,9 +575,15 @@ B.fall = function (o, dt, src) {
     BUI.showDown();
     return;
   }
+  if (src && src.heroId && o.troopId) B.heroKills[src.heroId] = (B.heroKills[src.heroId] || 0) + D.TROOPS[o.troopId].tier;
+  if (o.heroId) {
+    B.heroDown[o.heroId] = true;
+    B.feedAdd(`同伴 ${o.name} 负伤倒下了`, '#ffb070');
+    return;
+  }
   let wounded;
   if (B.mode === 'arena' || dt === 'blunt') wounded = true;
-  else if (o.team === 0) wounded = Math.random() < 0.35 + G.player.skills.surgery * 0.05;
+  else if (o.team === 0) wounded = Math.random() < 0.35 + W.pskill('surgery') * 0.05;
   else wounded = Math.random() < 0.5;
   if (o.troopId) B.fallen.push({ team: o.team, owner: o.owner, troopId: o.troopId, wounded });
   if (src && src.isPlayer) {
@@ -548,9 +598,10 @@ B.fall = function (o, dt, src) {
 // ---------------- 远程 ----------------
 B.shoot = function (u, quality) {
   const it = u.ranged;
-  let spread = Math.max(0.012, 0.11 - u.skill * 0.016) * (1.6 - quality * 0.6);
+  let spread = u.isPlayer ? Math.max(0.012, 0.11 - u.skill * 0.016) * (1.6 - quality * 0.6)
+    : u.heroId ? Math.max(0.03, 0.12 - u.skill * 0.014) : Math.max(0.05, 0.17 - u.skill * 0.02);
   if (u.horse && u.sp > 30) {
-    const ha = u.isPlayer ? G.player.skills.horsearchery : (u.kind === 'ha' ? u.skill : 1);
+    const ha = u.isPlayer ? G.player.skills.horsearchery : u.heroId ? u.haSkill : (u.kind === 'ha' ? u.skill : 1);
     spread += 0.07 * (u.sp / 220) * Math.max(0.15, 1 - ha * 0.15);
   }
   if (!u.horse && Math.hypot(u.vx, u.vy) > 30) spread += 0.04;
@@ -560,7 +611,7 @@ B.shoot = function (u, quality) {
     x: u.x + Math.cos(a) * 12, y: u.y + Math.sin(a) * 12, vx: Math.cos(a) * spd + u.vx * 0.3, vy: Math.sin(a) * spd + u.vy * 0.3,
     dmg: it.dmg * u.rangedMul * (0.75 + quality * 0.25), dt: it.dt, team: u.team, src: u, life: (it.range * 1.15) / spd, kind: it.kind,
   });
-  u.ammo--;
+  if (!(u.isPlayer && G.cheats && G.cheats.infAmmo)) u.ammo--;
   if (it.kind === 'xbow') { u.state = 'reload'; u.st = it.reload; u.loaded = false; }
   else { u.state = 'recover'; u.st = 0.2; }
   if (u.ammo <= 0) {
@@ -643,7 +694,7 @@ B.ai = function (u, dt) {
     u.tdist = d;
     // 远程/近战切换
     if (u.ranged && u.ammo > 0 && B.canUseRanged(u)) {
-      if (u.prefRanged) u.mode = d < 55 && !u.horse ? 'melee' : 'ranged';
+      if (u.prefRanged) u.mode = d < 95 && !u.horse ? 'melee' : 'ranged';
       else u.mode = d > 70 && d < u.ranged.range * 0.8 && Math.random() < 0.6 ? 'ranged' : 'melee';
     } else u.mode = 'melee';
     // 移动目标
@@ -678,9 +729,9 @@ B.ai = function (u, dt) {
       B.aiMove(u, { x: u.x + Math.cos(side) * 100, y: u.y + Math.sin(side) * 100 }, dt, 0.8);
     } else B.aiMove(u, null, dt, 0);
     if (inRange && (u.state === 'idle' || u.state === 'aim') && u.loaded) {
-      if (u.state === 'idle') { u.state = 'aim'; u.aimT = 0; u.aimNeed = u.ranged.kind === 'xbow' ? U.rr(0.4, 0.8) : u.ranged.reload * U.rr(0.8, 1.3); }
+      if (u.state === 'idle') { u.state = 'aim'; u.aimT = 0; u.aimNeed = u.ranged.kind === 'xbow' ? U.rr(0.7, 1.4) : u.ranged.reload * U.rr(1.2, 1.9); u.leadK = U.rr(0.2, 1.1); }
       u.aimT += dt;
-      u.aim = B.leadAngle(u, e);
+      u.aim = B.leadAngle(u, e, u.heroId ? 0.9 : u.leadK);
       if (!u.horse) u.face = u.aim;
       if (u.aimT >= u.aimNeed) { B.shoot(u, 1); }
     } else if (u.state === 'aim' && !inRange) u.state = 'idle';
@@ -886,6 +937,7 @@ B.finish = function (winner, retreat) {
     winner, retreat: !!retreat, fallen: B.fallen, escaped: B.escaped, playerDown: B.playerDown, kills: B.kills, killList: B.killList,
     playerHpFrac: pl.alive ? pl.hp / pl.maxHp : 0.15,
     arenaWins: B.mode === 'arena' ? B.units.filter(u => !u.alive && u.team !== 0).length : 0,
+    heroHp: B.units.filter(u => u.heroId).map(u => [u.heroId, u.alive ? u.hp / u.maxHp : 0.1]), heroKills: B.heroKills,
   };
   // 撤退时未上场的单位不受影响；场上存活的单位也保留
   const text = retreat ? '你撤离了战场' : winner === 0 ? '胜利！' : '战败……';
