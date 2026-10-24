@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="AppTheme" parent="android:Theme.Material.Light.DarkActionBar">
+        <item name="android:colorPrimary">#1F7A6D</item>
+        <item name="android:colorPrimaryDark">#185F55</item>
+        <item name="android:colorAccent">@color/accent</item>
+        <item name="android:windowBackground">@color/page</item>
+        <item name="android:actionModeBackground">@color/accent_dark</item>
+        <item name="android:windowActionModeOverlay">true</item>
+    </style>
+</resources>

@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="accent">#1F7A6D</color>
+    <color name="accent_dark">#185F55</color>
+    <color name="accent_soft">#E3F2EF</color>
+    <color name="bubble_other">#EEF1F4</color>
+    <color name="bubble_other_text">#1C2430</color>
+    <color name="panel">#FFFFFF</color>
+    <color name="page">#F3F5F8</color>
+    <color name="line">#E3E7EE</color>
+    <color name="ed_bg">#FFFFFF</color>
+    <color name="ed_text">#1C2430</color>
+    <color name="ed_gutter_bg">#F3F5F8</color>
+    <color name="ed_gutter_text">#9AA3AF</color>
+    <color name="ed_sel">#5A1F7A6D</color>
+    <color name="ed_line">#F3F7F9</color>
+    <color name="ed_match">#70FFC400</color>
+    <color name="clean_head">#1F7A6D</color>
+</resources>

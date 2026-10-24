@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="AppTheme" parent="android:Theme.Material">
+        <item name="android:colorPrimary">#1A2029</item>
+        <item name="android:colorPrimaryDark">#12161C</item>
+        <item name="android:colorAccent">@color/accent</item>
+        <item name="android:windowBackground">@color/page</item>
+        <item name="android:actionModeBackground">@color/accent_dark</item>
+        <item name="android:windowActionModeOverlay">true</item>
+    </style>
+</resources>
