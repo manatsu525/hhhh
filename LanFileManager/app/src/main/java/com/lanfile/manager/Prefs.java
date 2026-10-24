@@ -22,6 +22,10 @@ public final class Prefs {
     public static boolean sortDesc() { return sp.getBoolean("desc", false); }
     public static void setSort(int by, boolean desc) { sp.edit().putInt("sort", by).putBoolean("desc", desc).apply(); }
 
+    /** 文件分类列表：0 时间新→旧 1 时间旧→新 2 大小大→小 3 大小小→大 4 名称 */
+    public static int catSort() { return sp.getInt("catSort", 0); }
+    public static void setCatSort(int by) { sp.edit().putInt("catSort", by).apply(); }
+
     /** true: 收到的文件存到应用专属目录（卸载时被系统一起删除） */
     public static boolean recvPrivate() { return sp.getBoolean("recvPrivate", false); }
     public static void setRecvPrivate(boolean b) { sp.edit().putBoolean("recvPrivate", b).apply(); }

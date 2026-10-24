@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:id="@+id/cs_send" android:title="发送到电脑" android:icon="@drawable/ic_send" android:showAsAction="always|withText" />
+    <item android:id="@+id/cs_all" android:title="全选" android:showAsAction="never" />
+    <item android:id="@+id/cs_delete" android:title="删除" android:showAsAction="never" />
+    <item android:id="@+id/cs_share" android:title="分享" android:showAsAction="never" />
+    <item android:id="@+id/cs_locate" android:title="打开所在文件夹" android:showAsAction="never" />
+    <item android:id="@+id/cs_props" android:title="属性" android:showAsAction="never" />
+</menu>

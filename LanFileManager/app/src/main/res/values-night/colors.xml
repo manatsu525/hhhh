@@ -15,4 +15,5 @@
     <color name="ed_sel">#663FB3A1</color>
     <color name="ed_line">#181E26</color>
     <color name="ed_match">#70C9A227</color>
+    <color name="clean_head">#1D5E55</color>
 </resources>

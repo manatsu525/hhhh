@@ -15,6 +15,27 @@
   - **Shizuku（v1.1 起支持，Android 14 及以上推荐）**：授权一次，就能以 shell 身份访问所有 app 的 data/obb。读写、移动、删除、电脑端浏览都走它
   - 部分 Android 14 及以上的设备，系统已封掉 SAF 授权方式，这时请使用 Shizuku
 
+**文件分类（v1.4 起）**
+- 菜单 →「文件分类」：图片、音乐、视频、文档、安装包、压缩包、大文件（≥ 50 MB），显示每类的数量和总大小
+- 扫描全部存储卷；已授权（Shizuku / 零宽字符 / SAF）时会一并扫描 `Android/data`、`Android/obb`，微信、QQ 等应用私有目录里的文件也能归类。各应用 cache 目录和 `.thumbnails` 里的文件不计入分类
+- 列表可按时间、大小、名称排序，按文件名筛选；图片、视频、APK 显示缩略图
+- 多选后可以发送到电脑、分享、删除，单选时可以「打开所在文件夹」（在文件管理器中定位到该文件）、查看属性
+- 扫描结果只放在内存里，不写入磁盘；菜单 →「重新扫描」可刷新
+
+**清理垃圾（v1.4 起）**
+- 菜单 →「清理垃圾」，或从「文件分类」页进入。先分析，再按分组列出可清理的项目，由你逐项或整组勾选，确认后才删除
+- 分组：
+  - 应用缓存：各应用 `Android/data/<包名>/cache` 的内容（清空内容，保留目录），显示应用名称
+  - 卸载残留：`Android/data`、`Android/obb` 里已卸载应用的目录（若系统没有提供完整的应用列表，则不判断这一项，避免误删）
+  - 缩略图缓存：`.thumbnails`
+  - 临时文件：`.tmp`、`.temp`、`~$` 开头的文件；`.crdownload`、`.part` 等未下载完的文件默认不勾选
+  - 日志文件：`.log`、`.xlog`
+  - 安装包：已安装（同版本或更新版本）或已损坏的 APK 默认勾选，未安装的默认不勾选
+  - 空文件夹：只列出最外层的空文件夹，不包括存储根目录下的标准目录（DCIM、Download 等）、隐藏目录和 `Android` 目录
+- 长按某一项可以查看详情、打开所在文件夹
+- Android 11 及以上还提供「清理所有应用的内部缓存」：由系统弹窗确认并执行（`/data/data` 里的缓存普通应用无法直接删除）
+- 应用缓存和卸载残留需要能访问 `Android/data`，未授权时会提示用 Shizuku 授权
+
 **内置文本编辑器（v1.2 起）**
 - 点开 txt、log、md、json、xml、代码、字幕等文本文件，直接用内置编辑器打开；其他文件可以「打开方式 → 内置文本编辑器」
 - 菜单 →「新建文本文件」
@@ -93,6 +114,10 @@ app/src/main/
     ├── ShizukuHelper.java         Shizuku 状态、授权、绑定
     ├── ShizukuFileService.java    运行在 shell 进程中的文件服务（AIDL: IFileService）
     ├── MainActivity.java          文件管理器
+    ├── CategoryActivity.java      文件分类
+    ├── CleanActivity.java         垃圾清理（分析 → 勾选 → 清理）
+    ├── StorageScanner.java        全盘扫描，一次遍历同时得到分类和垃圾候选（结果只在内存里）
+    ├── OpDialog.java              带进度、可取消的后台删除操作
     ├── EditorActivity.java        文本编辑器界面（查找替换栏、保存、编码）
     ├── editor/                    编辑器核心（纯 Java + 一个自定义 View）
     │   ├── TextBuffer.java        gap buffer + 增量行索引

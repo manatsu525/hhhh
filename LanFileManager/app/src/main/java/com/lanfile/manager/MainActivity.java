@@ -63,6 +63,8 @@ public class MainActivity extends Activity implements AbsListView.MultiChoiceMod
     public static final String EXTRA_PICK = "pick";
     public static final String EXTRA_PATH = "path";
     public static final String EXTRA_PATHS = "paths";
+    /** 打开目录后定位到其中的这个文件 */
+    public static final String EXTRA_FOCUS = "focus";
     private static final int REQ_TREE = 21;
     private static final int REQ_STORAGE = 22;
 
@@ -87,6 +89,7 @@ public class MainActivity extends Activity implements AbsListView.MultiChoiceMod
     private List<Vfs.Entry> clip;
     private boolean clipCut;
     private String pendingGrant, pendingTarget;
+    private String focusName, focusDir;
     private ActionMode actionMode;
 
     private final Handler ui = new Handler(Looper.getMainLooper());
@@ -131,13 +134,19 @@ public class MainActivity extends Activity implements AbsListView.MultiChoiceMod
         }
         String start = getIntent().getStringExtra(EXTRA_PATH);
         cur = start != null ? start : vfs.primaryRoot();
+        focusName = getIntent().getStringExtra(EXTRA_FOCUS);
+        focusDir = start;
     }
 
     @Override
     protected void onNewIntent(Intent intent) {
         super.onNewIntent(intent);
         String p = intent.getStringExtra(EXTRA_PATH);
-        if (p != null) load(p);
+        if (p != null) {
+            focusName = intent.getStringExtra(EXTRA_FOCUS);
+            focusDir = p;
+            load(p);
+        }
     }
 
     @Override
@@ -384,6 +393,15 @@ public class MainActivity extends Activity implements AbsListView.MultiChoiceMod
         Integer pos = scrollPos.get(path);
         if (same) list.setSelection(keep);
         else list.setSelection(pos != null ? pos : 0);
+        if (focusName != null && path.equals(focusDir)) {
+            for (int i = 0; i < adapter.getCount(); i++) {
+                if (focusName.equals(adapter.getItem(i).name)) {
+                    list.setSelection(Math.max(0, i - 2));
+                    break;
+                }
+            }
+            focusName = null;
+        }
         updateCrumbs();
         updateUpButton();
         if (getActionBar() != null && !pickMode) {
@@ -1062,6 +1080,8 @@ public class MainActivity extends Activity implements AbsListView.MultiChoiceMod
             menu.findItem(R.id.m_settings).setVisible(false);
             menu.findItem(R.id.m_about).setVisible(false);
             menu.findItem(R.id.m_shizuku).setVisible(false);
+            menu.findItem(R.id.m_category).setVisible(false);
+            menu.findItem(R.id.m_clean).setVisible(false);
         }
         MenuItem s = menu.findItem(R.id.m_search);
         SearchView sv = (SearchView) s.getActionView();
@@ -1109,6 +1129,10 @@ public class MainActivity extends Activity implements AbsListView.MultiChoiceMod
             else if (pickMode) finish();
         } else if (id == R.id.m_transfer) {
             startActivity(new Intent(this, TransferActivity.class));
+        } else if (id == R.id.m_category) {
+            startActivity(new Intent(this, CategoryActivity.class));
+        } else if (id == R.id.m_clean) {
+            startActivity(new Intent(this, CleanActivity.class));
         } else if (id == R.id.m_storage) {
             chooseLocation();
         } else if (id == R.id.m_mkdir) {
@@ -1179,6 +1203,8 @@ public class MainActivity extends Activity implements AbsListView.MultiChoiceMod
                 .setMessage("• 完整的手机文件管理：浏览、搜索、复制、移动、重命名、删除、分享、属性\n"
                         + "• 支持访问各应用私有目录（Android/data、Android/obb）：Shizuku 或系统授权两种方式\n"
                         + "• 电脑互传：电脑无需安装任何软件，浏览器打开手机上显示的地址即可互发消息和文件\n"
+                        + "• 文件分类：图片、音乐、视频、文档、安装包、压缩包、大文件，已授权时包含各应用私有目录\n"
+                        + "• 清理垃圾：先分析应用缓存、卸载残留、缩略图、临时文件、日志、安装包、空文件夹，由你勾选后再删除\n"
                         + "• 内置文本编辑器：几百 MB 的大文件也能流畅编辑，支持查找、替换、正则、跳转行、多种编码\n\n"
                         + "隐私与零残留：\n"
                         + "• 不联网上传任何数据，只在局域网内工作\n"

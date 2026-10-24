@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:id="@+id/c_search" android:title="搜索" android:icon="@drawable/ic_search"
+        android:showAsAction="ifRoom|collapseActionView" android:actionViewClass="android.widget.SearchView" />
+    <item android:id="@+id/c_sort" android:title="排序方式" android:showAsAction="never" />
+    <item android:id="@+id/c_hidden" android:title="显示隐藏文件" android:checkable="true" android:showAsAction="never" />
+    <item android:id="@+id/c_rescan" android:title="重新扫描" android:showAsAction="never" />
+</menu>

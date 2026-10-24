@@ -68,6 +68,18 @@
             </intent-filter>
         </activity>
 
+        <activity
+            android:name=".CategoryActivity"
+            android:exported="false"
+            android:label="文件分类"
+            android:configChanges="orientation|screenSize|screenLayout|keyboardHidden|smallestScreenSize" />
+
+        <activity
+            android:name=".CleanActivity"
+            android:exported="false"
+            android:label="清理垃圾"
+            android:configChanges="orientation|screenSize|screenLayout|keyboardHidden|smallestScreenSize" />
+
         <!-- 内置文本编辑器：也可以被其他 app 用「打开方式」调用 -->
         <activity
             android:name=".EditorActivity"
