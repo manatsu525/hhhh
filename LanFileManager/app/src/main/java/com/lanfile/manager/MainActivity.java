@@ -38,6 +38,9 @@ import android.widget.SearchView;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.lanfile.manager.archive.CancelledException;
+import com.lanfile.manager.archive.Formats;
+import com.lanfile.manager.archive.Progress;
 import com.lanfile.manager.core.Util;
 import com.lanfile.manager.core.Vfs;
 
@@ -575,6 +578,10 @@ public class MainActivity extends Activity implements AbsListView.MultiChoiceMod
             openEditor(e.path);
             return;
         }
+        if ("builtin/archive".equals(forceMime) || (forceMime == null && Formats.isArchive(e.name))) {
+            startActivity(new Intent(this, ArchiveActivity.class).putExtra(ArchiveActivity.EXTRA_PATH, e.path));
+            return;
+        }
         if ("builtin/editor".equals(forceMime)) {
             openEditor(e.path);
             return;
@@ -591,8 +598,8 @@ public class MainActivity extends Activity implements AbsListView.MultiChoiceMod
     }
 
     private void openAs(final Vfs.Entry e) {
-        final String[] labels = {"内置文本编辑器", "文本（其他应用）", "图片", "视频", "音频", "其他（全部应用）"};
-        final String[] types = {"builtin/editor", "text/*", "image/*", "video/*", "audio/*", "*/*"};
+        final String[] labels = {"内置文本编辑器", "压缩包查看器", "文本（其他应用）", "图片", "视频", "音频", "其他（全部应用）"};
+        final String[] types = {"builtin/editor", "builtin/archive", "text/*", "image/*", "video/*", "audio/*", "*/*"};
         new AlertDialog.Builder(this).setTitle("以何种类型打开")
                 .setItems(labels, (d, w) -> openFile(e, types[w])).show();
     }
@@ -615,7 +622,8 @@ public class MainActivity extends Activity implements AbsListView.MultiChoiceMod
         getMenuInflater().inflate(R.menu.select, menu);
         if (pickMode) {
             menu.findItem(R.id.s_send).setTitle("发送");
-            for (int id : new int[]{R.id.s_copy, R.id.s_cut, R.id.s_rename, R.id.s_delete, R.id.s_share, R.id.s_open_with, R.id.s_props}) {
+            for (int id : new int[]{R.id.s_copy, R.id.s_cut, R.id.s_rename, R.id.s_delete, R.id.s_share, R.id.s_open_with, R.id.s_props,
+                    R.id.s_compress, R.id.s_extract}) {
                 menu.findItem(id).setVisible(false);
             }
         }
@@ -630,6 +638,10 @@ public class MainActivity extends Activity implements AbsListView.MultiChoiceMod
             menu.findItem(R.id.s_props).setVisible(n == 1);
             List<Vfs.Entry> s = selected();
             menu.findItem(R.id.s_open_with).setVisible(n == 1 && !s.isEmpty() && !s.get(0).dir);
+            menu.findItem(R.id.s_extract).setVisible(n == 1 && !s.isEmpty() && !s.get(0).dir && Formats.canTryOpen(s.get(0).name));
+            boolean locked = false;
+            for (Vfs.Entry e : s) locked |= e.locked;
+            menu.findItem(R.id.s_compress).setVisible(!locked);
         }
         return true;
     }
@@ -679,6 +691,12 @@ public class MainActivity extends Activity implements AbsListView.MultiChoiceMod
         } else if (id == R.id.s_props) {
             mode.finish();
             props(sel.get(0));
+        } else if (id == R.id.s_compress) {
+            mode.finish();
+            ArchiveUi.compressDialog(this, sel, cur, () -> load(cur));
+        } else if (id == R.id.s_extract) {
+            mode.finish();
+            ArchiveUi.extractFromFile(this, sel.get(0), () -> load(cur));
         }
         return true;
     }
@@ -719,69 +737,8 @@ public class MainActivity extends Activity implements AbsListView.MultiChoiceMod
 
     // ======================= 文件操作 =======================
 
-    interface Op {
-        void run(Progress p) throws Exception;
-    }
-
-    static final class Progress {
-        volatile boolean cancelled;
-        volatile long total = -1, done;
-        volatile String current = "";
-        volatile int count;
-        final List<String> scan = new ArrayList<>();
-    }
-
-    static final class CancelledException extends IOException {
-        CancelledException() { super("已取消"); }
-    }
-
-    private void runOp(String title, final Op op, final Runnable after) {
-        View v = LayoutInflater.from(this).inflate(R.layout.dialog_progress, null);
-        final TextView pt = v.findViewById(R.id.pText);
-        final TextView ps = v.findViewById(R.id.pSub);
-        final ProgressBar pb = v.findViewById(R.id.pBar);
-        final Progress p = new Progress();
-        final AlertDialog d = new AlertDialog.Builder(this).setTitle(title).setView(v).setCancelable(false)
-                .setNegativeButton("取消", null).create();
-        d.show();
-        d.getButton(AlertDialog.BUTTON_NEGATIVE).setOnClickListener(x -> {
-            p.cancelled = true;
-            pt.setText("正在取消…");
-        });
-        pb.setIndeterminate(true);
-        final Runnable tick = new Runnable() {
-            @Override
-            public void run() {
-                if (!p.cancelled) pt.setText(p.current);
-                if (p.total > 0) {
-                    pb.setIndeterminate(false);
-                    pb.setProgress((int) (p.done * 1000 / Math.max(1, p.total)));
-                    ps.setText(Util.formatSize(p.done) + " / " + Util.formatSize(p.total));
-                } else if (p.count > 0) ps.setText("已处理 " + p.count + " 项");
-                ui.postDelayed(this, 200);
-            }
-        };
-        ui.post(tick);
-        ops.execute(() -> {
-            Exception err = null;
-            try {
-                op.run(p);
-            } catch (Exception e) {
-                err = e;
-            }
-            final Exception fe = err;
-            final String[] scan;
-            synchronized (p.scan) {
-                scan = p.scan.toArray(new String[0]);
-            }
-            if (scan.length > 0) MediaScannerConnection.scanFile(getApplicationContext(), scan, null, null);
-            ui.post(() -> {
-                ui.removeCallbacks(tick);
-                if (!isFinishing()) d.dismiss();
-                if (fe != null && !(fe instanceof CancelledException)) toast("操作失败：" + fe.getMessage());
-                if (after != null) after.run();
-            });
-        });
+    private void runOp(String title, final OpRunner.Op op, final Runnable after) {
+        OpRunner.run(this, title, op, after);
     }
 
     private void addScan(Progress p, String path) {
@@ -1179,12 +1136,14 @@ public class MainActivity extends Activity implements AbsListView.MultiChoiceMod
                 .setMessage("• 完整的手机文件管理：浏览、搜索、复制、移动、重命名、删除、分享、属性\n"
                         + "• 支持访问各应用私有目录（Android/data、Android/obb）：Shizuku 或系统授权两种方式\n"
                         + "• 电脑互传：电脑无需安装任何软件，浏览器打开手机上显示的地址即可互发消息和文件\n"
-                        + "• 内置文本编辑器：几百 MB 的大文件也能流畅编辑，支持查找、替换、正则、跳转行、多种编码\n\n"
+                        + "• 内置文本编辑器：几百 MB 的大文件也能流畅编辑，支持查找、替换、正则、跳转行、多种编码\n"
+                        + "• 压缩包：不解压直接浏览和打开里面的文件，可只解压部分文件；支持 zip、7z、rar（含 RAR5）、tar、gz、bz2、xz、iso、cab 等；可创建 zip / 7z（支持加密）和 tar 系列压缩包\n\n"
                         + "隐私与零残留：\n"
                         + "• 不联网上传任何数据，只在局域网内工作\n"
                         + "• 设置只保存在应用内部存储，聊天记录只在内存里，缩略图不写入磁盘\n"
                         + "• 不在存储中创建任何自己的文件夹，禁用了系统备份\n"
                         + "• 文本编辑器不写缓存、不自动备份；保存时的临时文件替换完成即消失，异常退出也会在下次启动时清理\n"
+                        + "• 在压缩包里点开的文件只临时解压到应用缓存，关闭压缩包即删除；压缩时先写隐藏的临时文件，完成后再改名\n"
                         + "• 目录授权由系统保存，Shizuku 授权由 Shizuku 保存，卸载时都会自动失效\n"
                         + "• 卸载后手机中不会留下本应用的任何文件（你主动保存到「下载」的文件除外，那是你的文件）")
                 .setPositiveButton("确定", null).show();

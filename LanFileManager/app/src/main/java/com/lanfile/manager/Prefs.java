@@ -40,6 +40,11 @@ public final class Prefs {
     public static float edTextSize() { return sp.getFloat("edSize", 15f); }
     public static void setEdTextSize(float f) { sp.edit().putFloat("edSize", f).apply(); }
 
+    // 创建压缩文件时上次选的格式和级别
+    public static int zipFormat() { return sp.getInt("zipFmt", 0); }
+    public static int zipLevel() { return sp.getInt("zipLevel", 2); }
+    public static void setZipOptions(int fmt, int level) { sp.edit().putInt("zipFmt", fmt).putInt("zipLevel", level).apply(); }
+
     public static synchronized Set<String> partials() {
         return new HashSet<>(sp.getStringSet("partials", new HashSet<String>()));
     }

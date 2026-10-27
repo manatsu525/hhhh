@@ -97,6 +97,43 @@
             </intent-filter>
         </activity>
 
+        <!-- 压缩包查看器：也可以被其他 app 用「打开方式」调用 -->
+        <activity
+            android:name=".ArchiveActivity"
+            android:exported="true"
+            android:label="压缩包"
+            android:configChanges="orientation|screenSize|screenLayout|keyboardHidden|smallestScreenSize">
+            <intent-filter android:label="压缩包查看器">
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:scheme="content" />
+                <data android:scheme="file" />
+                <data android:mimeType="application/zip" />
+                <data android:mimeType="application/x-zip-compressed" />
+                <data android:mimeType="application/x-7z-compressed" />
+                <data android:mimeType="application/x-rar-compressed" />
+                <data android:mimeType="application/vnd.rar" />
+                <data android:mimeType="application/x-rar" />
+                <data android:mimeType="application/x-tar" />
+                <data android:mimeType="application/gzip" />
+                <data android:mimeType="application/x-gzip" />
+                <data android:mimeType="application/x-compressed-tar" />
+                <data android:mimeType="application/x-bzip2" />
+                <data android:mimeType="application/x-bzip" />
+                <data android:mimeType="application/x-xz" />
+                <data android:mimeType="application/x-lzma" />
+                <data android:mimeType="application/x-compress" />
+                <data android:mimeType="application/vnd.ms-cab-compressed" />
+                <data android:mimeType="application/x-iso9660-image" />
+                <data android:mimeType="application/x-cpio" />
+                <data android:mimeType="application/x-lzh-compressed" />
+                <data android:mimeType="application/x-arj" />
+                <data android:mimeType="application/x-rpm" />
+                <data android:mimeType="application/vnd.debian.binary-package" />
+                <data android:mimeType="application/java-archive" />
+            </intent-filter>
+        </activity>
+
         <service
             android:name=".TransferService"
             android:exported="false"

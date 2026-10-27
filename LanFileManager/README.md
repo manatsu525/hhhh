@@ -29,6 +29,35 @@
 - 接物理键盘：Ctrl+S / F / H / G / Z / Y / A / C / X / V，F3 查找下一个
 - 可打开的大小取决于手机给 app 的内存（已开启 largeHeap），一般 8 GB 内存的手机可以打开 100 MB 以上的纯文本
 
+**压缩包（v1.4 起）**
+- 点开压缩包直接进入内置查看器，**不用解压**就能像文件夹一样浏览里面的目录
+  - 点开里面的文件直接查看（图片、视频、文本、APK…），只临时解压这一个文件到应用缓存，关闭压缩包后自动删除
+  - 压缩包里的压缩包可以继续点开
+  - 长按多选，可以只解压选中的文件 / 文件夹，也可以分享、选择打开方式
+  - 当前目录内搜索、压缩包信息（格式、文件数、解压后大小、压缩率）
+  - zip 文件名乱码时可以手动切换编码（自动识别 UTF-8 / GBK，另有 Big5、Shift_JIS、EUC-KR 等）
+- 解压：在压缩包查看器里点「全部解压」，或在文件管理器里选中压缩包 →「解压到…」
+  - 可以解压到同名新文件夹或当前文件夹；遇到同名文件可选保留两者 / 覆盖 / 跳过
+  - 也能解压到 `Android/data` 等私有目录（通过 Shizuku / 系统授权）
+- 创建压缩文件：在文件管理器里多选文件或文件夹 →「压缩…」
+  - 格式：ZIP、7Z、TAR.GZ、TAR.XZ、TAR.BZ2、TAR
+  - 压缩级别：仅存储 / 快速 / 标准 / 最高
+  - 密码：ZIP 用 AES-256 加密；7Z 用 AES-256 加密，还可以同时加密文件名
+- 支持读取的格式：
+
+  | 格式 | 浏览 / 解压 | 创建 | 说明 |
+  |---|---|---|---|
+  | ZIP（含 jar、apk、docx、epub 等） | ✅ | ✅ | 支持 AES / ZipCrypto 密码、GBK 文件名、zip64、Deflate64、zipx |
+  | 7Z | ✅ | ✅ | 支持密码和加密文件名，支持分卷 `.7z.001` |
+  | RAR（RAR4 / RAR5） | ✅ | ❌ | 支持密码、加密文件名、分卷 `.part1.rar` |
+  | TAR、TAR.GZ / TGZ、TAR.BZ2、TAR.XZ | ✅ | ✅ | |
+  | GZ、BZ2、XZ、LZMA、Z（单个文件） | ✅ | — | |
+  | ISO、CAB、ARJ、LZH、CPIO、RPM、DEB、WIM、DMG、XAR、CHM、NSIS 等 | ✅ | ❌ | 由 7-Zip 引擎读取 |
+  | ZST（Zstandard） | ❌ | ❌ | 暂不支持 |
+
+  RAR 是商业格式，没有公开的创建方式，所以只能解压不能创建（和 ZArchiver 等应用一样）。
+- 其他应用也可以用「打开方式」把压缩包交给本应用查看
+
 **电脑互传（浏览器）**
 - 手机打开「电脑互传」，电脑浏览器访问显示的地址（如 `http://192.168.1.5:8899`），输入 4 位访问码
 - 双向发文字消息，网址可以点击，一键复制
@@ -57,6 +86,7 @@
 - 不在公共存储里创建任何自己的文件夹
 - 禁用系统备份（`allowBackup=false`、`dataExtractionRules`），重装后旧数据不会恢复
 - 其他 app 分享过来的文件，暂存在应用缓存（卸载即删），清空聊天记录时一并清理
+- 压缩包查看器：点开查看的文件只临时解压到应用缓存，关闭压缩包时删除；异常退出的话下次启动时清理。创建压缩文件时先写同目录下的隐藏临时文件 `.文件名.lanpart`，完成后再改名，失败或取消会删除
 - 文本编辑器：不写缓存、不自动保存副本，未保存的内容只在内存里。保存时先写同目录下的隐藏临时文件 `.文件名.lanpart`，写完再替换原文件（中途失败原文件不受影响），临时文件同样登记在案，异常退出后下次启动自动清理
 - 接收中的文件用 `.lanpart` 临时名写入。传输失败会立即删除；如果 app 意外退出，下次启动时自动清理
 - 删除、移动文件后会通知媒体库同步，相册里不会留下失效的记录
@@ -100,6 +130,16 @@ app/src/main/
     │   ├── TextIO.java            流式读写、编码与换行符识别
     │   ├── Searcher.java          查找 / 替换
     │   └── UndoManager.java       撤销重做
+    ├── archive/                   压缩引擎（纯 Java，可脱离 Android 测试）
+    │   ├── ArchiveReader.java     识别格式、列目录、解压（zip4j / commons-compress / 7-Zip 三种实现）
+    │   ├── ZipReader.java         zip：密码、文件名编码识别
+    │   ├── StreamReader.java      tar 及 gz / bz2 / xz / lzma / Z
+    │   ├── NativeReader.java      7-Zip 引擎：7z、rar、iso、cab 等，含分卷
+    │   ├── ArchiveWriter.java     创建 zip / 7z / tar.*
+    │   └── Extractor.java         解压到 Vfs（同名处理、防目录穿越）
+    ├── ArchiveActivity.java       压缩包查看器
+    ├── ArchiveUi.java             压缩 / 解压对话框和后台任务
+    ├── OpRunner.java              带进度、可取消的后台操作
     ├── TransferActivity.java      互传聊天界面
     ├── TransferService.java       前台服务，运行 HTTP 服务器
     ├── ShareProvider.java         只读文件 Provider，用于「打开方式」和「分享」
@@ -107,7 +147,13 @@ app/src/main/
     ├── SettingsDialog.java / Prefs.java / App.java
 ```
 
-唯一的第三方依赖是 Shizuku API，release APK 大约 140 KB。
+第三方依赖：
+- Shizuku API
+- [zip4j](https://github.com/srikanth-lingala/zip4j)（Apache-2.0）：zip 读写和加密
+- [Apache Commons Compress](https://commons.apache.org/proper/commons-compress/) + [XZ for Java](https://tukaani.org/xz/java.html)：tar、gz、bz2、xz
+- [7-Zip-JBinding-4Android](https://github.com/omicronapps/7-Zip-JBinding-4Android)（LGPL-2.1，基于 7-Zip 16.02）：7z、rar 等
+
+release APK 约 3.3 MB（大部分是 7-Zip 原生库，包含 arm64-v8a、armeabi-v7a、x86_64 三种架构）。
 
 ## Shizuku 使用步骤（Android 14 及以上）
 

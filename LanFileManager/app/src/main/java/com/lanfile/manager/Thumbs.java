@@ -42,6 +42,9 @@ public final class Thumbs {
             case "mp3": case "flac": case "wav": case "aac": case "m4a": case "ogg": case "wma": case "ape": case "opus": case "amr":
                 return R.drawable.ft_audio;
             case "zip": case "rar": case "7z": case "tar": case "gz": case "bz2": case "xz": case "zst":
+            case "tgz": case "tbz": case "tbz2": case "txz": case "lzma": case "tlz": case "z": case "zipx": case "cab":
+            case "iso": case "arj": case "lzh": case "lha": case "cpio": case "rpm": case "deb": case "wim": case "dmg":
+            case "xar": case "001": case "jar":
                 return R.drawable.ft_archive;
             case "apk": case "apks": case "xapk":
                 return R.drawable.ft_apk;

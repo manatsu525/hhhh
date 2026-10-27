@@ -6,6 +6,8 @@
     <item android:id="@+id/s_cut" android:title="剪切" android:showAsAction="never" />
     <item android:id="@+id/s_rename" android:title="重命名" android:showAsAction="never" />
     <item android:id="@+id/s_delete" android:title="删除" android:showAsAction="never" />
+    <item android:id="@+id/s_compress" android:title="压缩…" android:showAsAction="never" />
+    <item android:id="@+id/s_extract" android:title="解压到…" android:showAsAction="never" />
     <item android:id="@+id/s_share" android:title="分享" android:showAsAction="never" />
     <item android:id="@+id/s_open_with" android:title="打开方式" android:showAsAction="never" />
     <item android:id="@+id/s_props" android:title="属性" android:showAsAction="never" />

@@ -8,4 +8,12 @@
         <item name="android:actionModeBackground">@color/accent_dark</item>
         <item name="android:windowActionModeOverlay">true</item>
     </style>
+
+    <style name="DialogLabel">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:layout_marginTop">12dp</item>
+        <item name="android:textSize">13sp</item>
+        <item name="android:textColor">?android:attr/textColorSecondary</item>
+    </style>
 </resources>
