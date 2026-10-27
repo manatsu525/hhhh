@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:id="@+id/s_send" android:title="发送到电脑" android:icon="@drawable/ic_send" android:showAsAction="always|withText" />
+    <item android:id="@+id/s_all" android:title="全选" android:showAsAction="never" />
+    <item android:id="@+id/s_copy" android:title="复制" android:showAsAction="never" />
+    <item android:id="@+id/s_cut" android:title="剪切" android:showAsAction="never" />
+    <item android:id="@+id/s_rename" android:title="重命名" android:showAsAction="never" />
+    <item android:id="@+id/s_delete" android:title="删除" android:showAsAction="never" />
+    <item android:id="@+id/s_compress" android:title="压缩…" android:showAsAction="never" />
+    <item android:id="@+id/s_extract" android:title="解压到…" android:showAsAction="never" />
+    <item android:id="@+id/s_share" android:title="分享" android:showAsAction="never" />
+    <item android:id="@+id/s_open_with" android:title="打开方式" android:showAsAction="never" />
+    <item android:id="@+id/s_props" android:title="属性" android:showAsAction="never" />
+</menu>

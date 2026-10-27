@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content">
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:paddingStart="24dp"
+        android:paddingTop="8dp"
+        android:paddingEnd="24dp">
+        <TextView
+            android:id="@+id/xWhere"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textColor="?android:attr/textColorSecondary"
+            android:textSize="13sp" />
+        <RadioGroup
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp">
+            <RadioButton
+                android:id="@+id/xToFolder"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:checked="true"
+                android:text="解压到新文件夹：" />
+            <EditText
+                android:id="@+id/xFolder"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="32dp"
+                android:hint="文件夹名称"
+                android:importantForAutofill="no"
+                android:inputType="text"
+                android:singleLine="true" />
+            <RadioButton
+                android:id="@+id/xToHere"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="直接解压到当前文件夹" />
+        </RadioGroup>
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:text="已存在同名文件时"
+            android:textColor="?android:attr/textColorSecondary"
+            android:textSize="13sp" />
+        <RadioGroup
+            android:id="@+id/xConflict"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:checkedButton="@+id/xRename"
+            android:orientation="horizontal">
+            <RadioButton
+                android:id="@+id/xRename"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="保留两者" />
+            <RadioButton
+                android:id="@+id/xOverwrite"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="8dp"
+                android:text="覆盖" />
+            <RadioButton
+                android:id="@+id/xSkip"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="8dp"
+                android:text="跳过" />
+        </RadioGroup>
+    </LinearLayout>
+</ScrollView>

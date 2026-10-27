@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:id="@+id/as_extract" android:title="解压所选…" android:showAsAction="always|withText" />
+    <item android:id="@+id/as_all" android:title="全选" android:showAsAction="never" />
+    <item android:id="@+id/as_open_with" android:title="打开方式" android:showAsAction="never" />
+    <item android:id="@+id/as_share" android:title="分享" android:showAsAction="never" />
+</menu>
