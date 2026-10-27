@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:id="@+id/e_undo" android:title="撤销" android:icon="@drawable/ic_undo" android:showAsAction="ifRoom" />
+    <item android:id="@+id/e_redo" android:title="重做" android:icon="@drawable/ic_redo" android:showAsAction="ifRoom" />
+    <item android:id="@+id/e_find" android:title="查找" android:icon="@drawable/ic_search" android:showAsAction="ifRoom" />
+    <item android:id="@+id/e_save" android:title="保存" android:icon="@drawable/ic_save" android:showAsAction="always" />
+    <item android:id="@+id/e_replace" android:title="查找和替换" android:showAsAction="never" />
+    <item android:id="@+id/e_goto" android:title="跳转到行" android:showAsAction="never" />
+    <item android:id="@+id/e_saveas" android:title="另存为…" android:showAsAction="never" />
+    <item android:id="@+id/e_wrap" android:title="自动换行" android:checkable="true" android:showAsAction="never" />
+    <item android:id="@+id/e_lines" android:title="显示行号" android:checkable="true" android:showAsAction="never" />
+    <item android:id="@+id/e_readonly" android:title="只读模式" android:checkable="true" android:showAsAction="never" />
+    <item android:id="@+id/e_font" android:title="字体大小" android:showAsAction="never" />
+    <item android:id="@+id/e_charset" android:title="保存编码" android:showAsAction="never" />
+    <item android:id="@+id/e_eol" android:title="换行符" android:showAsAction="never" />
+    <item android:id="@+id/e_reopen" android:title="用其他编码重新打开" android:showAsAction="never" />
+    <item android:id="@+id/e_info" android:title="文件信息" android:showAsAction="never" />
+</menu>

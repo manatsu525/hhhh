@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:id="@+id/m_search" android:title="搜索" android:icon="@drawable/ic_search"
+        android:showAsAction="ifRoom|collapseActionView" android:actionViewClass="android.widget.SearchView" />
+    <item android:id="@+id/m_transfer" android:title="电脑互传" android:icon="@drawable/ic_swap" android:showAsAction="always" />
+    <item android:id="@+id/m_storage" android:title="位置 / 应用私有目录" android:icon="@drawable/ic_storage" android:showAsAction="ifRoom" />
+    <item android:id="@+id/m_mkdir" android:title="新建文件夹" android:showAsAction="never" />
+    <item android:id="@+id/m_newtext" android:title="新建文本文件" android:showAsAction="never" />
+    <item android:id="@+id/m_sort" android:title="排序方式" android:showAsAction="never" />
+    <item android:id="@+id/m_hidden" android:title="显示隐藏文件" android:checkable="true" android:showAsAction="never" />
+    <item android:id="@+id/m_shizuku" android:title="Shizuku（访问应用私有目录）" android:showAsAction="never" />
+    <item android:id="@+id/m_settings" android:title="设置" android:showAsAction="never" />
+    <item android:id="@+id/m_about" android:title="关于与隐私" android:showAsAction="never" />
+</menu>
