@@ -27,11 +27,20 @@ h1{margin:0;font-size:30px;letter-spacing:.08em;background:linear-gradient(90deg
 .btn.big{font-size:17px;font-weight:800;padding:10px 26px;background:linear-gradient(180deg,#36e087,#17a35a);color:#05200f;border:none}
 .btn.alt{background:rgba(80,140,255,.18);border-color:rgba(120,170,255,.4)}
 .chars{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin:6px 0}
-@media (max-width:620px){.chars{grid-template-columns:repeat(3,1fr)}}
-.char{border:1px solid var(--line);border-radius:10px;padding:6px;background:rgba(255,255,255,.04);cursor:pointer;font-size:11px}
+@media (max-width:700px){.chars{grid-template-columns:repeat(3,1fr)}}
+@media (max-width:420px){.chars{grid-template-columns:repeat(2,1fr)}}
+.char{position:relative;border:1px solid var(--line);border-radius:10px;padding:5px;background:rgba(255,255,255,.04);cursor:pointer;font-size:10px;display:flex;gap:6px;align-items:flex-start}
+.char canvas{width:44px;height:52px;border-radius:7px;flex:none}
+.char .info{flex:1;min-width:0}
 .char.on{border-color:#5ff0a0;background:rgba(47,212,122,.16)}
-.char b{font-size:13px;display:block}
-.char .tag{color:var(--muted)}
+.char.opp{border-color:#ff7a6a;background:rgba(255,90,70,.13)}
+.char.mate{border-color:#6ab4ff;background:rgba(80,150,255,.13)}
+.char b{font-size:12px}
+.char .tag{color:var(--muted);font-size:10px}
+.char .st{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:0 4px;margin-top:2px}
+.char .st span{color:#9fb0cc;font-size:9px}
+.badge{position:absolute;right:4px;top:3px;font-size:9px;padding:0 4px;border-radius:5px;font-weight:700}
+.pickinfo{font-size:12px;color:#cfe0ff;min-height:16px}
 .bar{height:4px;background:rgba(255,255,255,.1);border-radius:2px;margin:2px 0 1px;overflow:hidden}
 .bar i{display:block;height:100%;background:linear-gradient(90deg,#3aa0ff,#7dffb2)}
 .actions{display:flex;gap:10px;justify-content:center;margin-top:10px;flex-wrap:wrap}
@@ -80,7 +89,8 @@ h1{margin:0;font-size:30px;letter-spacing:.08em;background:linear-gradient(90deg
         <div class="row"><label>音效</label><div class="seg" data-key="sound"><button data-v="1">开</button><button data-v="0">关</button></div></div>
       </div>
     </div>
-    <div class="row" style="margin-top:4px"><label>选择球员</label></div>
+    <div class="row" style="margin-top:4px"><label>选择球员</label><div class="seg" id="slotSeg"><button data-s="char">你的球员</button><button data-s="opp">对手</button><button data-s="mate">双打队友</button></div><button class="btn" id="randBtn" style="padding:4px 9px">随机</button></div>
+    <div class="pickinfo" id="pickInfo"></div>
     <div class="chars" id="chars"></div>
     <div class="actions">
       <button class="btn big" id="startBtn">开始比赛</button>
@@ -95,8 +105,10 @@ h1{margin:0;font-size:30px;letter-spacing:.08em;background:linear-gradient(90deg
     <h3>基本操作</h3>
     <div>左半屏任意位置按住拖动 = <b>摇杆自由移动</b>（回位、调整站位）。右下角 4 个击球键。</div>
     <div><b>按住（或点一下）击球键 = 自动跑位 + 自动击球</b>：对方击球后，球员会自动冲向最佳击球点并在最佳时机挥拍，不需要自己把握时机。可以在对方出手前就提前按下，指令会一直保持到击球；中途按另一个键可以改变球路。</div>
-    <div><b>按住击球键并拖动 = 选择落点</b>：向左/右拖动 = 落点偏左/右，向上拖 = 打得更深，向下拖 = 更短更近网，不拖 = 打向中路默认深度。场上会显示彩色圈标出预计落点。</div>
-    <div><b>只有杀球需要蓄力</b>：按住[杀球]越久，杀球越重；蓄力过半（黄色以上）且球足够高时自动起跳 = <b>跳杀</b>，蓄满最重。其它球不需要蓄力。</div>
+    <div><b>按住击球键并拖动 = 选择落点</b>：向左/右拖动 = 落点偏左/右，<b>拖到底 = 压边线</b>（杀边线、打大对角都靠它）；向上拖 = 打得更深（拖到底压底线），向下拖 = 更短更近网，不拖 = 打向中路。<b>落点自动限制在界内</b>，拖出界也只会瞄准贴线位置；只有击球质量很差时才可能出界。场上彩色圈标出预计落点。</div>
+    <div><b>只有杀球需要蓄力</b>：按住[杀球]越久，杀球越重；蓄力过半（黄色以上）且球足够高时自动起跳 = <b>跳杀</b>；<b>蓄满（红色）球速额外大幅提升</b>。快速杀球落地后会继续向前滑行。其它球不需要蓄力。</div>
+    <h3>球员</h3>
+    <div>10 名男女球员，身高、左右手、外观各不相同。属性：速度（移动）、力量（杀球球速）、耐力（体力消耗）、技术（击球稳定性）、防守（接杀能力/范围）、网前（搓球贴网程度）、弹跳（跳杀高度与球速）、假动作（吊球/网前让对手反应变慢）。身高越高，击球点越高。菜单里可以分别选择你的球员、对手和双打队友。</div>
     <h3>击球键（随击球高度和位置自动变化）</h3>
     <table>
       <tr><th>按键</th><th>高点（头顶）</th><th>中路（胸前）</th><th>低点（膝下）</th></tr>
@@ -170,18 +182,34 @@ let settings = Object.assign({}, DEFAULTS);
 try { Object.assign(settings, JSON.parse(localStorage.getItem('yujing_settings') || '{}')); } catch (e) {}
 function saveSettings() { try { localStorage.setItem('yujing_settings', JSON.stringify(settings)); } catch (e) {} }
 
+// 球员：g 性别；h 身高；hd 1=右手 -1=左手；hs 发型；属性 1-10：spd 速度 pow 力量 sta 耐力 tec 技术 def 防守 net 网前 jump 弹跳 decept 假动作
 const CHARS = [
-  { name: '林远', tag: '全面型', spd: 7, pow: 7, sta: 7, tec: 7, color: '#2f7cf6', color2: '#ffffff', hair: '#1b1b1b' },
-  { name: '霍刚', tag: '力量型', spd: 5, pow: 10, sta: 6, tec: 6, color: '#e2392f', color2: '#1d1d1d', hair: '#2a1a10' },
-  { name: '苏影', tag: '速度型', spd: 10, pow: 5, sta: 7, tec: 7, color: '#13b38a', color2: '#ffffff', hair: '#3a2416' },
-  { name: '陈思', tag: '技术型', spd: 6, pow: 6, sta: 7, tec: 10, color: '#8d4be8', color2: '#f2f2f2', hair: '#111' },
-  { name: '韩铁', tag: '耐力型', spd: 7, pow: 6, sta: 10, tec: 6, color: '#f08a1c', color2: '#202020', hair: '#1f1f1f' },
+  { name: '林远', tag: '全面型', g: 'm', h: 1.80, hd: 1, num: 1, spd: 7, pow: 7, sta: 7, tec: 7, def: 7, net: 6, jump: 6, decept: 6,
+    skin: '#e8b48a', hair: '#1b1b1b', hs: 'short', shirt: '#2f7cf6', trim: '#ffffff', bottom: '#1b2440', shoe: '#f4f4f4', racket: '#2f7cf6', desc: '攻守均衡，没有短板' },
+  { name: '霍刚', tag: '重炮手', g: 'm', h: 1.88, hd: 1, num: 7, build: 1.1, spd: 5, pow: 10, sta: 6, tec: 6, def: 5, net: 4, jump: 8, decept: 3,
+    skin: '#d9a47a', hair: '#2a1a10', hs: 'crew', shirt: '#e2392f', trim: '#151515', bottom: '#151515', shoe: '#e2392f', racket: '#151515', desc: '跳杀球速全场最快，移动偏慢' },
+  { name: '叶锋', tag: '左手鬼才', g: 'm', h: 1.76, hd: -1, num: 11, spd: 7, pow: 6, sta: 6, tec: 9, def: 6, net: 9, jump: 5, decept: 10,
+    skin: '#f0c49c', hair: '#3b2a1e', hs: 'spiky', shirt: '#151b2b', trim: '#f5c518', bottom: '#151b2b', shoe: '#f5c518', racket: '#f5c518', band: '#f5c518', desc: '左手持拍，吊球假动作让对手迟疑' },
+  { name: '韩铁', tag: '铁壁防守', g: 'm', h: 1.82, hd: 1, num: 4, spd: 7, pow: 6, sta: 10, tec: 6, def: 10, net: 6, jump: 5, decept: 4,
+    skin: '#c98e64', hair: '#151515', hs: 'buzz', shirt: '#f08a1c', trim: '#202020', bottom: '#202020', shoe: '#ffffff', racket: '#f08a1c', desc: '接杀稳定，体力充沛' },
+  { name: '秦朗', tag: '速度飞人', g: 'm', h: 1.78, hd: 1, num: 9, spd: 10, pow: 7, sta: 7, tec: 6, def: 6, net: 5, jump: 10, decept: 5,
+    skin: '#e5ad80', hair: '#5a3a1e', hs: 'swept', shirt: '#13b38a', trim: '#ffffff', bottom: '#0e3b30', shoe: '#13b38a', racket: '#0e3b30', desc: '步伐最快，弹跳惊人' },
+  { name: '苏影', tag: '灵动型', g: 'f', h: 1.68, hd: 1, num: 3, spd: 10, pow: 5, sta: 7, tec: 7, def: 7, net: 7, jump: 6, decept: 6,
+    skin: '#f1c6a0', hair: '#2b1a10', hs: 'pony', shirt: '#ff4f8b', trim: '#ffffff', bottom: '#2b2b3a', skirt: 1, shoe: '#ffffff', racket: '#ff4f8b', desc: '移动迅速，覆盖面大' },
+  { name: '陈思', tag: '网前魔术师', g: 'f', h: 1.65, hd: 1, num: 5, spd: 6, pow: 5, sta: 7, tec: 10, def: 6, net: 10, jump: 4, decept: 9,
+    skin: '#f3cdab', hair: '#121212', hs: 'bun', shirt: '#8d4be8', trim: '#f2f2f2', bottom: '#f2f2f2', skirt: 1, shoe: '#f2f2f2', racket: '#8d4be8', desc: '网前搓球贴网，手法细腻' },
+  { name: '唐悦', tag: '女子重炮', g: 'f', h: 1.74, hd: 1, num: 8, spd: 6, pow: 9, sta: 6, tec: 6, def: 5, net: 5, jump: 8, decept: 4,
+    skin: '#e3ad84', hair: '#3a2416', hs: 'bob', shirt: '#d62828', trim: '#ffd34d', bottom: '#1d1d1d', shoe: '#1d1d1d', racket: '#ffd34d', desc: '杀球凶狠，进攻压迫感强' },
+  { name: '白露', tag: '防守反击', g: 'f', h: 1.70, hd: 1, num: 2, spd: 7, pow: 6, sta: 9, tec: 7, def: 9, net: 7, jump: 5, decept: 5,
+    skin: '#f5d2b3', hair: '#1a1a1a', hs: 'long', shirt: '#f4f6fa', trim: '#1f7ae0', bottom: '#1f7ae0', skirt: 1, shoe: '#1f7ae0', racket: '#1f7ae0', band: '#1f7ae0', desc: '防守韧性强，擅长拉吊消耗' },
+  { name: '林小雨', tag: '左手全能', g: 'f', h: 1.67, hd: -1, num: 6, spd: 8, pow: 7, sta: 7, tec: 8, def: 7, net: 8, jump: 6, decept: 7,
+    skin: '#eab892', hair: '#4a2c18', hs: 'pony', shirt: '#ffb020', trim: '#1b1b1b', bottom: '#1b1b1b', shoe: '#ffffff', racket: '#1b1b1b', band: '#ffffff', desc: '左手持拍，攻守兼备' },
 ];
 const DIFF = {
-  easy:   { react: 0.36, spd: 0.80, tNoise: 0.055, err: 1.7, judge: 0.25, smash: 0.30, aimSkill: 0.25 },
-  normal: { react: 0.26, spd: 0.92, tNoise: 0.035, err: 1.15, judge: 0.55, smash: 0.50, aimSkill: 0.55 },
-  hard:   { react: 0.19, spd: 1.00, tNoise: 0.022, err: 0.8, judge: 0.8, smash: 0.65, aimSkill: 0.8 },
-  master: { react: 0.13, spd: 1.06, tNoise: 0.012, err: 0.55, judge: 0.93, smash: 0.75, aimSkill: 0.95 },
+  easy:   { dp: 1.0, react: 0.36, spd: 0.80, tNoise: 0.055, err: 1.7, judge: 0.25, smash: 0.30, aimSkill: 0.25 },
+  normal: { dp: 0.62, react: 0.26, spd: 0.92, tNoise: 0.035, err: 1.15, judge: 0.55, smash: 0.50, aimSkill: 0.55 },
+  hard:   { dp: 0.5, react: 0.19, spd: 1.00, tNoise: 0.022, err: 0.8, judge: 0.8, smash: 0.65, aimSkill: 0.8 },
+  master: { dp: 0.4, react: 0.13, spd: 1.06, tNoise: 0.012, err: 0.55, judge: 0.93, smash: 0.75, aimSkill: 0.95 },
 };
 const SHOT_NAME = {
   clear: '高远球', attclear: '平高球', lift: '挑球', drop: '吊球', slice: '劈吊', net: '放网', block: '挡网',
@@ -321,27 +349,32 @@ function hw() { return match && match.doubles ? HW_D : HW_S; }
 
 function makePlayer(side, idx, charIdx, isHuman, diff) {
   const c = CHARS[charIdx];
+  const sc = c.h / 1.78;
   return {
-    side, idx, isHuman, ch: c, prof: DIFF[diff],
+    side, idx, isHuman, ch: c, prof: DIFF[diff], sc, hd: c.hd,
+    tr: { def: c.def, net: c.net, jump: c.jump, decept: c.decept },
+    maxH: MAXH * (0.55 + 0.45 * sc), jumpH: JUMPH * (0.7 + 0.06 * c.jump),
     vmax: 3.9 + 0.17 * c.spd, power: 42 + 2.2 * c.pow, drain: 1.5 - 0.07 * c.sta, tech: c.tec,
     x: 0, z: side === 0 ? 3.5 : -3.5, vx: 0, vz: 0, stamina: 100,
     court: 'R', charge: null, swing: null, lungeT: 0, lungeDir: [0, 0], jumpY: 0, jumpV: 0, recoverT: 0,
     runPhase: Math.random() * 6, pose: null, plan: null, base: null, reactAt: 0, leave: false, aiBtn: null, aiAim: null, aiCharge: 0,
-    stats: { smash: 0, maxSmash: 0, winners: 0, errors: 0, hits: 0, perfect: 0 }, callT: 0,
+    stats: { smash: 0, maxSmash: 0, winners: 0, errors: 0, hits: 0, perfect: 0 }, callT: 0, an: null,
   };
 }
 
 function newMatch() {
   const doubles = settings.mode === 'doubles';
   const diff = settings.diff;
-  const pc = settings.char | 0;
-  const others = [0, 1, 2, 3, 4].filter(i => i !== pc).sort(() => Math.random() - 0.5);
+  const pc = clamp(settings.char | 0, 0, CHARS.length - 1);
+  const used = new Set([pc]);
+  const pick = (want) => { let i = +want; if (!(i >= 0 && i < CHARS.length) || used.has(i)) { const pool = CHARS.map((_, k) => k).filter(k => !used.has(k)); i = pool[Math.floor(Math.random() * pool.length)]; } used.add(i); return i; };
+  const oc = pick(settings.opp), mc = doubles ? pick(settings.mate) : -1, oc2 = doubles ? pick(-1) : -1;
   players = [];
   const partnerDiff = demo ? diff : (diff === 'easy') ? 'normal' : (diff === 'normal' ? 'hard' : diff);
   players.push(makePlayer(0, 0, pc, !demo, diff));
-  if (doubles) players.push(makePlayer(0, 1, others[2], false, partnerDiff));
-  players.push(makePlayer(1, 0, others[0], false, diff));
-  if (doubles) players.push(makePlayer(1, 1, others[1], false, diff));
+  if (doubles) players.push(makePlayer(0, 1, mc, false, partnerDiff));
+  players.push(makePlayer(1, 0, oc, false, diff));
+  if (doubles) players.push(makePlayer(1, 1, oc2, false, diff));
   human = players[0];
   match = {
     doubles, target: +settings.points, cap: { 11: 15, 15: 21, 21: 30 }[settings.points] || 30, bestOf: +settings.games,
@@ -381,8 +414,9 @@ function setupServe() {
     else if (p === receiver) { x = xs * (m.doubles ? 0.6 : 0.75); z = zs * (m.doubles ? 2.55 : 3.25); }
     else { x = xs * 1.1; z = zs * 4.4; }
     p.x = x; p.z = z; p.vx = p.vz = 0; p.charge = null; p.swing = null; p.lungeT = 0; p.jumpY = 0; p.plan = null; p.leave = false; p.recoverT = 0; p.aiBtn = null;
+    if (p.an) p.an.snap = true;
   }
-  sh.flying = false; sh.netted = false; sh.isServe = false; sh.lastSide = -1; sh.trail = []; sh.lastHitter = null;
+  sh.flying = false; sh.netted = false; sh.isServe = false; sh.slide = null; sh.restDir = null; sh.lastSide = -1; sh.trail = []; sh.lastHitter = null;
   rallyPath = null; landMark = null; incomingHint = null;
   m.rally = 0;
   state = 'serve'; stateT = 0;
@@ -417,18 +451,19 @@ function localOf(p, x, z) {
 }
 function contactMetric(p, sx, sy, sz, px, pz) {
   const rs = p.side === 0 ? 1 : -1, fs = p.side === 0 ? -1 : 1;
-  const lr = (sx - px) * rs, lf = (sz - pz) * fs;
+  const lr = (sx - px) * rs * p.hd, lf = (sz - pz) * fs;
   const dFH = Math.hypot(lr - 0.52, lf - 0.24), dBH = Math.hypot(lr + 0.48, lf - 0.24);
   const hand = dFH <= dBH ? 1 : -1;
   const hd = Math.min(dFH, dBH);
   const canJump = p.stamina > 8 && p.lungeT <= 0;
-  const maxH = MAXH + (canJump ? JUMPH : 0);
+  const maxH = p.maxH + (canJump ? p.jumpH : 0);
   let vex = 0;
   if (sy > maxH) vex = sy - maxH; else if (sy < 0.06) vex = 0.06 - sy;
   const d = Math.sqrt(hd * hd + vex * vex * 3);
   const lungeOK = sy < 1.75;
-  const R0 = reachOf(p);
-  return { d, hand, reach: R0, reachL: R0 + (lungeOK ? lungeOf(p) : 0), y: sy, lr, lf };
+  let R0 = reachOf(p), LX = lungeOf(p);
+  if (!p.isHuman && POWER[sh.kind] && sh.lastSide !== p.side) { const k = p.prof.dp; R0 *= 1 - k * (0.14 - 0.01 * p.tr.def); LX *= 1 - k * (0.4 - 0.03 * p.tr.def); }
+  return { d, hand, reach: R0, reachL: R0 + (lungeOK ? LX : 0), y: sy, lr, lf };
 }
 function canHit(p) {
   if (!sh.flying || sh.netted) return false;
@@ -441,8 +476,8 @@ function predictStyle(p, t) {
   const s = { x: sh.x, y: sh.y, z: sh.z, vx: sh.vx, vy: sh.vy, vz: sh.vz };
   if (sh.flying) { const n = Math.round(t / PDT); for (let i = 0; i < n; i++) stepS(s, PDT); }
   const l = localOf(p, s.x, s.z);
-  const style = s.y > 1.85 ? 'over' : s.y > 0.95 ? 'side' : 'under';
-  return { style, hand: l.r >= -0.05 ? 1 : -1, y: s.y };
+  const style = s.y > 1.8 * p.sc ? 'over' : s.y > 0.95 * p.sc ? 'side' : 'under';
+  return { style, hand: l.r * p.hd >= -0.05 ? 1 : -1, y: s.y, r: l.r * p.hd, f: l.f };
 }
 function predictBest(p, horizon) {
   if (!sh.flying || sh.netted || sh.lastSide === p.side) return null;
@@ -481,11 +516,12 @@ function releaseCharge(p, aimX, aimY) {
 }
 function startSwing(p, btn, c, aimX, aimY) {
   const isServe = state === 'serve' && p === match.server;
-  const pr = isServe ? { style: 'under', hand: 1, y: 1 } : predictStyle(p, SW_HIT);
-  const from = p.pose ? p.pose.slice() : READY.slice();
-  p.swing = { t: 0, btn, c, aimX: clamp(aimX, -1, 1), aimY: clamp(aimY, -1, 1), bestD: 1e9, bestT: 0, bestM: null, done: false, style: pr.style, hand: pr.hand, from, serve: isServe };
+  const pr = isServe ? { style: 'serve', hand: 1, y: 1, r: 0.3, f: 0.3 } : predictStyle(p, SW_HIT);
+  const from = p.pose ? clonePose(p.pose) : clonePose(KF.ready);
+  p.swing = { t: 0, btn, c, aimX: clamp(aimX, -1, 1), aimY: clamp(aimY, -1, 1), bestD: 1e9, bestT: 0, bestM: null, done: false, style: pr.style, hand: pr.hand, from, serve: isServe,
+    contact: [pr.r, pr.y, pr.f] };
   // 起跳：高球必须跳，或蓄满力的杀球
-  if (!isServe && p.jumpY <= 0 && p.lungeT <= 0 && p.stamina > 8 && (pr.y > MAXH - 0.05 || (btn === 'C' && c > 0.55 && pr.y > 2.35 && p.stamina > 12))) p.jumpV = 2.7;
+  if (!isServe && p.jumpY <= 0 && p.lungeT <= 0 && p.stamina > 8 && (pr.y > p.maxH - 0.05 || (btn === 'C' && c > 0.55 && pr.y > 2.35 && p.stamina > 12))) p.jumpV = 2.7;
 }
 
 function shotQualityLabel(q) { return q >= 0.88 ? ['完美!', '#ffd34d'] : q >= 0.68 ? ['很好', '#7dffb2'] : q >= 0.42 ? ['一般', '#cfe0ff'] : ['勉强', '#ff9b7a']; }
@@ -525,22 +561,41 @@ function computeShot(p, kind, c, aimX, aimY, err, pos) {
     case 'slice': mode = 'speed'; ang = -5 * DEG; depth = 2.5 + 0.6 * aimY; margin = 0.06; break;
     case 'net': mode = 'speed'; ang = (pos.y > NET_H ? -8 : 4) * DEG; depth = 0.55 + 0.32 * (aimY + 1); margin = 0.025; txMul = 0.8; break;
     case 'block': mode = 'speed'; ang = (pos.y > NET_H ? -4 : 8) * DEG; depth = 1.35 + 0.45 * (aimY + 1); margin = 0.05; break;
-    case 'smash': mode = 'angle'; spd = P0 * (0.6 + 0.3 * ce); depth = 3.8 + 1.3 * aimY; margin = 0.09; hiDeg = 12; txMul = 0.82; break;
-    case 'jsmash': mode = 'angle'; spd = P0 * (0.64 + 0.3 * ce) * 1.08; depth = 3.5 + 1.3 * aimY; margin = 0.09; hiDeg = 12; txMul = 0.82; break;
+    case 'smash': mode = 'angle'; spd = P0 * (0.58 + 0.32 * ce); depth = 3.8 + 1.3 * aimY; margin = 0.09; hiDeg = 12; txMul = 0.82; break;
+    case 'jsmash': mode = 'angle'; spd = P0 * (0.62 + 0.34 * ce) * (1.06 + 0.012 * p.tr.jump); depth = 3.5 + 1.3 * aimY; margin = 0.09; hiDeg = 12; txMul = 0.82; break;
     case 'halfsmash': mode = 'angle'; spd = P0 * 0.5 * (0.8 + 0.25 * ce); depth = 3.0 + 1.1 * aimY; margin = 0.08; hiDeg = 15; break;
     case 'kill': mode = 'angle'; spd = P0 * (0.5 + 0.12 * ce); depth = 2.6 + 1.3 * aimY; margin = 0.06; hiDeg = 8; break;
     case 'drive': mode = 'angle'; spd = 19 + 14 * ce; depth = 4.4 + 1.5 * aimY; margin = 0.08; hiDeg = 22; break;
     case 'push': mode = 'angle'; spd = 13 + 9 * ce; depth = 3.4 + 1.4 * aimY; margin = 0.08; hiDeg = 32; break;
     case 'frame': mode = 'speed'; ang = rnd(25, 70) * DEG; depth = rnd(0.6, 3.5); aimX = rnd(-1.3, 1.3); break;
   }
-  depth = clamp(depth, 0.45, 7.4);
-  let tx = aimX * txMul * HW;
-  const latSd = (kind === 'net' ? 0.05 : 0.08) + 0.6 * err, depSd = (kind === 'net' ? 0.04 : 0.07) + (kind === 'net' ? 0.25 : 0.5) * err;
+  // 玩家满蓄力杀球额外提速
+  if (p.isHuman && ce >= 0.98 && (kind === 'smash' || kind === 'jsmash')) spd *= 1.18;
+  let tx;
+  if (p.isHuman && kind !== 'frame') {
+    // 玩家落点：拖到底 = 压线；落点辅助保证瞄准点在界内
+    depth = baseDepth(kind, pos, ce) + (AIM_K[kind] || 1) * aimY * 1.6;
+    tx = clamp(aimX * 1.08, -1, 1) * (HW - 0.07);
+  } else tx = aimX * txMul * HW;
+  depth = clamp(depth, 0.45, HL - 0.08);
+  const netF = (kind === 'net' || kind === 'block' || kind === 'drop') ? 1.3 - 0.06 * p.tr.net : 1;
+  const latSd = ((kind === 'net' ? 0.05 : 0.08) + 0.6 * err) * netF, depSd = ((kind === 'net' ? 0.04 : 0.07) + (kind === 'net' ? 0.25 : 0.5) * err) * netF;
   tx += gauss() * latSd; depth += gauss() * depSd;
   depth = Math.max(0.3, depth);
+  if (p.isHuman && kind !== 'frame' && err < 0.4) { tx = clamp(tx, -HW + 0.03, HW - 0.03); depth = Math.min(depth, HL - 0.04); }
   if (kind === 'net' || kind === 'block' || kind === 'drop' || kind === 'slice') margin = Math.max(0.0, margin - 0.05 * err + gauss() * 0.04 * err);
   const tz = dirS * depth;
   return launch(pos, tx, tz, mode, ang, spd, margin, hiDeg, err);
+}
+const AIM_K = { clear: 0.45, attclear: 0.4, lift: 0.45, drop: 0.55, slice: 0.6, net: 0.32, block: 0.45, smash: 1.3, jsmash: 1.3, halfsmash: 1.1, kill: 1.3, drive: 1.5, push: 1.4 };
+function baseDepth(kind, pos, ce) {
+  switch (kind) {
+    case 'clear': return 4.6 + 1.3 * ce; case 'attclear': return 5.2 + 0.9 * ce; case 'lift': return 4.3 + 1.55 * ce;
+    case 'drop': return 1.9 + 0.2 * ce; case 'slice': return 2.5; case 'net': return 0.87; case 'block': return 1.8;
+    case 'smash': return 3.8; case 'jsmash': return 3.5; case 'halfsmash': return 3.0; case 'kill': return 2.6;
+    case 'drive': return 4.4; case 'push': return 3.4;
+  }
+  return 3;
 }
 function launch(pos, tx, tz, mode, ang, spd, margin, hiDeg, err) {
   let dx = tx - pos.x, dz = tz - pos.z;
@@ -548,30 +603,41 @@ function launch(pos, tx, tz, mode, ang, spd, margin, hiDeg, err) {
   const ux = dx / D, uz = dz / D;
   const dn = Math.abs(uz) > 0.05 ? Math.max(0, -pos.z / uz) : 0;
   let r = mode === 'speed' ? solveSpeed(pos.y, ang, D, dn, margin) : solveAngle(pos.y, spd, D, dn, margin, hiDeg);
+  if (mode !== 'speed') {
+    // 过网所需角度导致落点过远：降低球速，保证打到瞄准点
+    const chk = sim2(pos.y, r.v, r.ang, dn);
+    if (chk.land > D + 0.25) r = solveSpeed(pos.y, Math.max(r.ang, -0.2), D, dn, margin);
+  }
   let v = r.v * (1 + gauss() * 0.012 * err);
   const ch = v * Math.cos(r.ang);
   return { vx: ch * ux, vy: v * Math.sin(r.ang), vz: ch * uz, v };
 }
 
+const POWER = { smash: 1, jsmash: 1, kill: 1, halfsmash: 1 };
 function doHit(p, sw) {
   sw.done = true;
+  const prevKind = sh.kind;
   const m = contactMetric(p, sh.x, sh.y, sh.z, p.x, p.z);
   const bestD = sw.bestD;
-  const R0 = reachOf(p), LX = lungeOf(p);
+  const R0 = sw.bestM ? sw.bestM.reach : reachOf(p), LX = sw.bestM ? Math.max(0.05, sw.bestM.reachL - sw.bestM.reach) : lungeOf(p);
   const lunge = bestD > R0;
   let posQ = lunge ? clamp(1 - (bestD - R0) / LX, 0, 1) * 0.42 + 0.12 : 1 - Math.pow(bestD / R0, 1.6) * 0.85;
   const tErr = Math.abs(sw.bestT - SW_HIT) / (SW_W1 - SW_HIT);
   let q = clamp(posQ * (1 - 0.4 * tErr), 0, 1);
+  // AI 接杀：质量下降（防守属性可减轻）
+  if (!p.isHuman && POWER[prevKind]) q *= 1 - p.prof.dp * (0.38 - 0.025 * p.tr.def);
+  else if (p.isHuman && POWER[prevKind]) q *= 0.85 + 0.015 * p.tr.def;
   // 状态因素
   const stF = 1 + (1 - p.stamina / 100) * 0.7;
   const techF = 1.32 - 0.055 * p.tech;
   const over = Math.max(0, sw.c - 1) / 0.35;
   let err = (1 - q) * 0.95 * stF * techF * (p.isHuman ? 1 : p.prof.err) + over * 0.6;
+  if (!p.isHuman && POWER[prevKind]) err *= 1 + 0.5 * p.prof.dp;
   if (q >= 0.88) err *= 0.45;
-  const jumpNeeded = sh.y > MAXH;
+  const jumpNeeded = sh.y > p.maxH;
   const jumpOK = !lunge && sw.btn === 'C' && sw.c > 0.55 && sh.y > 2.35 && p.stamina > 12 && Math.abs(sh.z) > 2.6;
   let kind = classify(p, sw.btn, sh.y, sh.z, lunge, q, jumpOK);
-  if (window.__log2) window.__log2.push({ kind, prev: sh.kind, y: +sh.y.toFixed(2), z: +sh.z.toFixed(2), q: +q.toFixed(2), side: p.side });
+  if (window.__log2) window.__log2.push({ t: +simT.toFixed(2), ls: sh.lastSide, kind, prev: sh.kind, y: +sh.y.toFixed(2), z: +sh.z.toFixed(2), q: +q.toFixed(2), side: p.side });
   const pos = { x: sh.x, y: sh.y, z: sh.z };
   const vel = computeShot(p, kind, sw.c, sw.aimX, sw.aimY, err, pos);
   sh.vx = vel.vx; sh.vy = vel.vy; sh.vz = vel.vz;
@@ -596,6 +662,7 @@ function doHit(p, sw) {
     const ql = shotQualityLabel(q);
     let txt = SHOT_NAME[kind];
     if (isPow) txt += ' ' + kmh + 'km/h';
+    if (p.isHuman && isPow && sw.c >= 0.98 && kind !== 'kill' && kind !== 'halfsmash') addPopup('满蓄力!', pos.x, pos.y + 1.25, pos.z, '#ff6a4d', 16);
     addPopup(txt, pos.x, pos.y + 0.45, pos.z, p.side === 0 ? '#ffffff' : '#ffc7c0', 15);
     if (p.isHuman) addPopup(ql[0], pos.x, pos.y + 0.85, pos.z, ql[1], 17);
   }
@@ -610,7 +677,12 @@ function onShuttleStruck(p) {
   // 防守方准备
   for (const q of players) {
     q.plan = null; q.leave = false; q.aiBtn = null;
-    if (q.side !== p.side) q.reactAt = simT + (q.isHuman ? 0 : q.prof.react * rnd(0.8, 1.25));
+    if (q.side !== p.side) {
+      let r = q.prof.react * rnd(0.8, 1.25);
+      if (POWER[sh.kind]) r = r * (1 + 0.45 * q.prof.dp) + (0.06 - 0.008 * q.tr.def + 0.004 * (p.power - 55)) * q.prof.dp;
+      if (sh.kind === 'drop' || sh.kind === 'slice' || sh.kind === 'net') r += 0.015 * p.tr.decept;
+      q.reactAt = simT + (q.isHuman ? 0 : r);
+    }
   }
   match.assignPending = true;
   match.lastHitter = p;
@@ -793,12 +865,12 @@ function planIntercept(p, elapsed) {
     if (tl < 0.12) continue;
     if ((p.side === 0 && pt.z < 0.15) || (p.side === 1 && pt.z > -0.15)) continue;
     if (pt.y < 0.2) continue;
-    const maxH = pass === 0 ? MAXH - 0.08 : MAXH + (p.stamina > 15 ? JUMPH * 0.85 : 0);
+    const maxH = pass === 0 ? p.maxH - 0.08 : p.maxH + (p.stamina > 15 ? p.jumpH * 0.85 : 0);
     if (pt.y > maxH) continue;
     // 站位点：使球位于正手/反手理想击球点
     const rs = p.side === 0 ? 1 : -1, fs = p.side === 0 ? -1 : 1;
-    const fhx = pt.x - rs * 0.52, fhz = pt.z - fs * 0.24;
-    const bhx = pt.x + rs * 0.48, bhz = pt.z - fs * 0.24;
+    const fhx = pt.x - rs * p.hd * 0.52, fhz = pt.z - fs * 0.24;
+    const bhx = pt.x + rs * p.hd * 0.48, bhz = pt.z - fs * 0.24;
     const dF = Math.hypot(fhx - p.x, fhz - p.z) * 0.92, dB = Math.hypot(bhx - p.x, bhz - p.z);
     const useF = dF <= dB;
     const sx = useF ? fhx : bhx, sz = useF ? fhz : bhz;
@@ -841,6 +913,7 @@ function aiChooseShot(p, pl) {
     if (nearNet) { opts.push(['B', 1.2 + pf.aimSkill]); opts.push(['A', 1.0]); opts.push(['D', 0.35]); }
     else { opts.push(['A', 1.3]); opts.push(['B', 0.7]); opts.push(['D', 0.45]); }
   }
+  if (POWER[sh.kind] && y < 2.0) { opts.length = 0; opts.push(['A', 1.3], ['B', 1.0], ['D', 0.35]); }
   let tot = 0; for (const o of opts) tot += o[1];
   let r = Math.random() * tot, btn = opts[0][0];
   for (const o of opts) { r -= o[1]; if (r <= 0) { btn = o[0]; break; } }
@@ -865,6 +938,7 @@ function aiChooseShot(p, pl) {
   }
   let c = clamp(0.7 + Math.random() * 0.35 + (pf.aimSkill - 0.5) * 0.1, 0.5, 1.02);
   if (btn === 'B') c = Math.random() < 0.35 + 0.3 * pf.aimSkill ? rnd(0.3, 0.7) : rnd(0.78, 1);
+  if (btn === 'C') c = rnd(0.3, 0.8);
   return { btn, aim: bestAim, c };
 }
 
@@ -990,7 +1064,7 @@ cv.addEventListener('pointermove', e => {
   const t = touches.get(e.pointerId);
   if (t && t.type === 'joy' && input.joy) { input.joy.x = e.clientX; input.joy.y = e.clientY; }
   if (t && t.type === 'btn') {
-    const R = t.r * 1.5;
+    const R = t.r * 1.2;
     let dx = (e.clientX - t.bx) / R, dy = (e.clientY - t.by) / R;
     const l = Math.hypot(dx, dy); if (l > 1) { dx /= l; dy /= l; }
     input.drag = { id: t.id, dx, dy };
@@ -1186,6 +1260,7 @@ function updatePlayersMove(dt) {
     // 跳跃
     if (p.jumpV > 0 || p.jumpY > 0) { p.jumpY += p.jumpV * dt; p.jumpV -= G * dt; if (p.jumpY <= 0) { p.jumpY = 0; p.jumpV = 0; } }
     p.runPhase += Math.hypot(p.vx, p.vz) * dt * 3.1;
+    updateAnim(p, dt);
     if (p.callT > 0) p.callT -= dt;
   }
 }
@@ -1212,6 +1287,14 @@ function stepShuttle(h) {
   if (sh.y <= 0) {
     sh.y = 0; sh.flying = false;
     sfx('land');
+    const hs = Math.hypot(sh.vx, sh.vz);
+    sh.restDir = hs > 0.3 ? [sh.vx / hs, sh.vz / hs] : null;
+    sh.slide = null;
+    if (hs > 8 && !sh.netted) {
+      const k = Math.min(9, hs * 0.45) / hs;
+      sh.slide = { vx: sh.vx * k, vz: sh.vz * k };
+      for (let i = 0; i < 8; i++) particles.push({ x: sh.x, y: 0.02, z: sh.z, vx: rnd(-1, 1) + sh.slide.vx * 0.3, vy: rnd(0.4, 1.4), vz: rnd(-1, 1) + sh.slide.vz * 0.3, t: 0, life: rnd(0.25, 0.5), dust: 1 });
+    }
     const x = sh.x, z = sh.z;
     const landSide = z >= 0 ? 0 : 1;
     const hitSide = sh.lastSide;
@@ -1224,6 +1307,17 @@ function stepShuttle(h) {
   sh.trail.push([sh.x, sh.y, sh.z]); if (sh.trail.length > 26) sh.trail.shift();
 }
 function stepShuttleFree(dt) {
+  if (sh.slide) {
+    const sl = sh.slide, sp = Math.hypot(sl.vx, sl.vz);
+    const nsp = Math.max(0, sp - 13 * dt);
+    if (nsp <= 0.05) { sh.slide = null; return; }
+    sl.vx *= nsp / sp; sl.vz *= nsp / sp;
+    const pz = sh.z;
+    sh.x += sl.vx * dt; sh.z += sl.vz * dt;
+    if (pz * sh.z < 0) { sh.z = pz > 0 ? 0.03 : -0.03; sh.slide = null; }
+    if (Math.random() < 0.5) particles.push({ x: sh.x, y: 0.01, z: sh.z, vx: rnd(-0.3, 0.3), vy: rnd(0.2, 0.6), vz: rnd(-0.3, 0.3), t: 0, life: 0.3, dust: 1 });
+    return;
+  }
   if (sh.y > 0 && (sh.flying || sh.netted)) {
     const n = Math.ceil(dt / PDT);
     for (let i = 0; i < n; i++) { stepS(sh, dt / n); if (sh.y <= 0) { sh.y = 0; break; } }
@@ -1330,117 +1424,452 @@ function renderStatic() {
   quad(n, [[-HW_D, NET_H - 0.075, 0], [HW_D, NET_H - 0.075, 0], [HW_D, NET_H, 0], [-HW_D, NET_H, 0]], '#f4f4f4');
 }
 
-// ---------- 渲染：动态 ----------
-const READY = [0.32, 1.18, 0.32, 0.15, 0.95, 0.3];
-const POSES = {
-  over: { back: [0.32, 1.78, -0.12, 0.05, -1, -0.35], hit: [0.22, 2.1, 0.22, 0.05, 1, 0.3], fol: [-0.32, 1.05, 0.36, -0.4, -0.6, 0.5] },
-  side: { back: [0.6, 1.25, -0.3, 0.3, 0.55, -0.8], hit: [0.5, 1.18, 0.32, 0.85, 0.15, 0.5], fol: [-0.36, 1.35, 0.3, -0.6, 0.5, 0.45] },
-  under: { back: [0.55, 0.95, -0.25, 0.3, -0.8, -0.4], hit: [0.44, 0.62, 0.38, 0.5, -0.55, 0.65], fol: [0.05, 1.65, 0.42, 0, 0.95, 0.3] },
+// ---------- 球员模型与动作 ----------
+// 规范坐标（右手持拍）：r 向右，y 向上，f 朝向球网；左手球员在转换到世界坐标时镜像 r
+const KF = {
+  ready: { yaw: 0, crouch: 0.1, lean: 0.2, rh: [0.3, 1.2, 0.34], rd: [0.18, 0.78, 0.55], lh: [-0.3, 1.1, 0.3], el: [0.7, -0.6, -0.1] },
+  over: {
+    back: { yaw: -1.05, crouch: 0.05, lean: -0.08, rh: [0.3, 1.62, -0.1], rd: [0.15, -0.8, -0.45], lh: [-0.1, 2.0, 0.42], el: [0.8, 0.5, -0.3] },
+    hit:  { yaw: 0.2, crouch: 0.02, lean: 0.06, rh: [0.24, 2.12, 0.24], rd: [0.02, 0.92, 0.38], lh: [-0.3, 1.2, 0.05], el: [0.7, 0.1, 0] },
+    fol:  { yaw: 0.75, crouch: 0.1, lean: 0.38, rh: [-0.25, 1.02, 0.38], rd: [-0.5, -0.65, 0.4], lh: [-0.42, 1.12, -0.22], el: [0.3, -0.7, 0] },
+  },
+  overB: { // 头顶绕头
+    back: { yaw: -1.15, crouch: 0.05, lean: -0.1, rh: [0.12, 1.66, -0.12], rd: [-0.2, -0.8, -0.4], lh: [-0.3, 1.9, 0.35], el: [0.9, 0.5, -0.2] },
+    hit:  { yaw: -0.05, crouch: 0.03, lean: 0.05, rh: [-0.14, 2.08, 0.2], rd: [-0.2, 0.9, 0.35], lh: [-0.4, 1.2, 0], el: [0.8, 0.3, 0] },
+    fol:  { yaw: 0.55, crouch: 0.1, lean: 0.32, rh: [-0.42, 1.05, 0.3], rd: [-0.6, -0.5, 0.4], lh: [-0.45, 1.1, -0.2], el: [0.3, -0.7, 0] },
+  },
+  side: {
+    back: { yaw: -0.85, crouch: 0.13, lean: 0.12, rh: [0.55, 1.25, -0.25], rd: [0.25, 0.55, -0.8], lh: [-0.36, 1.22, 0.36], el: [0.5, -0.7, 0] },
+    hit:  { yaw: 0.15, crouch: 0.13, lean: 0.15, rh: [0.58, 1.18, 0.36], rd: [0.75, 0.15, 0.62], lh: [-0.4, 1.15, 0.2], el: [0.4, -0.8, 0] },
+    fol:  { yaw: 0.6, crouch: 0.13, lean: 0.2, rh: [-0.2, 1.3, 0.42], rd: [-0.75, 0.35, 0.45], lh: [-0.45, 1.1, -0.1], el: [0.2, -0.8, 0] },
+  },
+  sideB: {
+    back: { yaw: 0.95, crouch: 0.13, lean: 0.12, rh: [-0.28, 1.32, -0.02], rd: [0.25, 0.5, -0.8], lh: [-0.25, 1.15, 0.15], el: [0.2, 0.4, 0.8] },
+    hit:  { yaw: 0.35, crouch: 0.13, lean: 0.15, rh: [-0.56, 1.22, 0.32], rd: [-0.75, 0.2, 0.6], lh: [-0.1, 1.1, -0.2], el: [0, 0.5, 0.6] },
+    fol:  { yaw: 0.15, crouch: 0.12, lean: 0.15, rh: [-0.6, 1.45, 0.38], rd: [-0.4, 0.85, 0.35], lh: [-0.1, 1.1, -0.25], el: [0, 0.6, 0.5] },
+  },
+  under: {
+    back: { yaw: -0.35, crouch: 0.25, lean: 0.45, rh: [0.42, 0.98, 0.12], rd: [0.35, -0.45, -0.65], lh: [-0.45, 1.05, -0.05], el: [0.6, -0.4, -0.3] },
+    hit:  { yaw: 0.0, crouch: 0.28, lean: 0.5, rh: [0.32, 0.62, 0.62], rd: [0.15, 0.1, 1], lh: [-0.5, 1.0, -0.2], el: [0.5, -0.7, 0] },
+    fol:  { yaw: 0.1, crouch: 0.2, lean: 0.35, rh: [0.18, 1.45, 0.55], rd: [0, 0.95, 0.3], lh: [-0.48, 1.05, -0.2], el: [0.6, -0.5, 0] },
+  },
+  underB: {
+    back: { yaw: 0.5, crouch: 0.25, lean: 0.45, rh: [-0.18, 0.98, 0.2], rd: [-0.3, -0.4, -0.6], lh: [-0.4, 1.0, -0.2], el: [-0.2, 0.5, 0.6] },
+    hit:  { yaw: 0.3, crouch: 0.28, lean: 0.5, rh: [-0.38, 0.62, 0.6], rd: [-0.2, 0.1, 1], lh: [-0.3, 1.0, -0.3], el: [-0.2, 0.6, 0.5] },
+    fol:  { yaw: 0.2, crouch: 0.2, lean: 0.35, rh: [-0.35, 1.35, 0.5], rd: [-0.1, 0.95, 0.3], lh: [-0.3, 1.0, -0.3], el: [-0.2, 0.6, 0.4] },
+  },
+  serve: { // 正手发高远球/反手发网前一律用正手低手（简化为站姿发球）
+    back: { yaw: -0.6, crouch: 0.08, lean: 0.2, rh: [0.45, 0.85, -0.25], rd: [0.3, -0.5, -0.6], lh: [0.05, 1.1, 0.4], el: [0.6, -0.6, -0.2] },
+    hit:  { yaw: -0.1, crouch: 0.08, lean: 0.22, rh: [0.28, 0.82, 0.32], rd: [0.1, 0.0, 1], lh: [-0.25, 1.05, 0.2], el: [0.5, -0.7, 0] },
+    fol:  { yaw: 0.3, crouch: 0.06, lean: 0.15, rh: [0.05, 1.55, 0.45], rd: [0, 0.95, 0.3], lh: [-0.35, 1.05, 0], el: [0.6, -0.5, 0] },
+  },
 };
-function mir(p, h) { return h > 0 ? p : [-p[0], p[1], p[2], -p[3], p[4], p[5]]; }
-function lerpPose(a, b, t) { const r = []; for (let i = 0; i < 6; i++) r.push(lerp(a[i], b[i], t)); return r; }
-function computePose(p) {
-  let pose = READY;
-  if (p.swing) {
-    const sw = p.swing, P0 = POSES[sw.style];
-    const back = mir(P0.back, sw.hand), hit = mir(P0.hit, sw.hand), fol = mir(P0.fol, sw.hand);
+function clonePose(a) { return { yaw: a.yaw, crouch: a.crouch, lean: a.lean, rh: a.rh.slice(), rd: a.rd.slice(), lh: a.lh.slice(), el: a.el.slice() }; }
+function lerp3(a, b, t) { return [lerp(a[0], b[0], t), lerp(a[1], b[1], t), lerp(a[2], b[2], t)]; }
+function lerpP(a, b, t) { return { yaw: lerp(a.yaw, b.yaw, t), crouch: lerp(a.crouch, b.crouch, t), lean: lerp(a.lean, b.lean, t), rh: lerp3(a.rh, b.rh, t), rd: lerp3(a.rd, b.rd, t), lh: lerp3(a.lh, b.lh, t), el: lerp3(a.el, b.el, t) }; }
+function ease(t) { return t * t * (3 - 2 * t); }
+function groupOf(style, hand) { if (style === 'serve') return KF.serve; return hand > 0 ? KF[style] : KF[style + 'B']; }
+
+function poseOf(p) {
+  const sc = p.sc;
+  let pose;
+  const sw = p.swing;
+  if (sw) {
+    const g = groupOf(sw.style, sw.hand);
+    let hit = g.hit;
+    if (sw.contact && sw.style !== 'serve') {
+      // 让拍面到达实际击球点
+      hit = clonePose(g.hit);
+      const d = norm(hit.rd), drop = (p.an ? p.an.pelY : 0.97 * sc) - 0.97 * sc;
+      hit.rh = [sw.contact[0] / sc - d[0] * 0.56, (sw.contact[1] - drop) / sc - d[1] * 0.56, sw.contact[2] / sc - d[2] * 0.56];
+    }
     const t = sw.t;
-    if (t < SW_HIT) pose = lerpPose(lerpPose(sw.from, back, 0.6), hit, t / SW_HIT);
-    else if (t < SW_END) pose = lerpPose(hit, fol, (t - SW_HIT) / (SW_END - SW_HIT));
-    else pose = lerpPose(fol, READY, clamp((t - SW_END) / 0.2, 0, 1));
-  } else if (p.charge) {
-    const pr = predictStyle(p, 0.25);
-    const k = Math.min(p.charge.t / 0.72, 1);
-    pose = lerpPose(READY, mir(POSES[pr.style].back, pr.hand), 0.25 + 0.75 * k);
+    if (t < SW_HIT) pose = lerpP(lerpP(sw.from, g.back, 0.65), hit, ease(t / SW_HIT));
+    else if (t < SW_END) pose = lerpP(hit, g.fol, ease((t - SW_HIT) / (SW_END - SW_HIT)));
+    else pose = lerpP(g.fol, KF.ready, ease(clamp((t - SW_END) / 0.2, 0, 1)));
+  } else {
+    pose = clonePose(KF.ready);
+    // 预备引拍：根据即将到来的击球时间与位置
+    let T = null, py = 1.2, pr = 0.4;
+    if (p.isHuman && p.charge && p.charge.plan && p.charge.planKey === pathT0 && state === 'rally') { T = pathT0 + p.charge.plan.t - SW_HIT; py = p.charge.plan.y; const l = localOf(p, p.charge.plan.x, p.charge.plan.z); pr = l.r * p.hd; }
+    else if (!p.isHuman && p.plan && p.plan.releaseAt) { T = p.plan.releaseAt; py = p.plan.y; const l = localOf(p, p.plan.x, p.plan.z); pr = l.r * p.hd; }
+    else if (p.charge && state === 'serve' && match && match.server === p) { T = simT + 0.15; py = 1; pr = 0.4; }
+    if (T !== null) {
+      const k = clamp(1 - (T - simT) / 0.4, 0, 1);
+      if (k > 0) {
+        const style = (state === 'serve') ? 'serve' : py > 1.8 * sc ? 'over' : py > 0.95 * sc ? 'side' : 'under';
+        pose = lerpP(pose, groupOf(style, pr >= -0.05 ? 1 : -1).back, ease(k));
+      }
+    }
+    // 跑动：后退时侧身，非持拍手摆臂
+    const sp = Math.hypot(p.vx, p.vz);
+    if (sp > 0.4) {
+      const fs = p.side === 0 ? -1 : 1;
+      const back = -(p.vz * fs) / p.vmax;
+      if (back > 0.15) pose.yaw = lerp(pose.yaw, -0.75, clamp(back * 1.5, 0, 1));
+      pose.lean += 0.08 * clamp(sp / 4, 0, 1);
+      pose.lh = [pose.lh[0], pose.lh[1], pose.lh[2] + Math.sin(p.runPhase * 2) * 0.12 * clamp(sp / 3, 0, 1)];
+    }
   }
+  if (p.lungeT > 0) { const k = clamp(p.lungeT / 0.2, 0, 1); pose.lean = lerp(pose.lean, 0.55, k); }
   p.pose = pose;
   return pose;
 }
-function drawLimb(a, b, w, col) {
-  ctx.strokeStyle = col; ctx.lineWidth = Math.max(1.2, w * (a.s + b.s) / 2);
-  ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y); ctx.stroke();
+
+// 规范坐标 → 世界坐标
+function cw(p, o, r, y, f) { const rs = (p.side === 0 ? 1 : -1) * p.hd, fs = p.side === 0 ? -1 : 1; return [o[0] + rs * r, y, o[2] + fs * f]; }
+function cdir(p, v) { const rs = (p.side === 0 ? 1 : -1) * p.hd, fs = p.side === 0 ? -1 : 1; return [rs * v[0], v[1], fs * v[2]]; }
+function rotY(v, a) { const c = Math.cos(a), s = Math.sin(a); return [v[0] * c - v[2] * s, v[1], v[0] * s + v[2] * c]; }
+function lungeWorldDir(p) {
+  const l = p.lungeDir; const L = Math.hypot(l[0], Math.max(0.2, l[1])) || 1;
+  return cdir(p, [l[0] / L, 0, Math.max(0.2, l[1]) / L]);
 }
-function drawPlayer(p) {
-  const rs = p.side === 0 ? 1 : -1, fs = p.side === 0 ? -1 : 1;
-  const jy = p.jumpY;
-  let lean = [0, 0];
-  if (p.lungeT > 0) { const k = Math.min(1, p.lungeT / 0.25); lean = [p.lungeDir[0] * 0.35 * k, Math.max(0.15, p.lungeDir[1]) * 0.35 * k]; }
-  const L = (r, y, f) => {
-    const lf = y > 0.5 ? (y - 0.5) / 1.2 : 0;
-    return P(p.x + rs * (r + lean[0] * lf), y + jy - (p.lungeT > 0 ? 0.18 * lf : 0), p.z + fs * (f + lean[1] * lf));
-  };
-  const W_ = (x, y, z) => P(x, y + jy, z);
-  const pose = computePose(p);
-  const ch = p.ch;
-  // 腿
-  const sp = Math.hypot(p.vx, p.vz);
-  const k = Math.min(1, sp / 3);
-  const dirx = sp > 0.1 ? p.vx / sp : 0, dirz = sp > 0.1 ? p.vz / sp : 0;
-  const ctx_ = ctx;
-  ctx_.lineCap = 'round'; ctx_.lineJoin = 'round';
-  const feet = [];
+
+function initAnim(p) {
+  p.an = { feet: [{ x: p.x, z: p.z, y: 0, st: false }, { x: p.x, z: p.z, y: 0, st: false }], pelY: 0.9 * p.sc, pony: 0, ponyV: 0, pel: [p.x, p.z], snap: true };
+}
+function footTargets(p) {
+  const sc = p.sc, pose = p.pose || KF.ready;
+  const hy = pose.yaw * 0.45;
+  const out = [];
+  const lead = [p.x + p.vx * 0.16, p.z + p.vz * 0.16];
   for (const side of [-1, 1]) {
-    const ph = p.runPhase + (side > 0 ? Math.PI : 0);
-    const stride = Math.sin(ph) * 0.34 * k;
-    let lift = Math.max(0, Math.cos(ph)) * 0.16 * k;
-    let fx = p.x + rs * side * 0.16 + dirx * stride, fz = p.z + dirz * stride;
-    if (p.lungeT > 0 && side > 0) { fx += rs * p.lungeDir[0] * 0.5; fz += fs * Math.max(0.2, p.lungeDir[1]) * 0.6; lift = 0; }
-    const hip = L(side * 0.1, 0.92, 0);
-    const foot = W_(fx, lift + 0.05, fz);
-    const knee = W_((p.x + rs * side * 0.13 + fx) / 2 + fs * 0, 0.5 + lift * 0.6, (p.z + fz) / 2 + fs * 0.12);
-    feet.push([hip, knee, foot]);
+    const v = rotY([side * 0.2 * sc, 0, side > 0 ? 0.05 * sc : -0.03 * sc], hy);
+    const w = cw(p, [lead[0], 0, lead[1]], v[0], 0, v[2]);
+    out.push([w[0], w[2]]);
   }
-  const skin = '#e7b38b';
-  for (const [hip, knee, foot] of feet) {
-    drawLimb(hip, knee, 0.12, skin); drawLimb(knee, foot, 0.1, skin);
-    drawLimb(foot, foot, 0.13, '#f5f5f5');
+  if (p.lungeT > 0) {
+    const d = lungeWorldDir(p);
+    out[1] = [p.x + d[0] * 0.8 * sc, p.z + d[2] * 0.8 * sc];
+    out[0] = [p.x - d[0] * 0.38 * sc, p.z - d[2] * 0.38 * sc];
+  } else if (p.swing && p.swing.style === 'under' && p.swing.t < SW_END) {
+    const f = cw(p, [p.x, 0, p.z], 0.22 * sc, 0, 0.45 * sc); out[1] = [f[0], f[2]];
   }
-  // 短裤
-  const pel = L(0, 0.92, 0), pelL = L(-0.12, 0.85, 0), pelR = L(0.12, 0.85, 0);
-  drawLimb(pelL, pelR, 0.2, ch.color2 === '#ffffff' || ch.color2 === '#f2f2f2' ? '#20263a' : ch.color2);
+  return out;
+}
+function updateAnim(p, dt) {
+  if (!p.an) initAnim(p);
+  const an = p.an, sc = p.sc;
+  poseOf(p);
+  const tg = footTargets(p);
+  const sp = Math.hypot(p.vx, p.vz);
+  // 位置突变（发球站位等）直接复位
+  for (let i = 0; i < 2; i++) if (an.snap || Math.hypot(an.feet[i].x - tg[i][0], an.feet[i].z - tg[i][1]) > 2.2) { an.feet[i] = { x: tg[i][0], z: tg[i][1], y: 0, st: false }; }
+  an.snap = false;
+  if (p.jumpY > 0.01) {
+    const jt = clamp(p.jumpV / 2.7, -1, 1);
+    const f = cw(p, [0, 0, 0], 0, 0, 0.3 * sc);
+    for (let i = 0; i < 2; i++) {
+      const k = i === 1 ? -jt : jt * 0.6; // 剪刀腿
+      an.feet[i].x = tg[i][0] + f[0] * k; an.feet[i].z = tg[i][1] + f[2] * k;
+      an.feet[i].y = Math.max(0, p.jumpY - 0.05 + (i === 1 ? 0.12 : 0.05) * (1 - Math.abs(jt)));
+      an.feet[i].st = false;
+    }
+  } else {
+    const lunging = p.lungeT > 0;
+    for (let i = 0; i < 2; i++) {
+      const F = an.feet[i], O = an.feet[1 - i];
+      if (F.st) {
+        F.t += dt; const k = Math.min(1, F.t / F.dur), e = ease(k);
+        F.x = lerp(F.ox, F.tx, e); F.z = lerp(F.oz, F.tz, e); F.y = Math.sin(Math.PI * k) * F.lift;
+        if (k >= 1) { F.st = false; F.y = 0; }
+        continue;
+      }
+      F.y = 0;
+      const d = Math.hypot(tg[i][0] - F.x, tg[i][1] - F.z);
+      const dO = Math.hypot(tg[1 - i][0] - O.x, tg[1 - i][1] - O.z);
+      const thr = lunging ? 0.06 : (sp > 0.3 ? 0.12 : 0.2) * sc;
+      const otherOK = !O.st || O.t / O.dur > 0.55 || lunging;
+      if (d > thr && otherOK && (O.st || d >= dO || dO <= thr)) {
+        const dur = lunging ? 0.11 : clamp(0.24 - sp * 0.03, 0.1, 0.24);
+        F.st = true; F.t = 0; F.dur = dur; F.ox = F.x; F.oz = F.z;
+        F.tx = tg[i][0] + p.vx * dur * 0.7; F.tz = tg[i][1] + p.vz * dur * 0.7;
+        F.lift = lunging ? 0.05 : 0.05 + 0.025 * sp;
+      }
+    }
+  }
+  // 骨盆位置/高度：受双脚约束
+  const pose = p.pose;
+  let pel = [p.x, p.z];
+  if (p.lungeT > 0) { const d = lungeWorldDir(p); const k = clamp(p.lungeT / 0.2, 0, 1); pel = [p.x + d[0] * 0.3 * sc * k, p.z + d[2] * 0.3 * sc * k]; }
+  else pel = [(an.feet[0].x + an.feet[1].x) / 2 * 0.5 + p.x * 0.5, (an.feet[0].z + an.feet[1].z) / 2 * 0.5 + p.z * 0.5];
+  an.pel = pel;
+  const legL = 0.9 * sc;
+  let target = 0.97 * sc - pose.crouch * sc + p.jumpY;
+  const hy = pose.yaw * 0.45;
+  for (let i = 0; i < 2; i++) {
+    const side = i === 0 ? -1 : 1;
+    const hv = rotY([side * 0.11 * sc, 0, 0], hy);
+    const hp = cw(p, [pel[0], 0, pel[1]], hv[0], 0, hv[2]);
+    const F = an.feet[i];
+    const dh = Math.hypot(hp[0] - F.x, hp[2] - F.z);
+    const maxY = F.y + 0.07 * sc + Math.sqrt(Math.max(0.01, (legL * 0.995) ** 2 - dh * dh));
+    target = Math.min(target, maxY);
+  }
+  an.pelY = target;
+  // 马尾摆动
+  const acc = -(p.vx * (p.side === 0 ? 1 : -1)) * 0.15;
+  an.ponyV += ((acc - an.pony) * 30 - an.ponyV * 6) * dt; an.pony += an.ponyV * dt;
+}
+
+function ik2(a, c, l1, l2, hint) {
+  const dx = c[0] - a[0], dy = c[1] - a[1], dz = c[2] - a[2];
+  const d = Math.hypot(dx, dy, dz) || 1e-4;
+  const dm = Math.min(d, (l1 + l2) * 0.999);
+  const ux = dx / d, uy = dy / d, uz = dz / d;
+  const end = [a[0] + ux * dm, a[1] + uy * dm, a[2] + uz * dm];
+  const x = (l1 * l1 - l2 * l2 + dm * dm) / (2 * dm);
+  const h = Math.sqrt(Math.max(0, l1 * l1 - x * x));
+  const hd = hint[0] * ux + hint[1] * uy + hint[2] * uz;
+  let px = hint[0] - ux * hd, py = hint[1] - uy * hd, pz = hint[2] - uz * hd;
+  const pl = Math.hypot(px, py, pz) || 1e-4;
+  return { mid: [a[0] + ux * x + px / pl * h, a[1] + uy * x + py / pl * h, a[2] + uz * x + pz / pl * h], end };
+}
+
+// ---- 颜色工具 ----
+const _shc = {};
+function shade(hex, f) {
+  const k = hex + '|' + f; if (_shc[k]) return _shc[k];
+  const n = parseInt(hex.slice(1), 16);
+  const c = [(n >> 16) & 255, (n >> 8) & 255, n & 255].map(v => Math.max(0, Math.min(255, Math.round(v * f))));
+  return (_shc[k] = `rgb(${c[0]},${c[1]},${c[2]})`);
+}
+// ---- 绘制原语 ----
+function Pv(v) { return P(v[0], v[1], v[2]); }
+function capS(a, b, ra, rb, col) {
+  const r1 = Math.max(0.7, ra * a.s), r2 = Math.max(0.7, rb * b.s);
+  const dx = b.x - a.x, dy = b.y - a.y, L = Math.hypot(dx, dy) || 1e-4, nx = -dy / L, ny = dx / L;
+  ctx.fillStyle = col;
+  ctx.beginPath();
+  ctx.moveTo(a.x + nx * r1, a.y + ny * r1); ctx.lineTo(b.x + nx * r2, b.y + ny * r2);
+  ctx.lineTo(b.x - nx * r2, b.y - ny * r2); ctx.lineTo(a.x - nx * r1, a.y - ny * r1); ctx.closePath(); ctx.fill();
+  ctx.beginPath(); ctx.arc(a.x, a.y, r1, 0, Math.PI * 2); ctx.fill();
+  ctx.beginPath(); ctx.arc(b.x, b.y, r2, 0, Math.PI * 2); ctx.fill();
+}
+function polyS(pts, col, stroke) {
+  ctx.beginPath(); pts.forEach((q, i) => i ? ctx.lineTo(q.x, q.y) : ctx.moveTo(q.x, q.y)); ctx.closePath();
+  ctx.fillStyle = col; ctx.fill();
+  if (stroke) { ctx.strokeStyle = stroke; ctx.lineWidth = 1; ctx.stroke(); }
+}
+function add3(a, b, k) { return [a[0] + b[0] * k, a[1] + b[1] * k, a[2] + b[2] * k]; }
+function mix3(a, b, t) { return [lerp(a[0], b[0], t), lerp(a[1], b[1], t), lerp(a[2], b[2], t)]; }
+function cross3(a, b) { return [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]]; }
+
+function drawPlayer(p) {
+  if (!p.an) initAnim(p);
+  const an = p.an, sc = p.sc, ch = p.ch, pose = p.pose || poseOf(p);
+  const fem = ch.g === 'f';
+  const pel = [an.pel[0], an.pelY, an.pel[1]];
+  const fwdW = cdir(p, [0, 0, 1]);
   // 躯干
-  const neck = L(0, 1.42, 0.02);
-  const shL = L(-0.2, 1.4, 0), shR = L(0.2, 1.4, 0);
-  drawLimb(pel, neck, 0.34, ch.color);
-  drawLimb(shL, shR, 0.16, ch.color);
-  // 号码条
-  drawLimb(L(-0.13, 1.18, 0), L(0.13, 1.18, 0), 0.05, ch.color2);
-  // 非持拍手
-  const offH = L(-0.3, 1.05, 0.25);
-  const offE = L(-0.3, 1.22, 0.05);
-  drawLimb(shL, offE, 0.09, skin); drawLimb(offE, offH, 0.08, skin);
-  // 头
-  const head = L(0, 1.62, 0.02);
-  ctx.fillStyle = skin; ctx.beginPath(); ctx.arc(head.x, head.y, Math.max(2, head.s * 0.115), 0, Math.PI * 2); ctx.fill();
-  ctx.fillStyle = ch.hair; ctx.beginPath();
-  if (p.side === 0) ctx.arc(head.x, head.y, Math.max(2, head.s * 0.118), 0, Math.PI * 2);
-  else ctx.arc(head.x, head.y - head.s * 0.03, Math.max(2, head.s * 0.118), Math.PI * 1.05, Math.PI * 1.95);
-  ctx.fill();
-  // 持拍手臂
-  const hand = L(pose[0], pose[1], pose[2]);
-  const elbow = L((0.2 + pose[0]) / 2 + 0.08 * Math.sign(pose[0] + 0.001), (1.4 + pose[1]) / 2 - 0.06, (pose[2]) / 2);
-  drawLimb(shR, elbow, 0.09, skin); drawLimb(elbow, hand, 0.08, skin);
+  const leanDir = cdir(p, rotY([0, 0, 1], pose.yaw * 0.5));
+  const spine = norm([leanDir[0] * Math.sin(pose.lean), Math.cos(pose.lean), leanDir[2] * Math.sin(pose.lean)]);
+  const chest = add3(pel, spine, 0.5 * sc);
+  const shW = (fem ? 0.36 : 0.41) * sc * (ch.build || 1), hipW = (fem ? 0.29 : 0.26) * sc;
+  const yawV = (w, a) => cdir(p, rotY([w, 0, 0], a));
+  const shR = add3(chest, yawV(shW / 2, pose.yaw), 1), shL = add3(chest, yawV(-shW / 2, pose.yaw), 1);
+  const hipR = add3(pel, yawV(hipW / 2, pose.yaw * 0.45), 1), hipL = add3(pel, yawV(-hipW / 2, pose.yaw * 0.45), 1);
+  const neck = add3(chest, spine, 0.07 * sc);
+  const headFwd = cdir(p, rotY([0, 0, 1], pose.yaw * 0.35));
+  const head = add3(add3(neck, [0, 1, 0], 0.13 * sc), headFwd, 0.015 * sc);
+  // 腿
+  const legs = [];
+  for (let i = 0; i < 2; i++) {
+    const F = an.feet[i], hip = i === 0 ? hipL : hipR;
+    const ankle = [F.x, F.y + 0.07 * sc, F.z];
+    let fdir = cdir(p, rotY([i === 0 ? -0.15 : 0.15, 0, 1], pose.yaw * 0.45));
+    if (p.lungeT > 0 && i === 1) fdir = lungeWorldDir(p);
+    const hint = add3(fdir, [0, 0.1, 0], 1);
+    const k = ik2(hip, ankle, 0.45 * sc, 0.45 * sc, hint);
+    const fl = Math.hypot(fdir[0], fdir[2]) || 1;
+    const fd = [fdir[0] / fl, 0, fdir[2] / fl];
+    legs.push({ hip, knee: k.mid, ankle: k.end, toe: add3([k.end[0], F.y + 0.035 * sc, k.end[2]], fd, 0.19 * sc), heel: add3([k.end[0], F.y + 0.04 * sc, k.end[2]], fd, -0.06 * sc) });
+  }
+  // 手臂
+  const drop = an.pelY - 0.97 * sc;
+  const base = [pel[0], 0, pel[2]];
+  const handT = (h) => { const w = cw(p, base, h[0] * sc, h[1] * sc + drop, h[2] * sc); return w; };
+  const elH = cdir(p, rotY(pose.el, pose.yaw * 0.5));
+  const armR = ik2(shR, handT(pose.rh), 0.3 * sc, 0.29 * sc, elH);
+  const armL = ik2(shL, handT(pose.lh), 0.3 * sc, 0.28 * sc, cdir(p, [-0.6, -0.7, -0.1]));
+  const rdW = norm(cdir(p, pose.rd));
+
+  const skin = ch.skin, shirt = ch.shirt, trim = ch.trim, bottom = ch.bottom;
+  const items = [];
+  const push = (pt, fn) => { const q = Pv(pt); items.push({ d: 1 / q.s, fn }); };
+  // 腿与鞋
+  legs.forEach((L, i) => {
+    const sh = i === 0 ? 0.88 : 1;
+    const thighTop = mix3(L.hip, L.knee, fem && ch.skirt ? 0.25 : 0.38);
+    push(mix3(L.knee, L.ankle, 0.5), () => {
+      const k = Pv(L.knee), a = Pv(L.ankle), s0 = Pv(mix3(L.knee, L.ankle, 0.72));
+      capS(k, a, 0.052 * sc, 0.036 * sc, shade(skin, sh));
+      capS(s0, a, 0.045 * sc, 0.04 * sc, shade('#f2f2f2', sh));
+      capS(Pv(L.heel), Pv(L.toe), 0.045 * sc, 0.04 * sc, shade(ch.shoe, sh));
+      const st = Pv(mix3(L.heel, L.toe, 0.55)); ctx.fillStyle = shade(ch.trim, sh * 0.9); ctx.beginPath(); ctx.arc(st.x, st.y, Math.max(0.6, 0.02 * sc * st.s), 0, 7); ctx.fill();
+    });
+    push(mix3(L.hip, L.knee, 0.5), () => {
+      capS(Pv(thighTop), Pv(L.knee), 0.068 * sc, 0.054 * sc, shade(skin, sh));
+      capS(Pv(L.hip), Pv(thighTop), 0.09 * sc, 0.082 * sc, shade(bottom, sh));
+    });
+  });
+  // 短裤/裙
+  push(pel, () => {
+    const a = Pv(hipL), b = Pv(hipR);
+    if (ch.skirt) {
+      const dn = [0, -0.25 * sc, 0];
+      const oL = yawV(-0.07 * sc, pose.yaw * 0.45), oR = yawV(0.07 * sc, pose.yaw * 0.45);
+      polyS([Pv(add3(hipL, [0, 0.04 * sc, 0], 1)), Pv(add3(hipR, [0, 0.04 * sc, 0], 1)), Pv(add3(add3(hipR, dn, 1), oR, 1)), Pv(add3(add3(hipL, dn, 1), oL, 1))], bottom, 'rgba(0,0,0,0.15)');
+    } else capS(a, b, 0.1 * sc, 0.1 * sc, bottom);
+  });
+  // 躯干
+  push(add3(chest, spine, -0.2 * sc), () => {
+    const sl = Pv(shL), sr = Pv(shR), hl = Pv(add3(hipL, [0, 0.06 * sc, 0], 1)), hr = Pv(add3(hipR, [0, 0.06 * sc, 0], 1));
+    capS(Pv(add3(pel, spine, 0.1 * sc)), Pv(add3(chest, spine, -0.04 * sc)), 0.14 * sc, 0.15 * sc, shirt);
+    polyS([sl, sr, hr, hl], shirt);
+    capS(sl, sr, 0.07 * sc, 0.07 * sc, shirt);
+    // 侧边条纹
+    ctx.strokeStyle = trim; ctx.lineWidth = Math.max(1, 0.025 * sc * sl.s); ctx.lineCap = 'round';
+    ctx.beginPath(); ctx.moveTo(sl.x, sl.y); ctx.lineTo(hl.x, hl.y); ctx.moveTo(sr.x, sr.y); ctx.lineTo(hr.x, hr.y); ctx.stroke();
+    // 背号（背对镜头时）
+    const toCam = norm([CAM.pos[0] - chest[0], CAM.pos[1] - chest[1], CAM.pos[2] - chest[2]]);
+    const facing = fwdW[0] * toCam[0] + fwdW[2] * toCam[2];
+    const c = Pv(mix3(chest, pel, 0.42));
+    if (facing < -0.2 && c.s * sc * 0.16 > 6) {
+      ctx.fillStyle = trim; ctx.font = `bold ${Math.round(c.s * sc * 0.17)}px sans-serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillText(ch.num, c.x, c.y); ctx.textBaseline = 'alphabetic';
+    }
+  });
+  // 手臂
+  const arm = (A, sh, isR) => {
+    push(A.mid, () => {
+      const s = Pv(isR ? shR : shL), e = Pv(A.mid), h = Pv(A.end);
+      const sleeve = Pv(mix3(isR ? shR : shL, A.mid, 0.45));
+      capS(s, e, 0.05 * sc, 0.043 * sc, shade(skin, sh));
+      capS(s, sleeve, 0.064 * sc, 0.06 * sc, shade(shirt, sh));
+      capS(e, h, 0.042 * sc, 0.032 * sc, shade(skin, sh));
+      if (isR && ch.band) capS(Pv(mix3(A.mid, A.end, 0.8)), h, 0.04 * sc, 0.038 * sc, ch.band);
+      ctx.fillStyle = shade(skin, sh * 0.95); ctx.beginPath(); ctx.arc(h.x, h.y, Math.max(1, 0.04 * sc * h.s), 0, 7); ctx.fill();
+    });
+  };
+  arm(armR, 1, true); arm(armL, 0.88, false);
   // 球拍
-  const dl = Math.hypot(pose[3], pose[4], pose[5]) || 1;
-  const dx = pose[3] / dl, dy = pose[4] / dl, dz = pose[5] / dl;
-  const sEnd = L(pose[0] + dx * 0.4, pose[1] + dy * 0.4, pose[2] + dz * 0.4);
-  const hc = L(pose[0] + dx * 0.56, pose[1] + dy * 0.56, pose[2] + dz * 0.56);
-  ctx.strokeStyle = '#333'; ctx.lineWidth = Math.max(1, hand.s * 0.022);
-  ctx.beginPath(); ctx.moveTo(hand.x, hand.y); ctx.lineTo(sEnd.x, sEnd.y); ctx.stroke();
-  const ang = Math.atan2(hc.y - sEnd.y, hc.x - sEnd.x);
-  ctx.save(); ctx.translate(hc.x, hc.y); ctx.rotate(ang);
-  const rr = Math.max(3, hc.s * 0.125);
-  ctx.beginPath(); ctx.ellipse(0, 0, rr * 1.25, rr * 0.95, 0, 0, Math.PI * 2);
-  ctx.fillStyle = 'rgba(255,255,255,0.18)'; ctx.fill();
-  ctx.strokeStyle = ch.color; ctx.lineWidth = Math.max(1.2, hc.s * 0.025); ctx.stroke();
-  ctx.restore();
-  // 呼叫标记（双打）
+  const hand = armR.end;
+  const headC = add3(hand, rdW, 0.56);
+  push(headC, () => {
+    const g0 = Pv(add3(hand, rdW, -0.06)), g1 = Pv(add3(hand, rdW, 0.14)), s1 = Pv(add3(hand, rdW, 0.43));
+    ctx.lineCap = 'round';
+    ctx.strokeStyle = '#2b2b2b'; ctx.lineWidth = Math.max(1.5, 0.028 * g0.s); ctx.beginPath(); ctx.moveTo(g0.x, g0.y); ctx.lineTo(g1.x, g1.y); ctx.stroke();
+    ctx.strokeStyle = '#555'; ctx.lineWidth = Math.max(0.8, 0.01 * g1.s); ctx.beginPath(); ctx.moveTo(g1.x, g1.y); ctx.lineTo(s1.x, s1.y); ctx.stroke();
+    let n = add3(fwdW, rdW, -(fwdW[0] * rdW[0] + fwdW[1] * rdW[1] + fwdW[2] * rdW[2])); n = norm(n[0] || n[1] || n[2] ? n : [0, 1, 0]);
+    const u = norm(cross3(rdW, n));
+    ctx.beginPath();
+    for (let i = 0; i <= 18; i++) {
+      const a = i / 18 * Math.PI * 2;
+      const q = Pv(add3(add3(headC, rdW, Math.cos(a) * 0.125), u, Math.sin(a) * 0.1));
+      i ? ctx.lineTo(q.x, q.y) : ctx.moveTo(q.x, q.y);
+    }
+    ctx.closePath(); ctx.fillStyle = 'rgba(240,240,240,0.16)'; ctx.fill();
+    const hcS = Pv(headC);
+    ctx.strokeStyle = ch.racket; ctx.lineWidth = Math.max(1.2, 0.02 * hcS.s); ctx.stroke();
+  });
+  // 头与发型
+  push(head, () => drawHead(p, head, headFwd, neck));
+  items.sort((a, b) => b.d - a.d);
+  ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+  for (const it of items) it.fn();
   if (p.callT > 0) {
-    const t = L(0, 2.15, 0);
-    ctx.fillStyle = 'rgba(255,255,255,0.9)'; ctx.font = `bold ${Math.max(10, t.s * 0.28)}px sans-serif`; ctx.textAlign = 'center';
+    const t = Pv(add3(head, [0, 1, 0], 0.4));
+    ctx.fillStyle = 'rgba(255,255,255,0.92)'; ctx.font = `bold ${Math.max(10, t.s * 0.26)}px sans-serif`; ctx.textAlign = 'center';
     ctx.fillText('我来!', t.x, t.y);
   }
 }
+function drawHead(p, head, headFwd, neck) {
+  const ch = p.ch, sc = p.sc, R3 = (ch.g === 'f' ? 0.108 : 0.115) * sc;
+  const c = Pv(head), R = Math.max(2, R3 * c.s);
+  const toCam = norm([CAM.pos[0] - head[0], CAM.pos[1] - head[1], CAM.pos[2] - head[2]]);
+  const f = headFwd[0] * toCam[0] + headFwd[2] * toCam[2]; // >0 面向镜头
+  const backPt = add3(head, headFwd, -R3);
+  const hair = ch.hair;
+  // 脖子
+  capS(Pv(neck), c, 0.045 * sc, 0.05 * sc, shade(ch.skin, 0.9));
+  const tail = () => {
+    if (ch.hs === 'pony') {
+      const base = add3(add3(backPt, [0, 1, 0], 0.55 * R3), headFwd, 0);
+      const sway = cdir(p, [p.an.pony, 0, 0]);
+      const end = add3(add3(add3(base, headFwd, -0.1 * sc), [0, -1, 0], 0.2 * sc), sway, 1);
+      const mid = add3(mix3(base, end, 0.5), headFwd, -0.03 * sc);
+      capS(Pv(base), Pv(mid), 0.035 * sc, 0.04 * sc, hair); capS(Pv(mid), Pv(end), 0.04 * sc, 0.02 * sc, hair);
+    } else if (ch.hs === 'long') {
+      const b0 = add3(head, headFwd, -0.4 * R3), b1 = add3(add3(b0, [0, -1, 0], 0.3 * sc), headFwd, -0.04 * sc);
+      capS(Pv(b0), Pv(b1), R3 * 0.95, R3 * 0.8, hair);
+    } else if (ch.hs === 'bun') {
+      const b = add3(add3(backPt, [0, 1, 0], 0.75 * R3), headFwd, 0.1 * R3);
+      const q = Pv(b); ctx.fillStyle = hair; ctx.beginPath(); ctx.arc(q.x, q.y, Math.max(1.2, 0.055 * sc * q.s), 0, 7); ctx.fill();
+    }
+  };
+  const behind = f > 0; // 面向镜头时马尾在头后
+  if (behind) tail();
+  if (ch.hs === 'bob' || ch.hs === 'long') { ctx.fillStyle = hair; ctx.beginPath(); ctx.ellipse(c.x, c.y + R * 0.15, R * 1.12, R * 1.15, 0, 0, 7); ctx.fill(); }
+  // 头部
+  ctx.fillStyle = ch.skin; ctx.beginPath(); ctx.arc(c.x, c.y, R, 0, Math.PI * 2); ctx.fill();
+  // 头发（裁剪到头部圆内）：发际线高度随朝向变化
+  ctx.save(); ctx.beginPath(); ctx.arc(c.x, c.y, R * 1.02, 0, Math.PI * 2); ctx.clip();
+  const cover = { crew: 0.05, buzz: 0.0, short: 0.1, spiky: 0.05, swept: 0.12, pony: 0.15, bun: 0.15, bob: 0.4, long: 0.35 }[ch.hs] || 0.1;
+  const lineY = c.y + R * lerp(-0.3 + cover * 0.3, 0.55 + cover, (1 - f) / 2);
+  const bp = Pv(backPt); const shiftX = (bp.x - c.x) * 0.6;
+  ctx.fillStyle = ch.hs === 'buzz' ? shade(hair, 1.4) : hair;
+  ctx.beginPath(); ctx.ellipse(c.x + shiftX, lineY - R * 1.1, R * 1.5, R * 1.25, 0, 0, Math.PI * 2); ctx.fill();
+  if (ch.band) { ctx.strokeStyle = ch.band; ctx.lineWidth = Math.max(1, R * 0.28); ctx.beginPath(); ctx.moveTo(c.x - R * 1.2, lineY - R * 0.05); ctx.lineTo(c.x + R * 1.2, lineY - R * 0.05); ctx.stroke(); }
+  ctx.restore();
+  if (ch.hs === 'spiky') {
+    ctx.fillStyle = hair;
+    for (let i = -2; i <= 2; i++) { const x = c.x + i * R * 0.38; ctx.beginPath(); ctx.moveTo(x - R * 0.2, c.y - R * 0.75); ctx.lineTo(x, c.y - R * 1.3); ctx.lineTo(x + R * 0.2, c.y - R * 0.75); ctx.fill(); }
+  }
+  // 五官（面向镜头且足够大）
+  if (f > 0.25 && R > 4) {
+    const side = (Pv(add3(head, headFwd, R3)).x - c.x) * 0.35;
+    ctx.fillStyle = '#2a1c14';
+    const ey = c.y + R * 0.05;
+    ctx.beginPath(); ctx.arc(c.x + side - R * 0.36, ey, Math.max(0.7, R * 0.09), 0, 7); ctx.arc(c.x + side + R * 0.36, ey, Math.max(0.7, R * 0.09), 0, 7); ctx.fill();
+    ctx.strokeStyle = 'rgba(140,60,50,0.7)'; ctx.lineWidth = Math.max(0.6, R * 0.07);
+    ctx.beginPath(); ctx.moveTo(c.x + side - R * 0.2, c.y + R * 0.5); ctx.lineTo(c.x + side + R * 0.2, c.y + R * 0.5); ctx.stroke();
+  }
+  if (!behind) tail();
+}
+
+// 菜单头像（正面半身）
+function drawPortrait(cv2, ch) {
+  const g = cv2.getContext('2d'); const w = cv2.width, h = cv2.height;
+  g.clearRect(0, 0, w, h);
+  const bg = g.createLinearGradient(0, 0, 0, h); bg.addColorStop(0, shade(ch.shirt, 0.45)); bg.addColorStop(1, shade(ch.shirt, 0.2));
+  g.fillStyle = bg; g.fillRect(0, 0, w, h);
+  const cx = w / 2, R = w * 0.19, cy = h * 0.42;
+  const sw = (ch.g === 'f' ? 0.38 : 0.46) * w * (ch.build || 1);
+  if (ch.hs === 'long' || ch.hs === 'bob') { g.fillStyle = ch.hair; g.beginPath(); g.ellipse(cx, cy + R * (ch.hs === 'long' ? 0.7 : 0.25), R * 1.18, R * (ch.hs === 'long' ? 1.7 : 1.2), 0, 0, 7); g.fill(); }
+  if (ch.hs === 'pony') { g.fillStyle = ch.hair; g.beginPath(); g.ellipse(cx + R * 1.05, cy + R * 0.3, R * 0.3, R * 0.75, -0.3, 0, 7); g.fill(); }
+  // 身体
+  g.fillStyle = ch.shirt; g.beginPath();
+  g.moveTo(cx - sw / 2, h); g.lineTo(cx - sw / 2, h * 0.78); g.quadraticCurveTo(cx - sw / 2, h * 0.66, cx - sw * 0.2, h * 0.66);
+  g.lineTo(cx + sw * 0.2, h * 0.66); g.quadraticCurveTo(cx + sw / 2, h * 0.66, cx + sw / 2, h * 0.78); g.lineTo(cx + sw / 2, h); g.fill();
+  g.strokeStyle = ch.trim; g.lineWidth = 2; g.beginPath(); g.moveTo(cx - sw * 0.15, h * 0.67); g.lineTo(cx, h * 0.76); g.lineTo(cx + sw * 0.15, h * 0.67); g.stroke();
+  g.fillStyle = shade(ch.skin, 0.9); g.fillRect(cx - R * 0.35, cy + R * 0.7, R * 0.7, h * 0.66 - cy - R * 0.6);
+  g.fillStyle = ch.skin; g.beginPath(); g.ellipse(cx, cy, R * 0.92, R, 0, 0, 7); g.fill();
+  // 头发
+  g.save(); g.beginPath(); g.ellipse(cx, cy, R * 0.95, R * 1.03, 0, 0, 7); g.clip();
+  const cover = { crew: 0.05, buzz: 0.0, short: 0.1, spiky: 0.05, swept: 0.15, pony: 0.12, bun: 0.12, bob: 0.3, long: 0.25 }[ch.hs] || 0.1;
+  g.fillStyle = ch.hs === 'buzz' ? shade(ch.hair, 1.5) : ch.hair;
+  g.beginPath(); g.ellipse(cx + (ch.hs === 'swept' ? R * 0.25 : 0), cy - R * (1.25 - cover), R * 1.5, R * 0.95, ch.hs === 'swept' ? 0.25 : 0, 0, 7); g.fill();
+  if (ch.band) { g.fillStyle = ch.band; g.fillRect(cx - R, cy - R * (0.42 - cover), R * 2, R * 0.22); }
+  g.restore();
+  if (ch.hs === 'spiky') { g.fillStyle = ch.hair; for (let i = -2; i <= 2; i++) { const x = cx + i * R * 0.36; g.beginPath(); g.moveTo(x - R * 0.2, cy - R * 0.75); g.lineTo(x + R * 0.05, cy - R * 1.32); g.lineTo(x + R * 0.2, cy - R * 0.75); g.fill(); } }
+  if (ch.hs === 'bun') { g.fillStyle = ch.hair; g.beginPath(); g.arc(cx, cy - R * 1.05, R * 0.38, 0, 7); g.fill(); }
+  g.fillStyle = '#2a1c14'; g.beginPath(); g.arc(cx - R * 0.36, cy + R * 0.08, R * 0.1, 0, 7); g.arc(cx + R * 0.36, cy + R * 0.08, R * 0.1, 0, 7); g.fill();
+  g.strokeStyle = 'rgba(150,60,50,0.8)'; g.lineWidth = 1.5; g.beginPath(); g.arc(cx, cy + R * 0.35, R * 0.22, 0.2, Math.PI - 0.2); g.stroke();
+  // 号码
+  g.fillStyle = ch.trim; g.font = `bold ${Math.round(w * 0.16)}px sans-serif`; g.textAlign = 'center'; g.fillText(ch.num, cx, h * 0.95);
+}
+
 function drawShadow(x, z, r, a) {
   const c = P(x, 0, z);
   const c2 = P(x, 0, z + r);
@@ -1462,7 +1891,10 @@ function drawShuttle() {
   }
   let dx = sh.vx, dy = sh.vy, dz = sh.vz;
   if (!sh.flying && state === 'serve') { dx = 0; dy = -1; dz = 0; }
-  if (sp < 0.5 && !(state === 'serve')) { dx = 0; dy = -1; dz = 0; }
+  if (!sh.flying && state !== 'serve' && sh.y <= 0.001) {
+    const sl = sh.slide; const rd = sl ? [sl.vx, sl.vz] : sh.restDir;
+    if (rd) { dx = rd[0]; dy = -0.15 * Math.hypot(rd[0], rd[1]); dz = rd[1]; } else { dx = 0; dy = -1; dz = 0; }
+  } else if (sp < 0.5 && state !== 'serve') { dx = 0; dy = -1; dz = 0; }
   const l = Math.hypot(dx, dy, dz) || 1;
   const c = P(sh.x, sh.y, sh.z);
   const t = P(sh.x - dx / l * 0.075, sh.y - dy / l * 0.075, sh.z - dz / l * 0.075);
@@ -1503,13 +1935,11 @@ function aimTarget(p, c) {
     return [tx, -dep];
   }
   const y = c.plan ? c.plan.y : 2.2, z = c.plan ? c.plan.z : p.z;
-  const nearNet = Math.abs(z) < 2.35;
-  let dep;
-  if (c.btn === 'A') dep = 5.75 + 0.45 * a[1];
-  else if (c.btn === 'B') dep = y < 1.75 && nearNet ? 0.87 + 0.32 * a[1] : y >= 2 ? 2.1 + 0.55 * a[1] : 1.8 + 0.45 * a[1];
-  else if (c.btn === 'C') dep = y >= 2 && !nearNet ? 3.6 + 1.3 * a[1] : nearNet && y > NET_H + 0.12 ? 2.6 + 1.3 * a[1] : 3.0 + 1.1 * a[1];
-  else dep = y >= 2 ? 6.0 + 0.4 * a[1] : 5.2 + 1.5 * a[1];
-  return [a[0] * 0.86 * HW, -clamp(dep, 0.5, 6.6)];
+  const ce = c.btn === 'C' ? Math.min(c.t / 0.72, 1) : c.btn === 'B' ? 0.5 : 0.9;
+  const jumpOK = c.btn === 'C' && ce > 0.55 && y > 2.35 && Math.abs(z) > 2.6;
+  const kind = classify(p, c.btn, y, z, false, 1, jumpOK);
+  const dep = clamp(baseDepth(kind, null, ce) + (AIM_K[kind] || 1) * a[1] * 1.6, 0.45, HL - 0.08);
+  return [clamp(a[0] * 1.08, -1, 1) * (HW - 0.07), p.side === 0 ? -dep : dep];
 }
 function addPopup(text, x, y, z, color, size) { popups.push({ text, x, y, z, color, size: size || 14, t: 0 }); if (popups.length > 8) popups.shift(); }
 function setBanner(text, dur, color) { banner = { text, t: 0, dur, color: color || '#ffffff' }; }
@@ -1553,7 +1983,7 @@ function render(dt) {
     }
   }
   // 阴影
-  for (const p of players) drawShadow(p.x, p.z, 0.32, 0.32);
+  for (const p of players) { const pp = p.an ? p.an.pel : [p.x, p.z]; drawShadow(pp[0], pp[1], 0.34 * p.sc, Math.max(0.12, 0.34 - p.jumpY * 0.3)); }
   if (sh.y > 0 || state === 'serve') drawShadow(sh.x, sh.z, 0.05, clamp(0.5 - sh.y * 0.04, 0.15, 0.5));
   // 深度排序
   const objs = players.map(p => ({ z: p.z, f: () => drawPlayer(p) }));
@@ -1568,7 +1998,7 @@ function render(dt) {
     if (pt.t > pt.life) { particles.splice(i, 1); continue; }
     pt.x += pt.vx * dt; pt.y += pt.vy * dt; pt.z += pt.vz * dt; pt.vy -= 4 * dt;
     const q = P(pt.x, pt.y, pt.z);
-    ctx.fillStyle = `rgba(255,255,255,${1 - pt.t / pt.life})`;
+    ctx.fillStyle = pt.dust ? `rgba(210,230,215,${0.6 * (1 - pt.t / pt.life)})` : `rgba(255,255,255,${1 - pt.t / pt.life})`;
     ctx.fillRect(q.x - 1.2, q.y - 1.2, 2.4, 2.4);
   }
   // 弹出文字
@@ -1752,13 +2182,40 @@ function buildMenu() {
       b.onclick = () => { settings[key] = b.dataset.v; saveSettings(); buildMenu(); };
     });
   });
+  if (!settings.slot) settings.slot = 'char';
+  if (settings.opp === undefined) settings.opp = -1;
+  if (settings.mate === undefined) settings.mate = -1;
+  document.querySelectorAll('#slotSeg button').forEach(b => {
+    b.classList.toggle('on', settings.slot === b.dataset.s);
+    b.style.display = b.dataset.s === 'mate' && settings.mode !== 'doubles' ? 'none' : '';
+    b.onclick = () => { settings.slot = b.dataset.s; buildMenu(); };
+  });
+  if (settings.slot === 'mate' && settings.mode !== 'doubles') settings.slot = 'char';
+  $('randBtn').style.display = settings.slot === 'char' ? 'none' : '';
+  $('randBtn').onclick = () => { settings[settings.slot] = -1; saveSettings(); buildMenu(); };
+  const nm = i => (+i >= 0 && CHARS[+i]) ? CHARS[+i].name : '随机';
+  const me = CHARS[settings.char | 0];
+  $('pickInfo').innerHTML = `你：<b>${me.name}</b>（${me.desc}） · 对手：<b>${nm(settings.opp)}</b>` + (settings.mode === 'doubles' ? ` · 队友：<b>${nm(settings.mate)}</b>` : '');
   const ce = $('chars'); ce.innerHTML = '';
   CHARS.forEach((c, i) => {
     const d = document.createElement('div');
-    d.className = 'char' + ((settings.char | 0) === i ? ' on' : '');
-    const bar = (n, v) => `<div style="display:flex;gap:4px;align-items:center"><span style="width:22px;color:#9fb0cc">${n}</span><div class="bar" style="flex:1"><i style="width:${v * 10}%"></i></div></div>`;
-    d.innerHTML = `<b style="color:${c.color}">${c.name}</b><span class="tag">${c.tag}</span>${bar('速度', c.spd)}${bar('力量', c.pow)}${bar('耐力', c.sta)}${bar('技术', c.tec)}`;
-    d.onclick = () => { settings.char = i; saveSettings(); buildMenu(); };
+    let cls = 'char', badge = '';
+    if ((settings.char | 0) === i) { cls += ' on'; badge = '<span class="badge" style="background:#2fd47a;color:#04210f">你</span>'; }
+    else if (+settings.opp === i) { cls += ' opp'; badge = '<span class="badge" style="background:#ff6a55;color:#fff">对手</span>'; }
+    else if (+settings.mate === i && settings.mode === 'doubles') { cls += ' mate'; badge = '<span class="badge" style="background:#4f9dff;color:#fff">队友</span>'; }
+    d.className = cls;
+    const bar = (n, v) => `<div><span>${n}</span><div class="bar"><i style="width:${v * 10}%"></i></div></div>`;
+    const lum = (h) => { const n = parseInt(h.slice(1), 16); return 0.3 * (n >> 16) + 0.59 * ((n >> 8) & 255) + 0.11 * (n & 255); };
+    const nc = lum(c.shirt) < 70 ? c.racket : lum(c.shirt) > 225 ? '#cfe0ff' : c.shirt;
+    d.innerHTML = `<canvas width="88" height="104"></canvas><div class="info"><b style="color:${nc}">${c.name}</b> <span class="tag">${c.g === 'f' ? '♀' : '♂'}${c.h.toFixed(2)}</span><div class="tag">${c.tag}${c.hd < 0 ? ' · 左手' : ''}</div>
+      <div class="st">${bar('速度', c.spd)}${bar('力量', c.pow)}${bar('耐力', c.sta)}${bar('技术', c.tec)}${bar('防守', c.def)}${bar('网前', c.net)}${bar('弹跳', c.jump)}${bar('假动', c.decept)}</div></div>${badge}`;
+    drawPortrait(d.querySelector('canvas'), c);
+    d.onclick = () => {
+      const slot = settings.slot;
+      if (slot === 'char') { if (+settings.opp === i) settings.opp = -1; if (+settings.mate === i) settings.mate = -1; settings.char = i; }
+      else { if ((settings.char | 0) === i) return; if (slot === 'opp' && +settings.mate === i) settings.mate = -1; if (slot === 'mate' && +settings.opp === i) settings.opp = -1; settings[slot] = i; }
+      saveSettings(); buildMenu();
+    };
     ce.appendChild(d);
   });
 }
@@ -1824,7 +2281,8 @@ resize();
 if (/[?&]demo=1/.test(location.search)) { if (/doubles/.test(location.search)) settings.mode = 'doubles'; startGame(true); }
 requestAnimationFrame(loop);
 // 测试钩子
-window.__game = { get state() { return state; }, get match() { return match; }, get players() { return players; }, get rallyPath() { return rallyPath; }, get pathT0() { return pathT0; }, get simT() { return simT; }, sh, update, settings, pressBtn, releaseBtn, planIntercept };
+window.__game = { get state() { return state; }, get match() { return match; }, get players() { return players; }, get rallyPath() { return rallyPath; }, get pathT0() { return pathT0; }, get simT() { return simT; }, sh, update, settings, pressBtn, releaseBtn, planIntercept,
+  closeCam(pos, look, foc) { CAM.pos = pos; CAM.look = look; setupCam(); FOC = foc; OX = W / 2; OY = H / 2; renderStatic(); }, render, updateAnim, KF };
 </script>
 </body>
 </html>
