@@ -1,0 +1,1739 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#0b1220">
+<title>羽境 · 3D 触屏羽毛球</title>
+<style>
+:root{--ink:#eef3ff;--muted:#9fb0cc;--accent:#2fd47a;--accent2:#3aa0ff;--warn:#ffb020;--panel:rgba(12,20,36,.92);--line:rgba(255,255,255,.12)}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%;overflow:hidden;background:#0b1220;color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei","Segoe UI",sans-serif;touch-action:none;user-select:none;-webkit-user-select:none;overscroll-behavior:none}
+canvas#game{position:fixed;inset:0;width:100vw;height:100vh;display:block;touch-action:none}
+.overlay{position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:radial-gradient(ellipse at 50% 30%,rgba(20,60,50,.75),rgba(5,10,20,.94));z-index:10;padding:max(10px,env(safe-area-inset-top)) max(14px,env(safe-area-inset-right)) max(10px,env(safe-area-inset-bottom)) max(14px,env(safe-area-inset-left));overflow:auto;touch-action:pan-y}
+.overlay.show{display:flex}
+.box{width:min(860px,100%);max-height:100%;overflow:auto;background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:14px 18px;box-shadow:0 20px 60px rgba(0,0,0,.5);touch-action:pan-y}
+h1{margin:0;font-size:30px;letter-spacing:.08em;background:linear-gradient(90deg,#7dffb2,#4fb6ff);-webkit-background-clip:text;background-clip:text;color:transparent}
+.sub{color:var(--muted);font-size:12px;letter-spacing:.2em;margin-bottom:8px}
+.cols{display:grid;grid-template-columns:1fr 1fr;gap:6px 18px}
+@media (max-width:620px){.cols{grid-template-columns:1fr}}
+.row{display:flex;align-items:center;gap:8px;margin:4px 0;flex-wrap:wrap}
+.row>label{min-width:58px;color:var(--muted);font-size:13px}
+.seg{display:flex;gap:4px;flex-wrap:wrap}
+.seg button,.btn{border:1px solid var(--line);background:rgba(255,255,255,.06);color:var(--ink);border-radius:9px;padding:6px 11px;font-size:13px;cursor:pointer}
+.seg button.on{background:linear-gradient(180deg,#2fd47a,#1c9c58);border-color:#5ff0a0;color:#06210f;font-weight:700}
+.btn.big{font-size:17px;font-weight:800;padding:10px 26px;background:linear-gradient(180deg,#36e087,#17a35a);color:#05200f;border:none}
+.btn.alt{background:rgba(80,140,255,.18);border-color:rgba(120,170,255,.4)}
+.chars{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin:6px 0}
+@media (max-width:620px){.chars{grid-template-columns:repeat(3,1fr)}}
+.char{border:1px solid var(--line);border-radius:10px;padding:6px;background:rgba(255,255,255,.04);cursor:pointer;font-size:11px}
+.char.on{border-color:#5ff0a0;background:rgba(47,212,122,.16)}
+.char b{font-size:13px;display:block}
+.char .tag{color:var(--muted)}
+.bar{height:4px;background:rgba(255,255,255,.1);border-radius:2px;margin:2px 0 1px;overflow:hidden}
+.bar i{display:block;height:100%;background:linear-gradient(90deg,#3aa0ff,#7dffb2)}
+.actions{display:flex;gap:10px;justify-content:center;margin-top:10px;flex-wrap:wrap}
+#menu .actions{position:sticky;bottom:-14px;background:linear-gradient(180deg,rgba(12,20,36,0),rgba(12,20,36,.97) 30%);padding:10px 0 12px;margin-bottom:-14px}
+@media (max-height:460px){
+  .box{padding:10px 14px}
+  h1{font-size:22px}.sub{margin-bottom:4px}
+  .row{margin:2px 0}.seg button,.btn{padding:4px 9px;font-size:12px}
+  .char{padding:4px 6px;font-size:10px}.char b{font-size:12px;display:inline;margin-right:4px}
+  .bar{height:3px;margin:1px 0}
+  .btn.big{padding:8px 22px;font-size:15px}
+}
+.help{font-size:13px;line-height:1.65;color:#d6e0f5}
+.help h3{margin:10px 0 4px;color:#7dffb2;font-size:15px}
+.help table{border-collapse:collapse;width:100%;font-size:12px}
+.help td,.help th{border:1px solid var(--line);padding:3px 6px;text-align:left}
+.help th{color:#9fe8c0}
+.k{display:inline-block;min-width:20px;padding:0 5px;border-radius:5px;background:rgba(255,255,255,.12);text-align:center;font-weight:700}
+.res h2{margin:4px 0;text-align:center;font-size:26px}
+.res table{width:100%;border-collapse:collapse;font-size:13px;margin-top:8px}
+.res td{padding:4px 6px;border-bottom:1px solid var(--line);text-align:center}
+.res td:first-child{text-align:left;color:var(--muted)}
+#rotate{position:fixed;inset:0;z-index:20;display:none;align-items:center;justify-content:center;flex-direction:column;background:rgba(5,10,20,.96);text-align:center;padding:20px}
+#rotate.show{display:flex}
+#rotate .ph{width:60px;height:100px;border:4px solid #7dffb2;border-radius:12px;animation:rot 2s infinite ease-in-out;margin-bottom:20px}
+@keyframes rot{0%,20%{transform:rotate(0)}60%,100%{transform:rotate(-90deg)}}
+</style>
+</head>
+<body>
+<canvas id="game"></canvas>
+
+<div id="menu" class="overlay show">
+  <div class="box">
+    <h1>羽境</h1>
+    <div class="sub">3D 触屏羽毛球 · 拟真物理 · 单打 / 双打</div>
+    <div class="cols">
+      <div>
+        <div class="row"><label>模式</label><div class="seg" data-key="mode"><button data-v="singles">单打</button><button data-v="doubles">双打</button></div></div>
+        <div class="row"><label>难度</label><div class="seg" data-key="diff"><button data-v="easy">简单</button><button data-v="normal">普通</button><button data-v="hard">困难</button><button data-v="master">大师</button></div></div>
+        <div class="row"><label>赛制</label><div class="seg" data-key="games"><button data-v="1">1局</button><button data-v="3">3局2胜</button></div></div>
+        <div class="row"><label>每局</label><div class="seg" data-key="points"><button data-v="11">11分</button><button data-v="15">15分</button><button data-v="21">21分</button></div></div>
+      </div>
+      <div>
+        <div class="row"><label>落点提示</label><div class="seg" data-key="marker"><button data-v="1">开</button><button data-v="0">关</button></div></div>
+        <div class="row"><label>击球辅助</label><div class="seg" data-key="assist"><button data-v="0">关</button><button data-v="1">开(自动挥拍时机)</button></div></div>
+        <div class="row"><label>游戏速度</label><div class="seg" data-key="speed"><button data-v="0.75">慢</button><button data-v="0.88">标准</button><button data-v="1">真实</button></div></div>
+        <div class="row"><label>音效</label><div class="seg" data-key="sound"><button data-v="1">开</button><button data-v="0">关</button></div></div>
+      </div>
+    </div>
+    <div class="row" style="margin-top:4px"><label>选择球员</label></div>
+    <div class="chars" id="chars"></div>
+    <div class="actions">
+      <button class="btn big" id="startBtn">开始比赛</button>
+      <button class="btn alt" id="helpBtn">操作与规则</button>
+      <button class="btn" id="demoBtn">观看AI演示</button>
+    </div>
+  </div>
+</div>
+
+<div id="help" class="overlay">
+  <div class="box help">
+    <h3>基本操作</h3>
+    <div>左半屏任意位置按住拖动 = <b>摇杆移动</b>；右下角 4 个击球键。<b>按住击球键蓄力，松开即挥拍</b>，球拍在松手后约 0.1 秒到达击球点。挥拍时机 + 站位决定击球质量（完美 / 很好 / 一般 / 勉强），时机太差会挥空或擦框。</div>
+    <div>松手瞬间摇杆的方向 = <b>击球方向</b>：左右控制落点左右（不推摇杆=打向中路），向上推=打得更深/更远，向下拉=更短更近网。蓄力越久球越有力、越深，但蓄力条进入红色区间会"用力过猛"导致失误增加。</div>
+    <h3>击球键（随击球高度和位置自动变化）</h3>
+    <table>
+      <tr><th>按键</th><th>高点（头顶）</th><th>中路（胸前）</th><th>低点（膝下）</th></tr>
+      <tr><td><span class="k">高远</span></td><td>高远球</td><td>挑高球</td><td>挑后场</td></tr>
+      <tr><td><span class="k">吊球</span></td><td>吊球（蓄力=劈吊）</td><td>挡网</td><td>网前搓/放网（离网近时）</td></tr>
+      <tr><td><span class="k">杀球</span></td><td>杀球 / 跳杀 / 网前扑球</td><td>点杀 / 扑球</td><td>推球</td></tr>
+      <tr><td><span class="k">平抽</span></td><td>平高球（进攻高远）</td><td>平抽</td><td>推后场</td></tr>
+    </table>
+    <div>发球时：<span class="k">吊球</span>=网前短发球，<span class="k">高远</span>=后场高远球，<span class="k">平抽</span>/<span class="k">杀球</span>=平快球，摇杆调整左右。高点球才能杀，蓄满力+球足够高会自动起跳杀球。够不到的低球会自动跨步/飞扑救球（质量下降、需要恢复时间）。</div>
+    <h3>体力</h3>
+    <div>冲刺、跳杀、飞扑都会消耗体力；体力低时移动变慢、失误增加。每分之间会恢复一部分。</div>
+    <h3>规则</h3>
+    <div>每球得分制，先到 11/15/21 分且领先 2 分获胜（21 分制 29 平后 30 分封顶）。得分方发球，发球方分数为双数在右区、单数在左区发球，发到对角区。单打场地为内侧边线+端线，双打为外侧边线；双打发球不得超过双打后发球线。下网、出界、发球不到位均失分。双打中你的AI队友会根据攻守自动轮转站位（进攻前后站位、防守左右站位）。</div>
+    <h3>电脑键盘（可选）</h3>
+    <div><span class="k">WASD</span>/方向键 移动，<span class="k">J</span>高远 <span class="k">K</span>吊球 <span class="k">L</span>杀球 <span class="k">I</span>平抽，<span class="k">P</span>暂停。</div>
+    <div class="actions"><button class="btn big" data-close="help">明白了</button></div>
+  </div>
+</div>
+
+<div id="pause" class="overlay">
+  <div class="box" style="width:min(380px,100%);text-align:center">
+    <h1 style="font-size:24px">暂停</h1>
+    <div class="actions" style="flex-direction:column;align-items:stretch">
+      <button class="btn big" id="resumeBtn">继续比赛</button>
+      <button class="btn alt" id="helpBtn2">操作与规则</button>
+      <button class="btn" id="restartBtn">重新开始</button>
+      <button class="btn" id="quitBtn">返回主菜单</button>
+    </div>
+  </div>
+</div>
+
+<div id="result" class="overlay">
+  <div class="box res" style="width:min(520px,100%)">
+    <h2 id="resTitle">胜利</h2>
+    <div id="resScore" style="text-align:center;color:var(--muted)"></div>
+    <table id="resTable"></table>
+    <div class="actions"><button class="btn big" id="againBtn">再来一场</button><button class="btn" id="menuBtn">主菜单</button></div>
+  </div>
+</div>
+
+<div id="rotate"><div class="ph"></div><div style="font-size:18px;font-weight:700">请将手机横屏游玩</div><div style="color:#9fb0cc;margin:8px 0 18px;font-size:13px">横屏视野更完整，操作更舒适</div><button class="btn" id="portraitBtn">仍然竖屏游玩</button></div>
+
+<script>
+'use strict';
+/* =========================================================================
+   羽境 —— 3D 触屏羽毛球
+   世界坐标(米)：x 横向(右为正)，y 高度，z 纵向（玩家方 z>0，对手方 z<0，球网 z=0）
+   ========================================================================= */
+const cv = document.getElementById('game');
+const ctx = cv.getContext('2d');
+let W = 0, H = 0, DPR = 1;
+
+// ---------- 常量 ----------
+const G = 9.81, VT = 6.8, KD = G / (VT * VT), PDT = 1 / 240, DEG = Math.PI / 180;
+const HL = 6.7, SSL = 1.98, LSL_D = 5.94, HW_S = 2.59, HW_D = 3.05, NET_H = 1.524, POST_H = 1.55;
+const SW_HIT = 0.11, SW_W0 = 0.035, SW_W1 = 0.19, SW_END = 0.36;
+const REACH = 0.64, LUNGE_EXTRA = 0.5, MAXH = 2.68, JUMPH = 0.5;
+
+const clamp = (v, a, b) => v < a ? a : v > b ? b : v;
+const lerp = (a, b, t) => a + (b - a) * t;
+function gauss() { let u = 0; while (!u) u = Math.random(); return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * Math.random()); }
+const rnd = (a, b) => a + Math.random() * (b - a);
+
+// ---------- 设置 ----------
+const DEFAULTS = { mode: 'singles', diff: 'normal', games: '3', points: '21', marker: '1', assist: '0', speed: '0.88', sound: '1', char: 0 };
+let settings = Object.assign({}, DEFAULTS);
+try { Object.assign(settings, JSON.parse(localStorage.getItem('yujing_settings') || '{}')); } catch (e) {}
+function saveSettings() { try { localStorage.setItem('yujing_settings', JSON.stringify(settings)); } catch (e) {} }
+
+const CHARS = [
+  { name: '林远', tag: '全面型', spd: 7, pow: 7, sta: 7, tec: 7, color: '#2f7cf6', color2: '#ffffff', hair: '#1b1b1b' },
+  { name: '霍刚', tag: '力量型', spd: 5, pow: 10, sta: 6, tec: 6, color: '#e2392f', color2: '#1d1d1d', hair: '#2a1a10' },
+  { name: '苏影', tag: '速度型', spd: 10, pow: 5, sta: 7, tec: 7, color: '#13b38a', color2: '#ffffff', hair: '#3a2416' },
+  { name: '陈思', tag: '技术型', spd: 6, pow: 6, sta: 7, tec: 10, color: '#8d4be8', color2: '#f2f2f2', hair: '#111' },
+  { name: '韩铁', tag: '耐力型', spd: 7, pow: 6, sta: 10, tec: 6, color: '#f08a1c', color2: '#202020', hair: '#1f1f1f' },
+];
+const DIFF = {
+  easy:   { react: 0.36, spd: 0.80, tNoise: 0.055, err: 1.7, judge: 0.25, smash: 0.30, aimSkill: 0.25 },
+  normal: { react: 0.26, spd: 0.92, tNoise: 0.035, err: 1.15, judge: 0.55, smash: 0.50, aimSkill: 0.55 },
+  hard:   { react: 0.19, spd: 1.00, tNoise: 0.022, err: 0.8, judge: 0.8, smash: 0.65, aimSkill: 0.8 },
+  master: { react: 0.13, spd: 1.06, tNoise: 0.012, err: 0.55, judge: 0.93, smash: 0.75, aimSkill: 0.95 },
+};
+const SHOT_NAME = {
+  clear: '高远球', attclear: '平高球', lift: '挑球', drop: '吊球', slice: '劈吊', net: '放网', block: '挡网',
+  smash: '杀球', jsmash: '跳杀', halfsmash: '点杀', kill: '扑球', drive: '平抽', push: '推球', frame: '擦框',
+  sShort: '网前发球', sLong: '高远发球', sFlick: '平快发球',
+};
+
+// ---------- 音效 ----------
+let AC = null;
+function audioInit() { if (AC) return; try { AC = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) { AC = null; } }
+function noiseBuf(len) { const b = AC.createBuffer(1, AC.sampleRate * len, AC.sampleRate); const d = b.getChannelData(0); for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1; return b; }
+let NB = null;
+function sfx(type, vol = 1) {
+  if (!AC || settings.sound !== '1') return;
+  if (AC.state === 'suspended') AC.resume();
+  if (!NB) NB = noiseBuf(2);
+  const t = AC.currentTime;
+  if (type === 'hit' || type === 'smash') {
+    const n = AC.createBufferSource(); n.buffer = NB;
+    const f = AC.createBiquadFilter(); f.type = 'bandpass'; f.frequency.value = type === 'smash' ? 1800 : 2600; f.Q.value = 1.2;
+    const g = AC.createGain(); const v = (type === 'smash' ? 0.9 : 0.5) * vol;
+    g.gain.setValueAtTime(v, t); g.gain.exponentialRampToValueAtTime(0.001, t + (type === 'smash' ? 0.12 : 0.07));
+    n.connect(f); f.connect(g); g.connect(AC.destination); n.start(t, Math.random()); n.stop(t + 0.15);
+    const o = AC.createOscillator(); o.type = 'triangle'; o.frequency.setValueAtTime(type === 'smash' ? 900 : 1300, t); o.frequency.exponentialRampToValueAtTime(300, t + 0.05);
+    const g2 = AC.createGain(); g2.gain.setValueAtTime(0.25 * vol, t); g2.gain.exponentialRampToValueAtTime(0.001, t + 0.06);
+    o.connect(g2); g2.connect(AC.destination); o.start(t); o.stop(t + 0.07);
+  } else if (type === 'land') {
+    const o = AC.createOscillator(); o.type = 'sine'; o.frequency.setValueAtTime(180, t); o.frequency.exponentialRampToValueAtTime(60, t + 0.08);
+    const g = AC.createGain(); g.gain.setValueAtTime(0.35 * vol, t); g.gain.exponentialRampToValueAtTime(0.001, t + 0.1);
+    o.connect(g); g.connect(AC.destination); o.start(t); o.stop(t + 0.12);
+  } else if (type === 'net') {
+    const n = AC.createBufferSource(); n.buffer = NB; const f = AC.createBiquadFilter(); f.type = 'lowpass'; f.frequency.value = 700;
+    const g = AC.createGain(); g.gain.setValueAtTime(0.4, t); g.gain.exponentialRampToValueAtTime(0.001, t + 0.18);
+    n.connect(f); f.connect(g); g.connect(AC.destination); n.start(t); n.stop(t + 0.2);
+  } else if (type === 'crowd') {
+    const n = AC.createBufferSource(); n.buffer = NB; const f = AC.createBiquadFilter(); f.type = 'bandpass'; f.frequency.value = 1100; f.Q.value = 0.5;
+    const g = AC.createGain(); g.gain.setValueAtTime(0.001, t); g.gain.linearRampToValueAtTime(0.22 * vol, t + 0.25); g.gain.exponentialRampToValueAtTime(0.001, t + 1.6);
+    n.connect(f); f.connect(g); g.connect(AC.destination); n.start(t); n.stop(t + 1.7);
+  } else if (type === 'whistle') {
+    const o = AC.createOscillator(); o.type = 'square'; o.frequency.value = 2400;
+    const g = AC.createGain(); g.gain.setValueAtTime(0.06, t); g.gain.setValueAtTime(0.0001, t + 0.25);
+    o.connect(g); g.connect(AC.destination); o.start(t); o.stop(t + 0.26);
+  }
+}
+
+// ---------- 摄像机 / 投影 ----------
+const CAM = { pos: [0, 6.4, 10.4], look: [0, 0, -0.9] };
+let cR, cU, cF, FOC = 1, OX = 0, OY = 0;
+function norm(v) { const l = Math.hypot(v[0], v[1], v[2]); return [v[0] / l, v[1] / l, v[2] / l]; }
+function setupCam() {
+  cF = norm([CAM.look[0] - CAM.pos[0], CAM.look[1] - CAM.pos[1], CAM.look[2] - CAM.pos[2]]);
+  cR = norm([-cF[2], 0, cF[0]]);
+  cU = [cR[1] * cF[2] - cR[2] * cF[1], cR[2] * cF[0] - cR[0] * cF[2], cR[0] * cF[1] - cR[1] * cF[0]];
+}
+function P(x, y, z) {
+  const dx = x - CAM.pos[0], dy = y - CAM.pos[1], dz = z - CAM.pos[2];
+  const xc = dx * cR[0] + dy * cR[1] + dz * cR[2];
+  const yc = dx * cU[0] + dy * cU[1] + dz * cU[2];
+  let zc = dx * cF[0] + dy * cF[1] + dz * cF[2];
+  if (zc < 0.2) zc = 0.2;
+  const s = FOC / zc;
+  return { x: OX + xc * s, y: OY - yc * s, s };
+}
+function fitCamera() {
+  const portrait = H > W;
+  if (portrait) { CAM.pos = [0, 7.2, 13.2]; CAM.look = [0, 0, -0.6]; }
+  else { CAM.pos = [0, 6.4, 10.4]; CAM.look = [0, 0, -0.9]; }
+  setupCam(); FOC = 1; OX = 0; OY = 0;
+  const pts = portrait ? [[-3.5, 0, -7.0], [3.5, 0, -7.0], [-3.3, 0, 7.0], [3.3, 0, 7.0], [0, 3.4, -6.9], [0, 0, 8.6]]
+                       : [[-3.4, 0, -7.0], [3.4, 0, -7.0], [-3.05, 0, 6.7], [3.05, 0, 6.7], [0, 2.2, -6.8], [0, 0, 7.6]];
+  let x0 = 1e9, x1 = -1e9, y0 = 1e9, y1 = -1e9;
+  for (const p of pts) { const q = P(p[0], p[1], p[2]); x0 = Math.min(x0, q.x); x1 = Math.max(x1, q.x); y0 = Math.min(y0, q.y); y1 = Math.max(y1, q.y); }
+  const topPad = portrait ? H * 0.12 : 40, botPad = portrait ? H * 0.26 : 0;
+  const sc = Math.min(W * 0.97 / (x1 - x0), (H - topPad - botPad) / (y1 - y0));
+  FOC = sc;
+  OX = W / 2 - (x0 + x1) / 2 * sc;
+  OY = topPad + (H - topPad - botPad) / 2 - (y0 + y1) / 2 * sc;
+}
+
+// ---------- 物理 ----------
+function stepS(s, h) {
+  const sp = Math.sqrt(s.vx * s.vx + s.vy * s.vy + s.vz * s.vz), k = KD * sp;
+  s.vx -= k * s.vx * h; s.vy -= (G + k * s.vy) * h; s.vz -= k * s.vz * h;
+  s.x += s.vx * h; s.y += s.vy * h; s.z += s.vz * h;
+}
+function sim2(y0, v, ang, dn) {
+  let h = 0, y = y0, vh = v * Math.cos(ang), vy = v * Math.sin(ang), yNet = dn <= 0 ? y0 : null, t = 0;
+  while (t < 7) {
+    const sp = Math.sqrt(vh * vh + vy * vy), k = KD * sp;
+    vh -= k * vh * PDT; vy -= (G + k * vy) * PDT;
+    const ph = h, py = y; h += vh * PDT; y += vy * PDT; t += PDT;
+    if (yNet === null && h >= dn) { const f = (dn - ph) / (h - ph || 1e-9); yNet = py + (y - py) * f; }
+    if (y <= 0) { const f = py / (py - y || 1e-9); return { land: ph + (h - ph) * f, yNet: yNet === null ? -1 : yNet, t }; }
+  }
+  return { land: h, yNet: yNet === null ? -1 : yNet, t };
+}
+function solveSpeed(y0, ang, D, dn, margin) {
+  let v = 10;
+  for (let it = 0; it < 26; it++) {
+    let lo = 0.5, hi = 140;
+    for (let i = 0; i < 22; i++) { const m = (lo + hi) / 2; if (sim2(y0, m, ang, dn).land < D) lo = m; else hi = m; }
+    v = (lo + hi) / 2;
+    const r = sim2(y0, v, ang, dn);
+    if (r.yNet >= NET_H + margin || ang > 1.4) return { v, ang };
+    ang += 0.045;
+  }
+  return { v, ang };
+}
+function solveAngle(y0, v, D, dn, margin, hiDeg) {
+  const top = hiDeg * DEG;
+  if (sim2(y0, v, top, dn).land < D) return solveSpeed(y0, top, D, dn, margin);
+  let lo = -1.3, hi = top;
+  for (let i = 0; i < 22; i++) { const m = (lo + hi) / 2; if (sim2(y0, v, m, dn).land < D) lo = m; else hi = m; }
+  let ang = (lo + hi) / 2;
+  if (sim2(y0, v, ang, dn).yNet < NET_H + margin) {
+    let a = ang, b = top;
+    if (sim2(y0, v, b, dn).yNet < NET_H + margin) return solveSpeed(y0, top, D, dn, margin);
+    for (let i = 0; i < 18; i++) { const m = (a + b) / 2; if (sim2(y0, v, m, dn).yNet < NET_H + margin) a = m; else b = m; }
+    ang = b;
+  }
+  return { v, ang };
+}
+
+// ---------- 游戏状态 ----------
+let players = [];
+let human = null;
+const sh = { x: 0, y: 1, z: 3, vx: 0, vy: 0, vz: 0, flying: false, netted: false, lastSide: -1, lastHitter: null, isServe: false, trail: [], spin: 0, kind: '' };
+let state = 'menu';   // menu | serve | rally | point | over
+let simT = 0, stateT = 0, paused = false;
+let match = null;
+let rallyPath = null, pathT0 = 0, landMark = null, lastLand = null;
+let popups = [], particles = [], banner = null;
+let demo = false;
+let incomingHint = null;
+
+function hw() { return match && match.doubles ? HW_D : HW_S; }
+
+function makePlayer(side, idx, charIdx, isHuman, diff) {
+  const c = CHARS[charIdx];
+  return {
+    side, idx, isHuman, ch: c, prof: DIFF[diff],
+    vmax: 3.9 + 0.17 * c.spd, power: 42 + 2.2 * c.pow, drain: 1.5 - 0.07 * c.sta, tech: c.tec,
+    x: 0, z: side === 0 ? 3.5 : -3.5, vx: 0, vz: 0, stamina: 100,
+    court: 'R', charge: null, swing: null, lungeT: 0, lungeDir: [0, 0], jumpY: 0, jumpV: 0, recoverT: 0,
+    runPhase: Math.random() * 6, pose: null, plan: null, base: null, reactAt: 0, leave: false, aiBtn: null, aiAim: null, aiCharge: 0,
+    stats: { smash: 0, maxSmash: 0, winners: 0, errors: 0, hits: 0, perfect: 0 }, callT: 0,
+  };
+}
+
+function newMatch() {
+  const doubles = settings.mode === 'doubles';
+  const diff = settings.diff;
+  const pc = settings.char | 0;
+  const others = [0, 1, 2, 3, 4].filter(i => i !== pc).sort(() => Math.random() - 0.5);
+  players = [];
+  const partnerDiff = demo ? diff : (diff === 'easy') ? 'normal' : (diff === 'normal' ? 'hard' : diff);
+  players.push(makePlayer(0, 0, pc, !demo, diff));
+  if (doubles) players.push(makePlayer(0, 1, others[2], false, partnerDiff));
+  players.push(makePlayer(1, 0, others[0], false, diff));
+  if (doubles) players.push(makePlayer(1, 1, others[1], false, diff));
+  human = players[0];
+  match = {
+    doubles, target: +settings.points, cap: { 11: 15, 15: 21, 21: 30 }[settings.points] || 30, bestOf: +settings.games,
+    score: [0, 0], games: [0, 0], gameScores: [], game: 1, serveSide: Math.random() < 0.5 ? 0 : 1, server: null,
+    interval: false, endsSwitched: false, rally: 0, longest: 0, totalRallies: 0,
+  };
+  for (const p of players) p.court = p.idx === 0 ? 'R' : 'L';
+  match.server = teamOf(match.serveSide)[0];
+  popups = []; particles = []; banner = null;
+  setBanner(match.serveSide === 0 ? '挑边：你方先发球' : '挑边：对方先发球', 1.6);
+  setupServe();
+}
+function teamOf(side) { return players.filter(p => p.side === side); }
+function opponentsOf(p) { return players.filter(q => q.side !== p.side); }
+function partnerOf(p) { return players.find(q => q.side === p.side && q !== p) || null; }
+function courtXSign(side, court) { return (side === 0 ? 1 : -1) * (court === 'R' ? 1 : -1); }
+
+function setupServe() {
+  const m = match;
+  const ss = m.serveSide, rs = 1 - ss;
+  const sc = m.score[ss];
+  const label = sc % 2 === 0 ? 'R' : 'L';
+  let server, receiver;
+  if (!m.doubles) {
+    server = teamOf(ss)[0]; receiver = teamOf(rs)[0];
+    server.court = label; receiver.court = label;
+  } else {
+    server = teamOf(ss).find(p => p.court === label);
+    receiver = teamOf(rs).find(p => p.court === label);
+  }
+  m.server = server; m.receiver = receiver;
+  for (const p of players) {
+    const zs = p.side === 0 ? 1 : -1;
+    let x, z;
+    const xs = courtXSign(p.side, p.court);
+    if (p === server) { x = xs * (m.doubles ? 0.45 : 0.55); z = zs * (m.doubles ? 2.35 : 2.95); }
+    else if (p === receiver) { x = xs * (m.doubles ? 0.6 : 0.75); z = zs * (m.doubles ? 2.55 : 3.25); }
+    else { x = xs * 1.1; z = zs * 4.4; }
+    p.x = x; p.z = z; p.vx = p.vz = 0; p.charge = null; p.swing = null; p.lungeT = 0; p.jumpY = 0; p.plan = null; p.leave = false; p.recoverT = 0; p.aiBtn = null;
+  }
+  sh.flying = false; sh.netted = false; sh.isServe = false; sh.lastSide = -1; sh.trail = []; sh.lastHitter = null;
+  rallyPath = null; landMark = null; incomingHint = null;
+  m.rally = 0;
+  state = 'serve'; stateT = 0;
+  server.serveDelay = rnd(1.0, 1.7);
+  attachShuttleToServer();
+  // 局点 / 赛点提示
+  const gp = gamePointSide();
+  if (gp >= 0 && !banner) {
+    const mp = (m.games[gp] === Math.ceil(m.bestOf / 2) - 1);
+    setBanner((mp ? '赛点 ' : '局点 ') + (gp === 0 ? '— 你方' : '— 对方'), 1.4, '#ffd34d');
+  }
+}
+function gamePointSide() {
+  const m = match;
+  for (let s = 0; s < 2; s++) {
+    const a = m.score[s] + 1, b = m.score[1 - s];
+    if ((a >= m.target && a - b >= 2) || a >= m.cap) return s;
+  }
+  return -1;
+}
+function attachShuttleToServer() {
+  const p = match.server;
+  const rs = p.side === 0 ? 1 : -1, fs = p.side === 0 ? -1 : 1;
+  sh.x = p.x + rs * 0.28; sh.z = p.z + fs * 0.32; sh.y = 0.98 + (p.charge ? 0.02 : 0);
+  sh.vx = sh.vy = sh.vz = 0;
+}
+
+// ---------- 击球判定 ----------
+function localOf(p, x, z) {
+  const rs = p.side === 0 ? 1 : -1, fs = p.side === 0 ? -1 : 1;
+  return { r: (x - p.x) * rs, f: (z - p.z) * fs };
+}
+function contactMetric(p, sx, sy, sz, px, pz) {
+  const rs = p.side === 0 ? 1 : -1, fs = p.side === 0 ? -1 : 1;
+  const lr = (sx - px) * rs, lf = (sz - pz) * fs;
+  const dFH = Math.hypot(lr - 0.52, lf - 0.24), dBH = Math.hypot(lr + 0.48, lf - 0.24);
+  const hand = dFH <= dBH ? 1 : -1;
+  const hd = Math.min(dFH, dBH);
+  const canJump = p.stamina > 8 && p.lungeT <= 0;
+  const maxH = MAXH + (canJump ? JUMPH : 0);
+  let vex = 0;
+  if (sy > maxH) vex = sy - maxH; else if (sy < 0.06) vex = 0.06 - sy;
+  const d = Math.sqrt(hd * hd + vex * vex * 3);
+  const lungeOK = sy < 1.75;
+  return { d, hand, reach: REACH, reachL: REACH + (lungeOK ? LUNGE_EXTRA : 0), y: sy, lr, lf };
+}
+function canHit(p) {
+  if (!sh.flying || sh.netted) return false;
+  if (sh.lastSide === p.side) return false;
+  if (p.side === 0 && sh.z < -0.08) return false;
+  if (p.side === 1 && sh.z > 0.08) return false;
+  return true;
+}
+function predictStyle(p, t) {
+  const s = { x: sh.x, y: sh.y, z: sh.z, vx: sh.vx, vy: sh.vy, vz: sh.vz };
+  if (sh.flying) { const n = Math.round(t / PDT); for (let i = 0; i < n; i++) stepS(s, PDT); }
+  const l = localOf(p, s.x, s.z);
+  const style = s.y > 1.85 ? 'over' : s.y > 0.95 ? 'side' : 'under';
+  return { style, hand: l.r >= -0.05 ? 1 : -1, y: s.y };
+}
+function predictBest(p, horizon) {
+  if (!sh.flying || sh.netted || sh.lastSide === p.side) return null;
+  const s = { x: sh.x, y: sh.y, z: sh.z, vx: sh.vx, vy: sh.vy, vz: sh.vz };
+  let best = null; const n = Math.round(horizon / PDT);
+  for (let i = 1; i <= n; i++) {
+    stepS(s, PDT);
+    if (s.y <= 0) break;
+    if ((p.side === 0 && s.z < -0.08) || (p.side === 1 && s.z > 0.08)) continue;
+    const px = p.x + p.vx * i * PDT * 0.5, pz = p.z + p.vz * i * PDT * 0.5;
+    const m = contactMetric(p, s.x, s.y, s.z, px, pz);
+    if (!best || m.d < best.d) best = { d: m.d, t: i * PDT, y: s.y, m };
+  }
+  return best;
+}
+
+function startCharge(p, btn) {
+  if (p.swing || p.lungeT > 0 || p.charge) return;
+  if (state === 'serve' && p !== match.server) { /* 接发球可提前蓄力 */ }
+  if (state === 'point' || state === 'over') return;
+  p.charge = { btn, t: 0 };
+}
+function releaseCharge(p, aimX, aimY) {
+  if (!p.charge) return;
+  const c = Math.min(p.charge.t / 0.72, 1.35);
+  const btn = p.charge.btn;
+  p.charge = null;
+  if (state === 'serve' && p !== match.server) return; // 未发球前挥拍无效
+  startSwing(p, btn, c, aimX, aimY);
+}
+function startSwing(p, btn, c, aimX, aimY) {
+  const isServe = state === 'serve' && p === match.server;
+  const pr = isServe ? { style: 'under', hand: 1, y: 1 } : predictStyle(p, SW_HIT);
+  const from = p.pose ? p.pose.slice() : READY.slice();
+  p.swing = { t: 0, btn, c, aimX: clamp(aimX, -1, 1), aimY: clamp(aimY, -1, 1), bestD: 1e9, bestT: 0, bestM: null, done: false, style: pr.style, hand: pr.hand, from, serve: isServe };
+  // 起跳：高球必须跳，或蓄满力的杀球
+  if (!isServe && p.jumpY <= 0 && p.lungeT <= 0 && p.stamina > 8 && (pr.y > MAXH - 0.05 || (btn === 'C' && c > 0.55 && pr.y > 2.35 && p.stamina > 12))) p.jumpV = 2.7;
+}
+
+function shotQualityLabel(q) { return q >= 0.88 ? ['完美!', '#ffd34d'] : q >= 0.68 ? ['很好', '#7dffb2'] : q >= 0.42 ? ['一般', '#cfe0ff'] : ['勉强', '#ff9b7a']; }
+
+function classify(p, btn, y, z, lunge, q, jumpOK) {
+  const nearNet = Math.abs(z) < 2.35;
+  if (q < 0.16) return 'frame';
+  let k;
+  if (btn === 'A') k = y >= 2.0 ? 'clear' : 'lift';
+  else if (btn === 'B') k = y >= 2.0 ? (p.swing && p.swing.c > 0.75 ? 'slice' : 'drop') : (nearNet && y < 1.75 ? 'net' : 'block');
+  else if (btn === 'C') {
+    if (y >= 2.0) k = (nearNet && y > NET_H + 0.3) ? 'kill' : 'smash';
+    else if (y >= NET_H + 0.12 && nearNet) k = 'kill';
+    else if (y >= 1.45) k = 'halfsmash';
+    else k = 'push';
+  } else {
+    if (y >= 2.0) k = 'attclear';
+    else if (y >= 0.85) k = 'drive';
+    else k = 'push';
+  }
+  if (lunge && (k === 'smash' || k === 'halfsmash' || k === 'kill' || k === 'attclear')) k = btn === 'C' || btn === 'D' ? 'push' : 'lift';
+  if (k === 'smash' && jumpOK) k = 'jsmash';
+  return k;
+}
+
+function computeShot(p, kind, c, aimX, aimY, err, pos) {
+  const dirS = p.side === 0 ? -1 : 1;
+  const HW = hw();
+  const ce = Math.min(c, 1);
+  let depth, mode, ang = 0, spd = 0, margin = 0.07, hiDeg = 30, txMul = 0.86;
+  const P0 = p.power;
+  switch (kind) {
+    case 'clear': mode = 'speed'; ang = 47 * DEG; depth = 4.6 + 1.3 * ce + 0.45 * aimY; break;
+    case 'attclear': mode = 'speed'; ang = 24 * DEG; depth = 5.2 + 0.9 * ce + 0.4 * aimY; break;
+    case 'lift': mode = 'speed'; ang = (pos.y < 0.8 ? 60 : 50) * DEG; depth = 4.3 + 1.55 * ce + 0.45 * aimY; break;
+    case 'drop': mode = 'speed'; ang = 6 * DEG; depth = 1.9 + 0.55 * aimY + 0.2 * ce; margin = 0.06; break;
+    case 'slice': mode = 'speed'; ang = -5 * DEG; depth = 2.5 + 0.6 * aimY; margin = 0.06; break;
+    case 'net': mode = 'speed'; ang = (pos.y > NET_H ? -8 : 4) * DEG; depth = 0.55 + 0.32 * (aimY + 1); margin = 0.025; txMul = 0.8; break;
+    case 'block': mode = 'speed'; ang = (pos.y > NET_H ? -4 : 8) * DEG; depth = 1.35 + 0.45 * (aimY + 1); margin = 0.05; break;
+    case 'smash': mode = 'angle'; spd = P0 * (0.6 + 0.3 * ce); depth = 3.8 + 1.3 * aimY; margin = 0.09; hiDeg = 12; txMul = 0.82; break;
+    case 'jsmash': mode = 'angle'; spd = P0 * (0.64 + 0.3 * ce) * 1.08; depth = 3.5 + 1.3 * aimY; margin = 0.09; hiDeg = 12; txMul = 0.82; break;
+    case 'halfsmash': mode = 'angle'; spd = P0 * 0.5 * (0.8 + 0.25 * ce); depth = 3.0 + 1.1 * aimY; margin = 0.08; hiDeg = 15; break;
+    case 'kill': mode = 'angle'; spd = P0 * (0.5 + 0.12 * ce); depth = 2.6 + 1.3 * aimY; margin = 0.06; hiDeg = 8; break;
+    case 'drive': mode = 'angle'; spd = 19 + 14 * ce; depth = 4.4 + 1.5 * aimY; margin = 0.08; hiDeg = 22; break;
+    case 'push': mode = 'angle'; spd = 13 + 9 * ce; depth = 3.4 + 1.4 * aimY; margin = 0.08; hiDeg = 32; break;
+    case 'frame': mode = 'speed'; ang = rnd(25, 70) * DEG; depth = rnd(0.6, 3.5); aimX = rnd(-1.3, 1.3); break;
+  }
+  depth = clamp(depth, 0.45, 7.4);
+  let tx = aimX * txMul * HW;
+  const latSd = (kind === 'net' ? 0.05 : 0.08) + 0.6 * err, depSd = (kind === 'net' ? 0.04 : 0.07) + (kind === 'net' ? 0.25 : 0.5) * err;
+  tx += gauss() * latSd; depth += gauss() * depSd;
+  depth = Math.max(0.3, depth);
+  if (kind === 'net' || kind === 'block' || kind === 'drop' || kind === 'slice') margin = Math.max(0.0, margin - 0.05 * err + gauss() * 0.04 * err);
+  const tz = dirS * depth;
+  return launch(pos, tx, tz, mode, ang, spd, margin, hiDeg, err);
+}
+function launch(pos, tx, tz, mode, ang, spd, margin, hiDeg, err) {
+  let dx = tx - pos.x, dz = tz - pos.z;
+  let D = Math.hypot(dx, dz) || 0.01;
+  const ux = dx / D, uz = dz / D;
+  const dn = Math.abs(uz) > 0.05 ? Math.max(0, -pos.z / uz) : 0;
+  let r = mode === 'speed' ? solveSpeed(pos.y, ang, D, dn, margin) : solveAngle(pos.y, spd, D, dn, margin, hiDeg);
+  let v = r.v * (1 + gauss() * 0.012 * err);
+  const ch = v * Math.cos(r.ang);
+  return { vx: ch * ux, vy: v * Math.sin(r.ang), vz: ch * uz, v };
+}
+
+function doHit(p, sw) {
+  sw.done = true;
+  const m = contactMetric(p, sh.x, sh.y, sh.z, p.x, p.z);
+  const bestD = sw.bestD;
+  const lunge = bestD > REACH;
+  let posQ = lunge ? clamp(1 - (bestD - REACH) / LUNGE_EXTRA, 0, 1) * 0.42 + 0.12 : 1 - Math.pow(bestD / REACH, 1.6) * 0.85;
+  const tErr = Math.abs(sw.bestT - SW_HIT) / (SW_W1 - SW_HIT);
+  let q = clamp(posQ * (1 - 0.4 * tErr), 0, 1);
+  // 状态因素
+  const stF = 1 + (1 - p.stamina / 100) * 0.7;
+  const techF = 1.32 - 0.055 * p.tech;
+  const over = Math.max(0, sw.c - 1) / 0.35;
+  let err = (1 - q) * 0.95 * stF * techF * (p.isHuman ? 1 : p.prof.err) + over * 0.6;
+  if (q >= 0.88) err *= 0.45;
+  const jumpNeeded = sh.y > MAXH;
+  const jumpOK = !lunge && sw.btn === 'C' && sw.c > 0.55 && sh.y > 2.35 && p.stamina > 12 && Math.abs(sh.z) > 2.6;
+  let kind = classify(p, sw.btn, sh.y, sh.z, lunge, q, jumpOK);
+  if (window.__log2) window.__log2.push({ kind, prev: sh.kind, y: +sh.y.toFixed(2), z: +sh.z.toFixed(2), q: +q.toFixed(2), side: p.side });
+  const pos = { x: sh.x, y: sh.y, z: sh.z };
+  const vel = computeShot(p, kind, sw.c, sw.aimX, sw.aimY, err, pos);
+  sh.vx = vel.vx; sh.vy = vel.vy; sh.vz = vel.vz;
+  sh.lastSide = p.side; sh.lastHitter = p; sh.isServe = false; sh.kind = kind; sh.trail = [];
+  match.rally++;
+  p.stats.hits++;
+  if (q >= 0.88) p.stats.perfect++;
+  // 动作/体力
+  if (jumpNeeded || kind === 'jsmash') p.stamina -= kind === 'jsmash' ? 6.5 * p.drain : 3 * p.drain;
+  if (lunge) { p.lungeT = 0.5; p.lungeDir = [m.lr, m.lf]; p.stamina -= 4 * p.drain; }
+  if (kind === 'smash' || kind === 'halfsmash' || kind === 'kill') p.stamina -= 2.6 * p.drain;
+  else if (kind === 'clear' || kind === 'lift') p.stamina -= 1.1 * p.drain;
+  else p.stamina -= 0.5 * p.drain;
+  p.stamina = Math.max(0, p.stamina);
+  sw.hand = m.hand;
+  // 反馈
+  const isPow = kind === 'smash' || kind === 'jsmash' || kind === 'kill' || kind === 'halfsmash';
+  sfx(isPow ? 'smash' : 'hit', clamp(vel.v / 40, 0.4, 1.2));
+  const kmh = Math.round(vel.v * 3.6);
+  if (isPow) { p.stats.smash++; p.stats.maxSmash = Math.max(p.stats.maxSmash, kmh); }
+  if (p.isHuman || p.side === 0 || isPow || kind === 'frame') {
+    const ql = shotQualityLabel(q);
+    let txt = SHOT_NAME[kind];
+    if (isPow) txt += ' ' + kmh + 'km/h';
+    addPopup(txt, pos.x, pos.y + 0.45, pos.z, p.side === 0 ? '#ffffff' : '#ffc7c0', 15);
+    if (p.isHuman) addPopup(ql[0], pos.x, pos.y + 0.85, pos.z, ql[1], 17);
+  }
+  if (isPow) for (let i = 0; i < 10; i++) particles.push({ x: pos.x, y: pos.y, z: pos.z, vx: rnd(-2, 2), vy: rnd(-1, 2.5), vz: rnd(-2, 2), t: 0, life: rnd(0.3, 0.6) });
+  onShuttleStruck(p);
+}
+
+function onShuttleStruck(p) {
+  rallyPath = predictPath();
+  pathT0 = simT;
+  landMark = rallyPath.land ? { x: rallyPath.land.x, z: rallyPath.land.z, out: !inBounds(rallyPath.land.x, rallyPath.land.z, false) } : null;
+  // 防守方准备
+  for (const q of players) {
+    q.plan = null; q.leave = false; q.aiBtn = null;
+    if (q.side !== p.side) q.reactAt = simT + (q.isHuman ? 0 : q.prof.react * rnd(0.8, 1.25));
+  }
+  match.assignPending = true;
+  match.lastHitter = p;
+}
+
+function doServe(p, sw) {
+  sw.done = true;
+  const m = match;
+  const rec = m.receiver;
+  const xs = courtXSign(rec.side, rec.court);
+  const HW = hw();
+  const dirS = p.side === 0 ? -1 : 1;
+  const back = m.doubles ? LSL_D : HL;
+  const ce = Math.min(sw.c, 1), over = Math.max(0, sw.c - 1) / 0.35;
+  const err = (0.18 + over * 0.7) * (1.32 - 0.055 * p.tech) * (p.isHuman ? 1 : p.prof.err);
+  let kind, mode = 'speed', ang, depth, margin = 0.06;
+  let tx = xs * HW * 0.55 + sw.aimX * HW * 0.4;
+  if (sw.btn === 'B') { kind = 'sShort'; ang = 14 * DEG; depth = SSL + 0.32 + 0.25 * sw.aimY; margin = 0.05; tx = xs * 0.6 + sw.aimX * HW * 0.35; }
+  else if (sw.btn === 'A') { kind = 'sLong'; ang = 62 * DEG; depth = back - 1.05 + 0.65 * ce + 0.25 * sw.aimY; }
+  else { kind = 'sFlick'; ang = 26 * DEG; depth = back - 0.95 + 0.5 * ce + 0.2 * sw.aimY; margin = 0.09; }
+  tx = xs > 0 ? clamp(tx, 0.18, HW - 0.15) : clamp(tx, -HW + 0.15, -0.18);
+  tx += gauss() * (0.06 + 0.5 * err);
+  depth += gauss() * (kind === 'sShort' ? 0.05 + 0.25 * err : 0.08 + 0.6 * err);
+  if (kind === 'sShort') margin = Math.max(0, margin + gauss() * 0.05 * err);
+  const pos = { x: sh.x, y: sh.y, z: sh.z };
+  const vel = launch(pos, tx, dirS * depth, mode, ang, 0, margin, 30, err);
+  sh.vx = vel.vx; sh.vy = vel.vy; sh.vz = vel.vz;
+  sh.flying = true; sh.netted = false; sh.isServe = true; sh.lastSide = p.side; sh.lastHitter = p; sh.kind = kind; sh.trail = [];
+  m.rally = 1;
+  state = 'rally'; stateT = 0;
+  sfx('hit', 0.6);
+  if (p.isHuman || p.side === 0) addPopup(SHOT_NAME[kind], pos.x, pos.y + 0.6, pos.z, '#ffffff', 14);
+  onShuttleStruck(p);
+}
+
+function predictPath() {
+  const s = { x: sh.x, y: sh.y, z: sh.z, vx: sh.vx, vy: sh.vy, vz: sh.vz };
+  const pts = []; let t = 0, n = 0;
+  while (t < 6) {
+    const pz = s.z, py = s.y;
+    stepS(s, PDT); t += PDT; n++;
+    if (pz * s.z < 0 && Math.abs(s.x) < HW_D + 0.05) {
+      const f = pz / (pz - s.z); const yc = py + (s.y - py) * f;
+      if (yc < NET_H) return { pts, land: null, netted: true };
+    }
+    if (s.y <= 0) { pts.push({ t, x: s.x, y: 0, z: s.z }); return { pts, land: { x: s.x, z: s.z }, netted: false }; }
+    if (n % 4 === 0) pts.push({ t, x: s.x, y: s.y, z: s.z });
+  }
+  return { pts, land: null, netted: false };
+}
+function inBounds(x, z, serve, recv) {
+  const HW = hw();
+  if (Math.abs(x) > HW + 0.02 || Math.abs(z) > HL + 0.02) return false;
+  if (serve && recv) {
+    const xs = courtXSign(recv.side, recv.court);
+    if (x * xs < -0.02) return false;
+    const az = Math.abs(z);
+    if (az < SSL - 0.02) return false;
+    if (match.doubles && az > LSL_D + 0.02) return false;
+    if ((recv.side === 0 && z < 0) || (recv.side === 1 && z > 0)) return false;
+  }
+  return true;
+}
+
+// ---------- 回合结束 / 计分 ----------
+function endRally(winSide, reason, x, z) {
+  if (state !== 'rally') return;
+  state = 'point'; stateT = 0;
+  const m = match;
+  m.totalRallies++;
+  m.longest = Math.max(m.longest, m.rally);
+  const loser = 1 - winSide;
+  const lh = sh.lastHitter;
+  if (reason === 'in' && lh && lh.side === winSide) lh.stats.winners++;
+  if ((reason === 'out' || reason === 'net' || reason === 'fault') && lh) lh.stats.errors++;
+  const txt = { in: '界内', out: '出界', net: '下网', fault: '发球失误' }[reason] || '';
+  setBanner((winSide === 0 ? '你方得分 · ' : '对方得分 · ') + txt, 1.4, winSide === 0 ? '#7dffb2' : '#ff8a7a');
+  if (x !== undefined) lastLand = { x, z, t: 0, out: reason !== 'in' };
+  sfx('crowd', winSide === 0 ? 1 : 0.6);
+  m.pendingWin = winSide;
+  if (window.__log) window.__log.push({ winSide, reason, rally: m.rally, kind: sh.kind, hitter: lh ? lh.side : -1 });
+}
+function applyPoint() {
+  const m = match, w = m.pendingWin;
+  const servingWon = w === m.serveSide;
+  m.score[w]++;
+  if (m.doubles) {
+    if (servingWon) {
+      const team = teamOf(w);
+      for (const p of team) p.court = p.court === 'R' ? 'L' : 'R';
+    } else {
+      m.serveSide = w;
+    }
+  } else m.serveSide = w;
+  for (const p of players) p.stamina = Math.min(100, p.stamina + 14 + p.ch.sta * 0.8);
+  // 局结束?
+  const a = m.score[w], b = m.score[1 - w];
+  if ((a >= m.target && a - b >= 2) || a >= m.cap) {
+    m.games[w]++;
+    m.gameScores.push([m.score[0], m.score[1]]);
+    const need = Math.ceil(m.bestOf / 2);
+    if (m.games[w] >= need) { finishMatch(w); return; }
+    m.game++;
+    m.score = [0, 0];
+    m.serveSide = w; m.interval = false; m.endsSwitched = false;
+    for (const p of players) { p.court = p.idx === 0 ? 'R' : 'L'; p.stamina = 100; }
+    setBanner(`第${m.game - 1}局结束 ${m.gameScores[m.gameScores.length - 1].join(' : ')} · 交换场地`, 2.4, '#ffd34d');
+    sfx('whistle');
+    state = 'between'; stateT = 0;
+    return;
+  }
+  const half = Math.ceil(m.target / 2);
+  if (!m.interval && a === half && b < half) {
+    m.interval = true;
+    const last = m.game === m.bestOf && m.bestOf > 1;
+    setBanner(last ? '决胜局 ' + half + ' 分 · 交换场地' : '技术暂停', 1.8, '#ffd34d');
+    sfx('whistle');
+    for (const p of players) p.stamina = Math.min(100, p.stamina + 25);
+    state = 'between'; stateT = 0.6;
+    return;
+  }
+  setupServe();
+}
+function finishMatch(w) {
+  state = 'over'; stateT = 0;
+  sfx('whistle');
+  setTimeout(() => showResult(w), demo ? 400 : 1200);
+}
+
+// ---------- AI ----------
+function aiThinkTeam(side) {
+  const team = teamOf(side);
+  if (!rallyPath || rallyPath.netted) return;
+  if (sh.lastSide === side || !sh.flying) return;
+  // 分配谁接球
+  const elapsed = simT - pathT0;
+  let best = null;
+  for (const p of team) {
+    if (!p.isHuman && simT < p.reactAt) return; // 尚未反应
+    const pl = planIntercept(p, elapsed);
+    if (!pl) continue;
+    let score = pl.slack;
+    if (p.isHuman) score += 0.05;
+    if (!best || score > best.score) best = { p, pl, score };
+  }
+  match.assignPending = false;
+  if (!best) { for (const p of team) if (!p.isHuman) p.plan = null; return; }
+  for (const p of team) {
+    if (p === best.p && !p.isHuman) {
+      // 判断出界放球
+      if (rallyPath.land && !inBounds(rallyPath.land.x, rallyPath.land.z, sh.isServe, match.receiver)) {
+        const mg = outMargin(rallyPath.land.x, rallyPath.land.z, sh.isServe);
+        const perceived = mg + gauss() * (0.35 * (1 - p.prof.judge) + 0.04);
+        if (perceived > 0.02 && Math.random() < 0.35 + 0.65 * p.prof.judge) { p.leave = true; p.plan = null; continue; }
+      }
+      p.plan = best.pl;
+      if (match.doubles && partnerOf(p) && partnerOf(p).isHuman) p.callT = 0.9;
+      p.plan.releaseAt = pathT0 + best.pl.t - SW_HIT + gauss() * p.prof.tNoise;
+    } else if (!p.isHuman) p.plan = null;
+  }
+  match.owner = best.p;
+}
+function outMargin(x, z, serve) {
+  const HW = hw();
+  let mg = Math.max(Math.abs(x) - HW, Math.abs(z) - HL);
+  if (serve && match.receiver) {
+    const xs = courtXSign(match.receiver.side, match.receiver.court);
+    mg = Math.max(mg, -x * xs, SSL - Math.abs(z), match.doubles ? Math.abs(z) - LSL_D : -9);
+  }
+  return mg;
+}
+function planIntercept(p, elapsed) {
+  const pts = rallyPath.pts;
+  const spd = p.vmax * (p.isHuman ? 1 : p.prof.spd) * staminaSpeed(p);
+  const react = p.isHuman ? 0.12 : 0;
+  let fallback = null;
+  for (let pass = 0; pass < 2; pass++) {
+  for (const pt of pts) {
+    const tl = pt.t - elapsed;
+    if (tl < 0.12) continue;
+    if ((p.side === 0 && pt.z < 0.15) || (p.side === 1 && pt.z > -0.15)) continue;
+    if (pt.y < 0.2) continue;
+    const maxH = pass === 0 ? MAXH - 0.08 : MAXH + (p.stamina > 15 ? JUMPH * 0.85 : 0);
+    if (pt.y > maxH) continue;
+    // 站位点：使球位于正手/反手理想击球点
+    const rs = p.side === 0 ? 1 : -1, fs = p.side === 0 ? -1 : 1;
+    const fhx = pt.x - rs * 0.52, fhz = pt.z - fs * 0.24;
+    const bhx = pt.x + rs * 0.48, bhz = pt.z - fs * 0.24;
+    const dF = Math.hypot(fhx - p.x, fhz - p.z) * 0.92, dB = Math.hypot(bhx - p.x, bhz - p.z);
+    const useF = dF <= dB;
+    const sx = useF ? fhx : bhx, sz = useF ? fhz : bhz;
+    const dist = Math.hypot(sx - p.x, sz - p.z);
+    const need = react + 0.1 + dist / spd;
+    const slack = tl - need;
+    const cand = { sx, sz, t: pt.t, y: pt.y, x: pt.x, z: pt.z, slack };
+    if (slack >= 0) {
+      // 更高的点有利进攻；低于 0.5m 的点除非别无选择否则继续往后找更好的
+      if (pt.y >= 0.45) return cand;
+      if (!fallback || slack > fallback.slack) fallback = cand;
+    } else if (!fallback || slack > fallback.slack) fallback = cand;
+  }
+  if (fallback && fallback.slack >= 0) return fallback;
+  }
+  return fallback;
+}
+function staminaSpeed(p) { return 0.72 + 0.28 * Math.sqrt(Math.max(0, p.stamina) / 100); }
+
+function aiChooseShot(p, pl) {
+  const y = pl.y, z = pl.z, x = pl.x;
+  const nearNet = Math.abs(z) < 2.35, deep = Math.abs(z) > 4.6;
+  const pf = p.prof, dbl = match.doubles;
+  const opts = [];
+  if (y >= 2.0) {
+    if (nearNet && y > NET_H + 0.3) opts.push(['C', 5]);
+    else {
+      opts.push(['C', pf.smash * (deep ? 1.0 : 2.0) * (dbl ? 1.6 : 1) * (p.stamina > 25 ? 1 : 0.4)]);
+      opts.push(['A', deep ? 1.0 : 0.45]);
+      opts.push(['B', 0.75]);
+      opts.push(['D', 0.35]);
+    }
+  } else if (y >= 1.1) {
+    if (nearNet && y > NET_H + 0.3) opts.push(['C', 2.5]);
+    else if (nearNet && y > NET_H + 0.12) opts.push(['C', 0.8]);
+    if (nearNet && y < NET_H + 0.05) { opts.push(['B', 1.4]); opts.push(['A', 0.9]); opts.push(['D', 0.35]); }
+    else { opts.push(['D', 1.1]); opts.push(['B', 0.6]); opts.push(['A', 0.5]); }
+    if (y > 1.45 && !nearNet) opts.push(['C', 0.5]);
+  } else {
+    if (nearNet) { opts.push(['B', 1.2 + pf.aimSkill]); opts.push(['A', 1.0]); opts.push(['D', 0.35]); }
+    else { opts.push(['A', 1.3]); opts.push(['B', 0.7]); opts.push(['D', 0.45]); }
+  }
+  let tot = 0; for (const o of opts) tot += o[1];
+  let r = Math.random() * tot, btn = opts[0][0];
+  for (const o of opts) { r -= o[1]; if (r <= 0) { btn = o[0]; break; } }
+  // 选择落点：远离对手
+  const opp = opponentsOf(p);
+  const HW = hw();
+  let bestAim = [0, 0], bestV = -1e9;
+  for (const ax of [-0.95, -0.55, 0, 0.55, 0.95]) for (const ay of [-1, 0, 1]) {
+    const tx = ax * 0.86 * HW;
+    let dep = { A: 5.6, B: 1.6, C: 3.8, D: 4.8 }[btn] + ay * (btn === 'B' ? 0.4 : 1.0);
+    if (btn === 'B' && nearNet && y < 1.75) dep = 0.8 + 0.3 * ay;
+    const tz = (p.side === 0 ? -1 : 1) * dep;
+    let dmin = 1e9;
+    for (const o of opp) {
+      const ox = o.x + o.vx * 0.3, oz = o.z + o.vz * 0.3;
+      dmin = Math.min(dmin, Math.hypot(tx - ox, (tz - oz) * 0.8));
+    }
+    let v = dmin * (0.4 + pf.aimSkill) + Math.random() * 1.6 * (1.1 - pf.aimSkill);
+    if (Math.abs(ax) > 0.9) v -= (1.2 - pf.aimSkill) * 1.3; // 压线风险
+    if (ay > 0.5 && (btn === 'A' || btn === 'D')) v -= (1.1 - pf.aimSkill) * 0.9;
+    if (v > bestV) { bestV = v; bestAim = [ax, ay]; }
+  }
+  let c = clamp(0.7 + Math.random() * 0.35 + (pf.aimSkill - 0.5) * 0.1, 0.5, 1.02);
+  if (btn === 'B') c = Math.random() < 0.35 + 0.3 * pf.aimSkill ? rnd(0.3, 0.7) : rnd(0.78, 1);
+  return { btn, aim: bestAim, c };
+}
+
+function basePosition(p) {
+  const zs = p.side === 0 ? 1 : -1;
+  if (!match.doubles) {
+    const bx = clamp(sh.x * 0.3, -1, 1);
+    let bz = 3.45;
+    if (sh.lastSide === p.side && (sh.kind === 'drop' || sh.kind === 'net' || sh.kind === 'block' || sh.kind === 'slice')) bz = 2.9;
+    if (sh.lastSide === p.side && (sh.kind === 'clear' || sh.kind === 'lift' || sh.kind === 'sLong')) bz = 3.7;
+    return [bx, zs * bz];
+  }
+  const mate = partnerOf(p);
+  const attacking = sh.lastSide === p.side ? ['smash', 'jsmash', 'halfsmash', 'kill', 'drive', 'push', 'drop', 'slice', 'net', 'block', 'sShort'].includes(sh.kind)
+                                           : ['clear', 'lift', 'sLong', 'attclear'].includes(sh.kind);
+  if (attacking) {
+    // 前后站位：队友在后场则我站前场，反之亦然
+    const mateBack = Math.abs(mate.z) > Math.abs(p.z) || (match.owner === mate && Math.abs(mate.plan ? mate.plan.sz : mate.z) > 3.2);
+    if (mateBack) return [clamp(sh.x * 0.35, -0.9, 0.9), zs * 2.2];
+    return [clamp(sh.x * 0.25, -1, 1), zs * 4.4];
+  }
+  // 防守左右站位
+  const mx = match.owner === mate && mate.plan ? mate.plan.sx : mate.x;
+  const myX = mx >= 0 ? -1.5 : 1.5;
+  return [myX, zs * 3.7];
+}
+
+function updateAI(p, dt) {
+  // 发球
+  if (state === 'serve') {
+    if (p === match.server) {
+      p.serveDelay -= dt;
+      if (p.serveDelay < 0.5 && !p.charge && !p.swing) {
+        const short = match.doubles ? Math.random() < 0.82 : Math.random() < 0.45;
+        const flick = !short && match.doubles;
+        p.aiBtn = short ? 'B' : (flick ? 'D' : 'A');
+        p.aiAim = [rnd(-0.6, 0.6), short ? rnd(-0.6, 0.2) : rnd(-0.2, 0.8)];
+        p.aiCharge = rnd(0.75, 1.0);
+        p.charge = { btn: p.aiBtn, t: 0 };
+      }
+      if (p.charge && p.serveDelay <= 0) {
+        const a = p.aiAim; p.charge.t = p.aiCharge * 0.72; releaseCharge(p, a[0], a[1]);
+      }
+    }
+    moveToward(p, p.x, p.z, dt, 0);
+    return;
+  }
+  if (state !== 'rally') { moveToward(p, p.base ? p.base[0] : p.x, p.base ? p.base[1] : p.z, dt, 0.5); return; }
+  if (p.plan && sh.lastSide !== p.side && sh.flying && !sh.netted) {
+    const pl = p.plan;
+    moveToward(p, pl.sx, pl.sz, dt, 1);
+    // 准备蓄力
+    if (!p.charge && !p.swing && simT >= pl.releaseAt - 0.38) {
+      const ch = aiChooseShot(p, pl);
+      p.aiBtn = ch.btn; p.aiAim = ch.aim; p.aiCharge = ch.c;
+      p.charge = { btn: ch.btn, t: Math.max(0, (pl.releaseAt - simT) < 0.38 ? 0.38 - (pl.releaseAt - simT) : 0) };
+    }
+    if (p.charge && simT >= pl.releaseAt) {
+      p.charge.t = p.aiCharge * 0.72;
+      releaseCharge(p, p.aiAim[0], p.aiAim[1]);
+      p.plan = null;
+    }
+  } else {
+    if (p.leave) { moveToward(p, p.x, p.z, dt, 0); return; }
+    // 对方刚击球、尚未反应：垫步原地制动
+    if (sh.flying && sh.lastSide !== p.side && simT < p.reactAt) { accel(p, 0, 0, dt * 0.6); return; }
+    const b = basePosition(p);
+    p.base = b;
+    moveToward(p, b[0], b[1], dt, 0.55);
+  }
+}
+function moveToward(p, tx, tz, dt, urgency) {
+  const dx = tx - p.x, dz = tz - p.z, d = Math.hypot(dx, dz);
+  let spd = p.vmax * (p.isHuman ? 1 : p.prof.spd) * staminaSpeed(p) * (urgency > 0.8 ? 1 : 0.55 + 0.45 * urgency);
+  if (p.swing) spd *= 0.3; if (p.charge) spd *= 0.8;
+  if (p.lungeT > 0) spd = 0;
+  let tvx = 0, tvz = 0;
+  if (d > 0.03) { const s = Math.min(spd, d * 5); tvx = dx / d * s; tvz = dz / d * s; }
+  accel(p, tvx, tvz, dt);
+}
+function accel(p, tvx, tvz, dt) {
+  const a = 22 * dt;
+  const dvx = tvx - p.vx, dvz = tvz - p.vz, dv = Math.hypot(dvx, dvz);
+  if (dv <= a) { p.vx = tvx; p.vz = tvz; } else { p.vx += dvx / dv * a; p.vz += dvz / dv * a; }
+}
+
+// ---------- 输入 ----------
+const input = { sx: 0, sy: 0, kx: 0, ky: 0, joy: null, btns: {}, keys: {} };
+let BTNS = [];
+function layoutButtons() {
+  const R = clamp(Math.min(W, H) * 0.088, 27, 46);
+  const cx = W - R * 2.75 - Math.max(10, W * 0.012), cy = H - R * 2.75 - 10;
+  const g = R * 1.62;
+  BTNS = [
+    { id: 'A', x: cx, y: cy - g, r: R, label: '高远', sub: '挑球', col: '#2f9bff' },
+    { id: 'C', x: cx + g, y: cy, r: R, label: '杀球', sub: '扑/点杀', col: '#ff4d3d' },
+    { id: 'B', x: cx, y: cy + g, r: R, label: '吊球', sub: '搓/挡网', col: '#2fd47a' },
+    { id: 'D', x: cx - g, y: cy, r: R, label: '平抽', sub: '推/平高', col: '#ffb020' },
+  ];
+  input.pauseBtn = { x: W - 30, y: 26, r: 18 };
+}
+function btnAt(x, y) {
+  for (const b of BTNS) if (Math.hypot(x - b.x, y - b.y) < b.r * 1.22) return b;
+  return null;
+}
+const touches = new Map();
+cv.addEventListener('pointerdown', e => {
+  audioInit();
+  e.preventDefault();
+  if (state === 'menu') return;
+  const x = e.clientX, y = e.clientY;
+  if (Math.hypot(x - input.pauseBtn.x, y - input.pauseBtn.y) < 26) { togglePause(true); return; }
+  if (paused) return;
+  const b = btnAt(x, y);
+  if (b) { touches.set(e.pointerId, { type: 'btn', id: b.id }); pressBtn(b.id); }
+  else if (x < W * 0.55) {
+    touches.set(e.pointerId, { type: 'joy' });
+    input.joy = { id: e.pointerId, ox: x, oy: y, x, y };
+  }
+  try { cv.setPointerCapture(e.pointerId); } catch (er) {}
+}, { passive: false });
+cv.addEventListener('pointermove', e => {
+  const t = touches.get(e.pointerId);
+  if (t && t.type === 'joy' && input.joy) { input.joy.x = e.clientX; input.joy.y = e.clientY; }
+}, { passive: false });
+function endPointer(e) {
+  const t = touches.get(e.pointerId);
+  if (!t) return;
+  touches.delete(e.pointerId);
+  if (t.type === 'btn') releaseBtn(t.id);
+  if (t.type === 'joy') input.joy = null;
+}
+cv.addEventListener('pointerup', endPointer);
+cv.addEventListener('pointercancel', endPointer);
+function joyRadius() { return clamp(Math.min(W, H) * 0.14, 45, 75); }
+function stick() {
+  let x = 0, y = 0;
+  if (input.joy) {
+    const R = joyRadius();
+    let dx = input.joy.x - input.joy.ox, dy = input.joy.y - input.joy.oy;
+    const d = Math.hypot(dx, dy);
+    if (d > R) { input.joy.ox = input.joy.x - dx / d * R; input.joy.oy = input.joy.y - dy / d * R; dx = dx / d * R; dy = dy / d * R; }
+    x = dx / R; y = dy / R;
+  }
+  const k = input.keys;
+  const kx = (k.d || k.arrowright ? 1 : 0) - (k.a || k.arrowleft ? 1 : 0);
+  const ky = (k.s || k.arrowdown ? 1 : 0) - (k.w || k.arrowup ? 1 : 0);
+  if (kx || ky) { const l = Math.hypot(kx, ky); x = kx / l; y = ky / l; }
+  const m = Math.hypot(x, y);
+  if (m < 0.14) return { x: 0, y: 0, m: 0 };
+  const s = (m - 0.14) / 0.86 / m;
+  return { x: x * s, y: y * s, m: Math.min(1, (m - 0.14) / 0.86) };
+}
+function pressBtn(id) { input.btns[id] = true; if (human && human.isHuman && !paused) startCharge(human, id); }
+function releaseBtn(id) {
+  input.btns[id] = false;
+  if (human && human.isHuman && human.charge && human.charge.btn === id && !paused) {
+    const s = stick(); releaseCharge(human, s.x, -s.y);
+  }
+}
+const KEYMAP = { j: 'A', k: 'B', l: 'C', i: 'D' };
+window.addEventListener('keydown', e => {
+  const k = e.key.toLowerCase();
+  audioInit();
+  if (k === 'p' || k === 'escape') { if (state !== 'menu') togglePause(!paused); return; }
+  if (input.keys[k]) return;
+  input.keys[k] = true;
+  if (KEYMAP[k] && state !== 'menu') pressBtn(KEYMAP[k]);
+});
+window.addEventListener('keyup', e => {
+  const k = e.key.toLowerCase();
+  input.keys[k] = false;
+  if (KEYMAP[k]) releaseBtn(KEYMAP[k]);
+});
+
+function updateHuman(p, dt) {
+  const s = stick();
+  let spd = p.vmax * staminaSpeed(p) * s.m;
+  if (p.charge) spd *= 0.8;
+  if (p.swing) spd *= 0.35;
+  if (p.lungeT > 0) spd = 0;
+  let tvx = 0, tvz = 0;
+  if (s.m > 0) { const l = Math.hypot(s.x, s.y); tvx = s.x / l * spd; tvz = s.y / l * spd; }
+  if (state === 'serve') {
+    if (p === match.server) { tvx *= 0.5; tvz *= 0.5; }
+  }
+  accel(p, tvx, tvz, dt);
+  // 击球辅助：按住时自动在最佳时机挥拍
+  if (settings.assist === '1' && p.charge && state === 'rally' && p.charge.t > 0.08) {
+    const b = predictBest(p, 0.32);
+    if (b && b.d < REACH + LUNGE_EXTRA && b.t <= SW_HIT + 0.012) { const st = stick(); releaseCharge(p, st.x, -st.y); }
+  }
+}
+
+// ---------- 主更新 ----------
+function update(dt) {
+  if (paused || state === 'menu') return;
+  simT += dt; stateT += dt;
+  if (state === 'over') { updatePlayersMove(dt); return; }
+  if (state === 'point') {
+    updatePlayersMove(dt);
+    stepShuttleFree(dt);
+    if (stateT > (demo ? 1.0 : 1.7)) applyPoint();
+    return;
+  }
+  if (state === 'between') {
+    updatePlayersMove(dt);
+    if (stateT > 2.4) setupServe();
+    return;
+  }
+  // 团队AI分配
+  if (state === 'rally' && match.assignPending) {
+    const rs = 1 - sh.lastSide;
+    aiThinkTeam(rs);
+  }
+  updatePlayersMove(dt);
+  // 物理子步
+  const n = Math.max(1, Math.ceil(dt / PDT)); const h = dt / n;
+  for (let i = 0; i < n; i++) {
+    for (const p of players) {
+      const sw = p.swing;
+      if (!sw) continue;
+      sw.t += h;
+      if (sw.serve) {
+        if (!sw.done && sw.t >= SW_HIT && state === 'serve') doServe(p, sw);
+      } else if (!sw.done && sw.t >= SW_W0 && sw.t <= SW_W1 && canHit(p)) {
+        const m = contactMetric(p, sh.x, sh.y, sh.z, p.x, p.z);
+        if (m.d < m.reachL) {
+          if (m.d < sw.bestD) { sw.bestD = m.d; sw.bestT = sw.t; sw.bestM = m; }
+          else if (m.d > sw.bestD + 0.0015) doHit(p, sw);
+        }
+      } else if (!sw.done && sw.t > SW_W1 && sw.bestM && canHit(p)) doHit(p, sw);
+      if (!sw.done && sw.t > SW_W1 && !sw.whiffed && !sw.serve) {
+        sw.whiffed = true;
+        if (p.isHuman && sh.flying && sh.lastSide !== p.side && Math.hypot(sh.x - p.x, sh.z - p.z) < 2.6) addPopup('挥空', p.x, 2.4, p.z, '#ff9b7a', 15);
+      }
+    }
+    if (state === 'serve') attachShuttleToServer();
+    if (state === 'rally') { stepShuttle(h); if (state !== 'rally') break; }
+  }
+  for (const p of players) if (p.swing && p.swing.t > SW_END + 0.2) { p.swing = null; }
+}
+function updatePlayersMove(dt) {
+  for (const p of players) {
+    if (p.charge) p.charge.t += dt;
+    if (state === 'rally' || state === 'serve') {
+      if (p.isHuman) updateHuman(p, dt); else updateAI(p, dt);
+    } else if (state === 'point' || state === 'between' || state === 'over') {
+      const zs = p.side === 0 ? 1 : -1;
+      moveToward(p, p.x * 0.98, zs * 3.6, dt, 0.2);
+    }
+    if (p.lungeT > 0) { p.lungeT -= dt; p.vx *= 0.8; p.vz *= 0.8; }
+    p.x += p.vx * dt; p.z += p.vz * dt;
+    // 边界
+    const zs = p.side === 0 ? 1 : -1;
+    let zmin = 0.32, zmax = 8.6;
+    if (state === 'serve') {
+      const m = match;
+      if (p === m.server || p === m.receiver) {
+        const xs = courtXSign(p.side, p.court);
+        const HW = hw();
+        const zs0 = SSL + 0.1, zs1 = (m.doubles && p === m.server) ? 4 : (m.doubles ? LSL_D : HL) - 0.1;
+        zmin = zs0; zmax = zs1;
+        if (xs > 0) p.x = clamp(p.x, 0.12, HW - 0.15); else p.x = clamp(p.x, -HW + 0.15, -0.12);
+      }
+    }
+    const az = clamp(p.z * zs, zmin, zmax);
+    p.z = az * zs;
+    p.x = clamp(p.x, -4.4, 4.4);
+    // 体力
+    const sp = Math.hypot(p.vx, p.vz) / p.vmax;
+    if (sp > 0.35) p.stamina -= 2.3 * sp * sp * p.drain * dt;
+    else p.stamina += 3.2 * dt;
+    p.stamina = clamp(p.stamina, 0, 100);
+    // 跳跃
+    if (p.jumpV > 0 || p.jumpY > 0) { p.jumpY += p.jumpV * dt; p.jumpV -= G * dt; if (p.jumpY <= 0) { p.jumpY = 0; p.jumpV = 0; } }
+    p.runPhase += Math.hypot(p.vx, p.vz) * dt * 3.1;
+    if (p.callT > 0) p.callT -= dt;
+  }
+}
+function stepShuttle(h) {
+  const pz = sh.z, py = sh.y;
+  stepS(sh, h);
+  // 球网
+  if (!sh.netted && pz * sh.z < 0 && Math.abs(sh.x) < HW_D + 0.05) {
+    const f = pz / (pz - sh.z); const yc = py + (sh.y - py) * f;
+    if (yc < NET_H) {
+      if (yc > NET_H - 0.03 && Math.random() < 0.4) {
+        sh.vx *= 0.25; sh.vz *= 0.15; sh.vy = 0.4; sfx('net');
+        addPopup('擦网!', sh.x, NET_H + 0.4, 0, '#ffd34d', 15);
+        rallyPath = predictPath(); pathT0 = simT; match.assignPending = true;
+        landMark = rallyPath.land ? { x: rallyPath.land.x, z: rallyPath.land.z, out: false } : null;
+        for (const q of players) { q.plan = null; if (q.side !== sh.lastSide) q.reactAt = simT + (q.isHuman ? 0 : q.prof.react * 0.7); }
+      } else {
+        sh.z = pz > 0 ? 0.03 : -0.03; sh.vz = -sh.vz * 0.06; sh.vx *= 0.2; sh.vy = Math.min(sh.vy, 0) * 0.3; sh.netted = true; sfx('net');
+        landMark = null;
+        for (const q of players) q.plan = null;
+      }
+    }
+  }
+  if (sh.y <= 0) {
+    sh.y = 0; sh.flying = false;
+    sfx('land');
+    const x = sh.x, z = sh.z;
+    const landSide = z >= 0 ? 0 : 1;
+    const hitSide = sh.lastSide;
+    if (sh.netted) { endRally(1 - hitSide, sh.isServe ? 'fault' : 'net', x, z); return; }
+    const ok = inBounds(x, z, sh.isServe, match.receiver);
+    if (!ok) endRally(1 - hitSide, sh.isServe ? 'fault' : 'out', x, z);
+    else if (landSide === hitSide) endRally(1 - hitSide, 'net', x, z);
+    else endRally(hitSide, 'in', x, z);
+  }
+  sh.trail.push([sh.x, sh.y, sh.z]); if (sh.trail.length > 26) sh.trail.shift();
+}
+function stepShuttleFree(dt) {
+  if (sh.y > 0 && (sh.flying || sh.netted)) {
+    const n = Math.ceil(dt / PDT);
+    for (let i = 0; i < n; i++) { stepS(sh, dt / n); if (sh.y <= 0) { sh.y = 0; break; } }
+  }
+}
+
+// ---------- 渲染：静态层 ----------
+let bgLayer = null, netLayer = null;
+function quad(c, pts, fill, stroke, lw) {
+  c.beginPath();
+  for (let i = 0; i < pts.length; i++) { const q = P(pts[i][0], pts[i][1], pts[i][2]); if (i) c.lineTo(q.x, q.y); else c.moveTo(q.x, q.y); }
+  c.closePath();
+  if (fill) { c.fillStyle = fill; c.fill(); }
+  if (stroke) { c.strokeStyle = stroke; c.lineWidth = lw || 1; c.stroke(); }
+}
+function floorLineX(c, x1, x2, z, w, col) { quad(c, [[x1, 0, z - w / 2], [x2, 0, z - w / 2], [x2, 0, z + w / 2], [x1, 0, z + w / 2]], col); }
+function floorLineZ(c, z1, z2, x, w, col) { quad(c, [[x - w / 2, 0, z1], [x + w / 2, 0, z1], [x + w / 2, 0, z2], [x - w / 2, 0, z2]], col); }
+function makeLayer() { const c = document.createElement('canvas'); c.width = Math.round(W * DPR); c.height = Math.round(H * DPR); const g = c.getContext('2d'); g.setTransform(DPR, 0, 0, DPR, 0, 0); return [c, g]; }
+let seedR = 1; function srand() { seedR = (seedR * 16807) % 2147483647; return seedR / 2147483647; }
+function renderStatic() {
+  const [bc, g] = makeLayer(); bgLayer = bc;
+  // 背景
+  const grd = g.createLinearGradient(0, 0, 0, H);
+  grd.addColorStop(0, '#05080f'); grd.addColorStop(0.45, '#0d1626'); grd.addColorStop(1, '#101a2b');
+  g.fillStyle = grd; g.fillRect(0, 0, W, H);
+  // 看台（后方 + 两侧）
+  seedR = 7;
+  const stands = [
+    { a: [-16, 1.0, -10.5], b: [16, 1.0, -10.5], c: [16, 9, -17], d: [-16, 9, -17] },
+    { a: [-8.6, 1.0, -10.5], b: [-8.6, 1.0, 10], c: [-15, 7, 10], d: [-15, 7, -10.5] },
+    { a: [8.6, 1.0, -10.5], b: [8.6, 1.0, 10], c: [15, 7, 10], d: [15, 7, -10.5] },
+  ];
+  for (const s of stands) {
+    quad(g, [s.a, s.b, s.c, s.d], '#141c2c');
+    const rows = 14, cols = s === stands[0] ? 70 : 46;
+    for (let i = 0; i < rows; i++) for (let j = 0; j < cols; j++) {
+      if (srand() < 0.12) continue;
+      const u = (j + 0.5 + (srand() - 0.5) * 0.4) / cols, v = (i + 0.5) / rows;
+      const x = lerp(lerp(s.a[0], s.b[0], u), lerp(s.d[0], s.c[0], u), v);
+      const y = lerp(lerp(s.a[1], s.b[1], u), lerp(s.d[1], s.c[1], u), v);
+      const z = lerp(lerp(s.a[2], s.b[2], u), lerp(s.d[2], s.c[2], u), v);
+      const q = P(x, y + 0.25, z);
+      if (q.x < -10 || q.x > W + 10 || q.y < -10 || q.y > H + 10) continue;
+      const r = Math.max(0.8, q.s * 0.17);
+      const hue = Math.floor(srand() * 360);
+      g.fillStyle = `hsl(${hue},${30 + srand() * 40}%,${22 + srand() * 25}%)`;
+      g.beginPath(); g.arc(q.x, q.y, r, 0, Math.PI * 2); g.fill();
+      g.fillStyle = `rgba(230,190,160,${0.35 + srand() * 0.3})`;
+      g.beginPath(); g.arc(q.x, q.y - r * 1.25, r * 0.6, 0, Math.PI * 2); g.fill();
+    }
+  }
+  // 顶灯光晕
+  for (const lx of [-0.18, 0.18, 0.5, 0.82, 1.18]) {
+    const gx = W * lx, gy = H * 0.02;
+    const rg = g.createRadialGradient(gx, gy, 0, gx, gy, W * 0.22);
+    rg.addColorStop(0, 'rgba(255,250,230,0.22)'); rg.addColorStop(1, 'rgba(255,250,230,0)');
+    g.fillStyle = rg; g.fillRect(gx - W * 0.25, gy - W * 0.25, W * 0.5, W * 0.5);
+  }
+  // 地板
+  quad(g, [[-8.6, 0, -10.5], [8.6, 0, -10.5], [8.6, 0, 11.5], [-8.6, 0, 11.5]], '#1c3554');
+  // 地板木纹/光
+  for (let i = -8; i <= 8; i += 0.9) floorLineZ(g, -10.5, 11.5, i, 0.02, 'rgba(255,255,255,0.025)');
+  // 广告板
+  const ads = [['羽境', '#1b5fd8'], ['SMASH', '#d93a2b'], ['极速对决', '#16a36a'], ['RALLY', '#7d3fd6'], ['羽境', '#1b5fd8'], ['NET', '#e5891a']];
+  for (let i = 0; i < 6; i++) {
+    const x0 = -8.4 + i * 2.8, x1 = x0 + 2.8;
+    quad(g, [[x0, 0, -9.6], [x1, 0, -9.6], [x1, 0.85, -9.6], [x0, 0.85, -9.6]], ads[i][1], 'rgba(0,0,0,0.4)', 1);
+    const c = P((x0 + x1) / 2, 0.42, -9.6);
+    g.fillStyle = 'rgba(255,255,255,0.92)'; g.font = `bold ${Math.max(6, c.s * 0.42)}px sans-serif`; g.textAlign = 'center'; g.textBaseline = 'middle';
+    g.fillText(ads[i][0], c.x, c.y);
+  }
+  for (const sx of [-1, 1]) for (let i = 0; i < 7; i++) {
+    const z0 = -9.6 + i * 3, z1 = z0 + 3;
+    quad(g, [[sx * 7.6, 0, z0], [sx * 7.6, 0, z1], [sx * 7.6, 0.85, z1], [sx * 7.6, 0.85, z0]], i % 2 ? '#1b5fd8' : '#16a36a', 'rgba(0,0,0,0.4)', 1);
+  }
+  // 球场地胶
+  quad(g, [[-3.75, 0, -7.55], [3.75, 0, -7.55], [3.75, 0, 7.55], [-3.75, 0, 7.55]], '#16784a');
+  quad(g, [[-HW_D, 0, -HL], [HW_D, 0, -HL], [HW_D, 0, HL], [-HW_D, 0, HL]], '#1a8a55');
+  // 光照
+  const cc = P(0, 0, 0);
+  const lg = g.createRadialGradient(cc.x, cc.y, 0, cc.x, cc.y, W * 0.55);
+  lg.addColorStop(0, 'rgba(255,255,240,0.10)'); lg.addColorStop(1, 'rgba(0,0,0,0.18)');
+  g.fillStyle = lg; g.fillRect(0, 0, W, H);
+  // 场线
+  const LW = 0.045, LC = '#f4f7f2';
+  for (const zz of [-HL + LW / 2, HL - LW / 2]) floorLineX(g, -HW_D, HW_D, zz, LW, LC);
+  for (const zz of [-LSL_D, LSL_D]) floorLineX(g, -HW_D, HW_D, zz, LW, LC);
+  for (const zz of [-SSL, SSL]) floorLineX(g, -HW_D, HW_D, zz, LW, LC);
+  for (const xx of [-HW_D + LW / 2, HW_D - LW / 2, -HW_S, HW_S]) floorLineZ(g, -HL, HL, xx, LW, LC);
+  floorLineZ(g, -HL, -SSL, 0, LW, LC); floorLineZ(g, SSL, HL, 0, LW, LC);
+
+  // 网层
+  const [nc, n] = makeLayer(); netLayer = nc;
+  for (const sx of [-1, 1]) {
+    const b = P(sx * (HW_D + 0.05), 0, 0), t = P(sx * (HW_D + 0.05), POST_H, 0);
+    n.strokeStyle = '#d0d4dc'; n.lineWidth = Math.max(2, b.s * 0.05); n.lineCap = 'round';
+    n.beginPath(); n.moveTo(b.x, b.y); n.lineTo(t.x, t.y); n.stroke();
+    n.fillStyle = '#c33'; n.beginPath(); n.ellipse(b.x, b.y, b.s * 0.22, b.s * 0.06, 0, 0, Math.PI * 2); n.fill();
+  }
+  quad(n, [[-HW_D, NET_H - 0.76, 0], [HW_D, NET_H - 0.76, 0], [HW_D, NET_H - 0.07, 0], [-HW_D, NET_H - 0.07, 0]], 'rgba(12,16,20,0.42)');
+  n.lineWidth = 0.6; n.strokeStyle = 'rgba(255,255,255,0.13)';
+  for (let x = -HW_D; x <= HW_D + 0.001; x += 0.1) { const a = P(x, NET_H - 0.76, 0), b = P(x, NET_H - 0.07, 0); n.beginPath(); n.moveTo(a.x, a.y); n.lineTo(b.x, b.y); n.stroke(); }
+  for (let y = NET_H - 0.76; y <= NET_H - 0.06; y += 0.1) { const a = P(-HW_D, y, 0), b = P(HW_D, y, 0); n.beginPath(); n.moveTo(a.x, a.y); n.lineTo(b.x, b.y); n.stroke(); }
+  quad(n, [[-HW_D, NET_H - 0.075, 0], [HW_D, NET_H - 0.075, 0], [HW_D, NET_H, 0], [-HW_D, NET_H, 0]], '#f4f4f4');
+}
+
+// ---------- 渲染：动态 ----------
+const READY = [0.32, 1.18, 0.32, 0.15, 0.95, 0.3];
+const POSES = {
+  over: { back: [0.32, 1.78, -0.12, 0.05, -1, -0.35], hit: [0.22, 2.1, 0.22, 0.05, 1, 0.3], fol: [-0.32, 1.05, 0.36, -0.4, -0.6, 0.5] },
+  side: { back: [0.6, 1.25, -0.3, 0.3, 0.55, -0.8], hit: [0.5, 1.18, 0.32, 0.85, 0.15, 0.5], fol: [-0.36, 1.35, 0.3, -0.6, 0.5, 0.45] },
+  under: { back: [0.55, 0.95, -0.25, 0.3, -0.8, -0.4], hit: [0.44, 0.62, 0.38, 0.5, -0.55, 0.65], fol: [0.05, 1.65, 0.42, 0, 0.95, 0.3] },
+};
+function mir(p, h) { return h > 0 ? p : [-p[0], p[1], p[2], -p[3], p[4], p[5]]; }
+function lerpPose(a, b, t) { const r = []; for (let i = 0; i < 6; i++) r.push(lerp(a[i], b[i], t)); return r; }
+function computePose(p) {
+  let pose = READY;
+  if (p.swing) {
+    const sw = p.swing, P0 = POSES[sw.style];
+    const back = mir(P0.back, sw.hand), hit = mir(P0.hit, sw.hand), fol = mir(P0.fol, sw.hand);
+    const t = sw.t;
+    if (t < SW_HIT) pose = lerpPose(lerpPose(sw.from, back, 0.6), hit, t / SW_HIT);
+    else if (t < SW_END) pose = lerpPose(hit, fol, (t - SW_HIT) / (SW_END - SW_HIT));
+    else pose = lerpPose(fol, READY, clamp((t - SW_END) / 0.2, 0, 1));
+  } else if (p.charge) {
+    const pr = predictStyle(p, 0.25);
+    const k = Math.min(p.charge.t / 0.72, 1);
+    pose = lerpPose(READY, mir(POSES[pr.style].back, pr.hand), 0.25 + 0.75 * k);
+  }
+  p.pose = pose;
+  return pose;
+}
+function drawLimb(a, b, w, col) {
+  ctx.strokeStyle = col; ctx.lineWidth = Math.max(1.2, w * (a.s + b.s) / 2);
+  ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y); ctx.stroke();
+}
+function drawPlayer(p) {
+  const rs = p.side === 0 ? 1 : -1, fs = p.side === 0 ? -1 : 1;
+  const jy = p.jumpY;
+  let lean = [0, 0];
+  if (p.lungeT > 0) { const k = Math.min(1, p.lungeT / 0.25); lean = [p.lungeDir[0] * 0.35 * k, Math.max(0.15, p.lungeDir[1]) * 0.35 * k]; }
+  const L = (r, y, f) => {
+    const lf = y > 0.5 ? (y - 0.5) / 1.2 : 0;
+    return P(p.x + rs * (r + lean[0] * lf), y + jy - (p.lungeT > 0 ? 0.18 * lf : 0), p.z + fs * (f + lean[1] * lf));
+  };
+  const W_ = (x, y, z) => P(x, y + jy, z);
+  const pose = computePose(p);
+  const ch = p.ch;
+  // 腿
+  const sp = Math.hypot(p.vx, p.vz);
+  const k = Math.min(1, sp / 3);
+  const dirx = sp > 0.1 ? p.vx / sp : 0, dirz = sp > 0.1 ? p.vz / sp : 0;
+  const ctx_ = ctx;
+  ctx_.lineCap = 'round'; ctx_.lineJoin = 'round';
+  const feet = [];
+  for (const side of [-1, 1]) {
+    const ph = p.runPhase + (side > 0 ? Math.PI : 0);
+    const stride = Math.sin(ph) * 0.34 * k;
+    let lift = Math.max(0, Math.cos(ph)) * 0.16 * k;
+    let fx = p.x + rs * side * 0.16 + dirx * stride, fz = p.z + dirz * stride;
+    if (p.lungeT > 0 && side > 0) { fx += rs * p.lungeDir[0] * 0.5; fz += fs * Math.max(0.2, p.lungeDir[1]) * 0.6; lift = 0; }
+    const hip = L(side * 0.1, 0.92, 0);
+    const foot = W_(fx, lift + 0.05, fz);
+    const knee = W_((p.x + rs * side * 0.13 + fx) / 2 + fs * 0, 0.5 + lift * 0.6, (p.z + fz) / 2 + fs * 0.12);
+    feet.push([hip, knee, foot]);
+  }
+  const skin = '#e7b38b';
+  for (const [hip, knee, foot] of feet) {
+    drawLimb(hip, knee, 0.12, skin); drawLimb(knee, foot, 0.1, skin);
+    drawLimb(foot, foot, 0.13, '#f5f5f5');
+  }
+  // 短裤
+  const pel = L(0, 0.92, 0), pelL = L(-0.12, 0.85, 0), pelR = L(0.12, 0.85, 0);
+  drawLimb(pelL, pelR, 0.2, ch.color2 === '#ffffff' || ch.color2 === '#f2f2f2' ? '#20263a' : ch.color2);
+  // 躯干
+  const neck = L(0, 1.42, 0.02);
+  const shL = L(-0.2, 1.4, 0), shR = L(0.2, 1.4, 0);
+  drawLimb(pel, neck, 0.34, ch.color);
+  drawLimb(shL, shR, 0.16, ch.color);
+  // 号码条
+  drawLimb(L(-0.13, 1.18, 0), L(0.13, 1.18, 0), 0.05, ch.color2);
+  // 非持拍手
+  const offH = L(-0.3, 1.05, 0.25);
+  const offE = L(-0.3, 1.22, 0.05);
+  drawLimb(shL, offE, 0.09, skin); drawLimb(offE, offH, 0.08, skin);
+  // 头
+  const head = L(0, 1.62, 0.02);
+  ctx.fillStyle = skin; ctx.beginPath(); ctx.arc(head.x, head.y, Math.max(2, head.s * 0.115), 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = ch.hair; ctx.beginPath();
+  if (p.side === 0) ctx.arc(head.x, head.y, Math.max(2, head.s * 0.118), 0, Math.PI * 2);
+  else ctx.arc(head.x, head.y - head.s * 0.03, Math.max(2, head.s * 0.118), Math.PI * 1.05, Math.PI * 1.95);
+  ctx.fill();
+  // 持拍手臂
+  const hand = L(pose[0], pose[1], pose[2]);
+  const elbow = L((0.2 + pose[0]) / 2 + 0.08 * Math.sign(pose[0] + 0.001), (1.4 + pose[1]) / 2 - 0.06, (pose[2]) / 2);
+  drawLimb(shR, elbow, 0.09, skin); drawLimb(elbow, hand, 0.08, skin);
+  // 球拍
+  const dl = Math.hypot(pose[3], pose[4], pose[5]) || 1;
+  const dx = pose[3] / dl, dy = pose[4] / dl, dz = pose[5] / dl;
+  const sEnd = L(pose[0] + dx * 0.4, pose[1] + dy * 0.4, pose[2] + dz * 0.4);
+  const hc = L(pose[0] + dx * 0.56, pose[1] + dy * 0.56, pose[2] + dz * 0.56);
+  ctx.strokeStyle = '#333'; ctx.lineWidth = Math.max(1, hand.s * 0.022);
+  ctx.beginPath(); ctx.moveTo(hand.x, hand.y); ctx.lineTo(sEnd.x, sEnd.y); ctx.stroke();
+  const ang = Math.atan2(hc.y - sEnd.y, hc.x - sEnd.x);
+  ctx.save(); ctx.translate(hc.x, hc.y); ctx.rotate(ang);
+  const rr = Math.max(3, hc.s * 0.125);
+  ctx.beginPath(); ctx.ellipse(0, 0, rr * 1.25, rr * 0.95, 0, 0, Math.PI * 2);
+  ctx.fillStyle = 'rgba(255,255,255,0.18)'; ctx.fill();
+  ctx.strokeStyle = ch.color; ctx.lineWidth = Math.max(1.2, hc.s * 0.025); ctx.stroke();
+  ctx.restore();
+  // 呼叫标记（双打）
+  if (p.callT > 0) {
+    const t = L(0, 2.15, 0);
+    ctx.fillStyle = 'rgba(255,255,255,0.9)'; ctx.font = `bold ${Math.max(10, t.s * 0.28)}px sans-serif`; ctx.textAlign = 'center';
+    ctx.fillText('我来!', t.x, t.y);
+  }
+}
+function drawShadow(x, z, r, a) {
+  const c = P(x, 0, z);
+  const c2 = P(x, 0, z + r);
+  ctx.fillStyle = `rgba(0,0,0,${a})`;
+  ctx.beginPath(); ctx.ellipse(c.x, c.y, r * c.s, Math.max(1, Math.abs(c2.y - c.y)), 0, 0, Math.PI * 2); ctx.fill();
+}
+function drawShuttle() {
+  const sp = Math.hypot(sh.vx, sh.vy, sh.vz);
+  // 拖尾
+  if (sh.flying && sp > 14 && sh.trail.length > 2) {
+    ctx.lineCap = 'round';
+    for (let i = 1; i < sh.trail.length; i++) {
+      const a = P(...sh.trail[i - 1]), b = P(...sh.trail[i]);
+      const al = i / sh.trail.length;
+      ctx.strokeStyle = `rgba(255,255,255,${al * 0.35 * Math.min(1, (sp - 14) / 20)})`;
+      ctx.lineWidth = Math.max(1, b.s * 0.03 * al);
+      ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y); ctx.stroke();
+    }
+  }
+  let dx = sh.vx, dy = sh.vy, dz = sh.vz;
+  if (!sh.flying && state === 'serve') { dx = 0; dy = -1; dz = 0; }
+  if (sp < 0.5 && !(state === 'serve')) { dx = 0; dy = -1; dz = 0; }
+  const l = Math.hypot(dx, dy, dz) || 1;
+  const c = P(sh.x, sh.y, sh.z);
+  const t = P(sh.x - dx / l * 0.075, sh.y - dy / l * 0.075, sh.z - dz / l * 0.075);
+  let sdx = t.x - c.x, sdy = t.y - c.y; const sl = Math.hypot(sdx, sdy) || 1;
+  const nx = -sdy / sl, ny = sdx / sl;
+  const rw = Math.max(2.2, t.s * 0.034), cw = Math.max(1.4, c.s * 0.014);
+  const minL = 4;
+  let tx = t.x, ty = t.y;
+  if (sl < minL) { tx = c.x + (sdx / sl) * minL * (sl < 0.01 ? 0 : 1); ty = c.y + (sdy / sl) * minL; if (sl < 0.01) { ty = c.y - minL; } }
+  ctx.fillStyle = 'rgba(255,255,255,0.95)';
+  ctx.beginPath();
+  ctx.moveTo(c.x + nx * cw, c.y + ny * cw); ctx.lineTo(tx + nx * rw, ty + ny * rw); ctx.lineTo(tx - nx * rw, ty - ny * rw); ctx.lineTo(c.x - nx * cw, c.y - ny * cw); ctx.closePath(); ctx.fill();
+  ctx.strokeStyle = 'rgba(120,120,120,0.6)'; ctx.lineWidth = 0.6; ctx.stroke();
+  ctx.fillStyle = '#f1e6c8'; ctx.beginPath(); ctx.arc(c.x, c.y, Math.max(1.8, c.s * 0.016), 0, Math.PI * 2); ctx.fill();
+  // 超出屏幕上方的指示
+  if (c.y < 0) {
+    ctx.fillStyle = 'rgba(255,255,255,0.85)';
+    ctx.beginPath(); ctx.moveTo(c.x, 6); ctx.lineTo(c.x - 7, 18); ctx.lineTo(c.x + 7, 18); ctx.closePath(); ctx.fill();
+    ctx.font = '11px sans-serif'; ctx.textAlign = 'center'; ctx.fillText(sh.y.toFixed(1) + 'm', c.x, 30);
+  }
+}
+function drawRing(x, z, r, col, lw, dash) {
+  ctx.strokeStyle = col; ctx.lineWidth = lw;
+  if (dash) ctx.setLineDash(dash);
+  ctx.beginPath();
+  for (let i = 0; i <= 32; i++) { const a = i / 32 * Math.PI * 2; const q = P(x + Math.cos(a) * r, 0.01, z + Math.sin(a) * r); if (i) ctx.lineTo(q.x, q.y); else ctx.moveTo(q.x, q.y); }
+  ctx.stroke();
+  if (dash) ctx.setLineDash([]);
+}
+
+function addPopup(text, x, y, z, color, size) { popups.push({ text, x, y, z, color, size: size || 14, t: 0 }); if (popups.length > 8) popups.shift(); }
+function setBanner(text, dur, color) { banner = { text, t: 0, dur, color: color || '#ffffff' }; }
+
+function render(dt) {
+  ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+  if (bgLayer) ctx.drawImage(bgLayer, 0, 0, W, H);
+  if (state === 'menu' && !match) return;
+  // 落点标记
+  if (settings.marker === '1' && landMark && sh.flying && (state === 'rally')) {
+    const toUs = sh.lastSide === 1;
+    drawRing(landMark.x, landMark.z, 0.16, toUs ? 'rgba(255,220,80,0.85)' : 'rgba(255,255,255,0.35)', 2);
+    drawRing(landMark.x, landMark.z, 0.05, toUs ? 'rgba(255,220,80,0.85)' : 'rgba(255,255,255,0.35)', 2);
+  }
+  if (lastLand) {
+    lastLand.t += dt;
+    if (lastLand.t < 2.2) {
+      drawRing(lastLand.x, lastLand.z, 0.2, lastLand.out ? 'rgba(255,90,70,0.95)' : 'rgba(110,255,160,0.95)', 3);
+      const q = P(lastLand.x, 0.35, lastLand.z);
+      ctx.fillStyle = lastLand.out ? '#ff6a55' : '#7dffb2'; ctx.font = `bold ${Math.max(11, q.s * 0.3)}px sans-serif`; ctx.textAlign = 'center';
+      ctx.fillText(lastLand.out ? 'OUT' : 'IN', q.x, q.y);
+    } else lastLand = null;
+  }
+  // 人类球员范围提示
+  if (human && human.isHuman && (state === 'rally' || state === 'serve')) {
+    let col = 'rgba(255,255,255,0.18)';
+    if (state === 'rally' && sh.flying && sh.lastSide !== 0 && !sh.netted) {
+      const b = predictBest(human, 0.7);
+      incomingHint = b;
+      if (b && b.d < REACH) col = 'rgba(110,255,160,0.75)';
+      else if (b && b.d < REACH + LUNGE_EXTRA && b.y < 1.75) col = 'rgba(255,210,80,0.7)';
+    }
+    drawRing(human.x, human.z, 0.62, col, 1.6, [5, 4]);
+  }
+  // 阴影
+  for (const p of players) drawShadow(p.x, p.z, 0.32, 0.32);
+  if (sh.y > 0 || state === 'serve') drawShadow(sh.x, sh.z, 0.05, clamp(0.5 - sh.y * 0.04, 0.15, 0.5));
+  // 深度排序
+  const objs = players.map(p => ({ z: p.z, f: () => drawPlayer(p) }));
+  objs.push({ z: sh.z + 0.05, f: drawShuttle });
+  objs.sort((a, b) => a.z - b.z);
+  for (const o of objs) if (o.z < 0) o.f();
+  if (netLayer) ctx.drawImage(netLayer, 0, 0, W, H);
+  for (const o of objs) if (o.z >= 0) o.f();
+  // 粒子
+  for (let i = particles.length - 1; i >= 0; i--) {
+    const pt = particles[i]; pt.t += dt;
+    if (pt.t > pt.life) { particles.splice(i, 1); continue; }
+    pt.x += pt.vx * dt; pt.y += pt.vy * dt; pt.z += pt.vz * dt; pt.vy -= 4 * dt;
+    const q = P(pt.x, pt.y, pt.z);
+    ctx.fillStyle = `rgba(255,255,255,${1 - pt.t / pt.life})`;
+    ctx.fillRect(q.x - 1.2, q.y - 1.2, 2.4, 2.4);
+  }
+  // 弹出文字
+  ctx.textAlign = 'center';
+  for (let i = popups.length - 1; i >= 0; i--) {
+    const pp = popups[i]; pp.t += dt;
+    if (pp.t > 1.1) { popups.splice(i, 1); continue; }
+    const q = P(pp.x, pp.y + pp.t * 0.6, pp.z);
+    ctx.globalAlpha = 1 - Math.max(0, pp.t - 0.7) / 0.4;
+    ctx.font = `bold ${pp.size}px sans-serif`;
+    ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(0,0,0,0.6)'; ctx.strokeText(pp.text, q.x, q.y);
+    ctx.fillStyle = pp.color; ctx.fillText(pp.text, q.x, q.y);
+    ctx.globalAlpha = 1;
+  }
+  drawHUD(dt);
+}
+
+function roundRect(x, y, w, h, r) { ctx.beginPath(); ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r); ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath(); }
+function drawHUD(dt) {
+  if (!match) return;
+  const m = match;
+  // 记分牌
+  const sw = 230, shh = 46, sx = W / 2 - sw / 2, sy = 6;
+  roundRect(sx, sy, sw, shh, 9); ctx.fillStyle = 'rgba(8,14,26,0.82)'; ctx.fill();
+  ctx.strokeStyle = 'rgba(255,255,255,0.12)'; ctx.lineWidth = 1; ctx.stroke();
+  const names0 = teamOf(0).map(p => p.ch.name).join('/'), names1 = teamOf(1).map(p => p.ch.name).join('/');
+  ctx.font = 'bold 11px sans-serif'; ctx.textBaseline = 'middle';
+  ctx.textAlign = 'left'; ctx.fillStyle = '#9fd0ff'; ctx.fillText((demo ? '' : '你 ') + names0, sx + 10, sy + 13);
+  ctx.textAlign = 'right'; ctx.fillStyle = '#ffb3a8'; ctx.fillText(names1, sx + sw - 10, sy + 13);
+  ctx.textAlign = 'center'; ctx.fillStyle = '#fff'; ctx.font = 'bold 22px sans-serif';
+  ctx.fillText(m.score[0], W / 2 - 30, sy + 31); ctx.fillText(m.score[1], W / 2 + 30, sy + 31);
+  ctx.font = '11px sans-serif'; ctx.fillStyle = '#9fb0cc';
+  ctx.fillText(`局 ${m.games[0]}-${m.games[1]}`, W / 2, sy + 13);
+  ctx.fillText(`第${m.game}局`, W / 2, sy + 31);
+  // 发球方
+  const svx = m.serveSide === 0 ? W / 2 - 58 : W / 2 + 58;
+  ctx.fillStyle = '#ffd34d'; ctx.beginPath(); ctx.arc(svx, sy + 31, 4, 0, Math.PI * 2); ctx.fill();
+  if (m.rally > 2 && state === 'rally') { ctx.fillStyle = '#9fb0cc'; ctx.font = '11px sans-serif'; ctx.fillText(`回合 ${m.rally}`, W / 2, sy + shh + 10); }
+  // 体力
+  if (human) {
+    const bx = 12, by = 12, bw = Math.min(150, W * 0.2);
+    ctx.fillStyle = 'rgba(8,14,26,0.7)'; roundRect(bx - 4, by - 4, bw + 8, 30, 7); ctx.fill();
+    ctx.fillStyle = '#cfe0ff'; ctx.font = 'bold 10px sans-serif'; ctx.textAlign = 'left';
+    ctx.fillText(`${human.ch.name} · 体力`, bx, by + 4);
+    ctx.fillStyle = 'rgba(255,255,255,0.12)'; ctx.fillRect(bx, by + 12, bw, 7);
+    const st = human.stamina / 100;
+    ctx.fillStyle = st > 0.5 ? '#38e08a' : st > 0.25 ? '#ffc23a' : '#ff5a48';
+    ctx.fillRect(bx, by + 12, bw * st, 7);
+  }
+  // 蓄力条（世界空间）
+  for (const p of players) {
+    if (!p.charge || !(p.isHuman || demo)) continue;
+    const c = p.charge.t / 0.72;
+    const q = P(p.x, 2.35 + p.jumpY, p.z);
+    const bw = 44, bh = 6;
+    ctx.fillStyle = 'rgba(0,0,0,0.6)'; ctx.fillRect(q.x - bw / 2 - 1, q.y - 1, bw + 2, bh + 2);
+    const f = Math.min(c, 1.35) / 1.35;
+    ctx.fillStyle = c > 1 ? '#ff4d3d' : c > 0.75 ? '#ffd34d' : '#5fd6ff';
+    ctx.fillRect(q.x - bw / 2, q.y, bw * f, bh);
+    ctx.fillStyle = 'rgba(255,255,255,0.7)'; ctx.fillRect(q.x - bw / 2 + bw / 1.35 - 0.5, q.y - 2, 1, bh + 4);
+  }
+  // 发球提示
+  if (state === 'serve' && human.isHuman) {
+    ctx.font = 'bold 13px sans-serif'; ctx.textAlign = 'center';
+    ctx.fillStyle = 'rgba(255,255,255,0.9)';
+    const msg = m.server === human ? '你发球：按住[吊球]网前球 / [高远]后场高球 / [平抽]平快球，松开发球' :
+                (m.receiver === human ? '准备接发球' : (m.server.side === 0 ? '队友发球' : '对方发球'));
+    ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(0,0,0,0.55)';
+    const my = banner ? sy + shh + 62 : sy + shh + 22;
+    ctx.strokeText(msg, W / 2, my); ctx.fillText(msg, W / 2, my);
+  }
+  // 横幅
+  if (banner) {
+    banner.t += dt;
+    if (banner.t > banner.dur) banner = null;
+    else {
+      const a = Math.min(1, banner.t * 6, (banner.dur - banner.t) * 4);
+      ctx.globalAlpha = a;
+      ctx.font = 'bold 18px sans-serif'; ctx.textAlign = 'center';
+      const tw = ctx.measureText(banner.text).width + 36, by = sy + shh + 30;
+      ctx.fillStyle = 'rgba(5,10,20,0.75)'; roundRect(W / 2 - tw / 2, by - 17, tw, 34, 9); ctx.fill();
+      ctx.fillStyle = banner.color; ctx.fillText(banner.text, W / 2, by + 1);
+      ctx.globalAlpha = 1;
+    }
+  }
+  if (demo) {
+    ctx.font = 'bold 12px sans-serif'; ctx.fillStyle = 'rgba(255,255,255,0.7)'; ctx.textAlign = 'left';
+    ctx.fillText('AI 演示中 · 点右上角暂停可退出', 12, H - 16);
+  }
+  drawControls();
+}
+function drawControls() {
+  // 暂停按钮
+  const pb = input.pauseBtn;
+  ctx.fillStyle = 'rgba(8,14,26,0.7)'; ctx.beginPath(); ctx.arc(pb.x, pb.y, pb.r, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = '#fff'; ctx.fillRect(pb.x - 5, pb.y - 6, 3.5, 12); ctx.fillRect(pb.x + 1.5, pb.y - 6, 3.5, 12);
+  if (demo || !human.isHuman) return;
+  // 摇杆
+  const R = joyRadius();
+  let jx, jy, kx, ky;
+  if (input.joy) { jx = input.joy.ox; jy = input.joy.oy; kx = input.joy.x; ky = input.joy.y; }
+  else { jx = R + 26; jy = H - R - 22; kx = jx; ky = jy; }
+  ctx.globalAlpha = input.joy ? 0.9 : 0.4;
+  ctx.fillStyle = 'rgba(255,255,255,0.08)'; ctx.strokeStyle = 'rgba(255,255,255,0.35)'; ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.arc(jx, jy, R, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+  ctx.fillStyle = 'rgba(255,255,255,0.45)'; ctx.beginPath(); ctx.arc(kx, ky, R * 0.42, 0, Math.PI * 2); ctx.fill();
+  ctx.globalAlpha = 1;
+  // 按键
+  const hc = human.charge;
+  for (const b of BTNS) {
+    const down = !!input.btns[b.id];
+    ctx.globalAlpha = down ? 0.95 : 0.72;
+    const g = ctx.createRadialGradient(b.x - b.r * 0.3, b.y - b.r * 0.3, 2, b.x, b.y, b.r);
+    g.addColorStop(0, '#ffffff55'); g.addColorStop(1, b.col + (down ? 'ee' : '99'));
+    ctx.fillStyle = g; ctx.beginPath(); ctx.arc(b.x, b.y, b.r * (down ? 0.94 : 1), 0, Math.PI * 2); ctx.fill();
+    ctx.strokeStyle = 'rgba(255,255,255,0.6)'; ctx.lineWidth = 1.5; ctx.stroke();
+    if (hc && hc.btn === b.id) {
+      const c = Math.min(hc.t / 0.72, 1.35);
+      ctx.strokeStyle = c > 1 ? '#ff4d3d' : '#ffffff'; ctx.lineWidth = 4;
+      ctx.beginPath(); ctx.arc(b.x, b.y, b.r + 4, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * Math.min(c, 1)); ctx.stroke();
+    }
+    ctx.globalAlpha = 1;
+    ctx.fillStyle = '#fff'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.font = `bold ${Math.round(b.r * 0.42)}px sans-serif`; ctx.fillText(b.label, b.x, b.y - b.r * 0.12);
+    ctx.font = `${Math.round(b.r * 0.26)}px sans-serif`; ctx.fillStyle = 'rgba(255,255,255,0.8)'; ctx.fillText(b.sub, b.x, b.y + b.r * 0.32);
+  }
+  // 当前击球位置提示（高/中/低）
+  if (incomingHint && state === 'rally' && sh.flying && sh.lastSide === 1) {
+    const y = incomingHint.y;
+    const zone = y >= 2.0 ? '高点 · 可杀' : y >= 1.1 ? '中路' : '低点';
+    const b = BTNS[0];
+    ctx.font = 'bold 12px sans-serif'; ctx.fillStyle = y >= 2.0 ? '#ff8a7a' : '#cfe0ff'; ctx.textAlign = 'center';
+    ctx.fillText(zone, b.x, b.y - b.r - 14);
+  }
+  ctx.textBaseline = 'alphabetic';
+}
+
+// ---------- 循环 ----------
+let lastT = performance.now();
+function loop(now) {
+  let dt = (now - lastT) / 1000; lastT = now;
+  dt = Math.min(dt, 0.05);
+  const gdt = dt * (+settings.speed || 0.88);
+  update(gdt);
+  render(dt);
+  requestAnimationFrame(loop);
+}
+function resize() {
+  DPR = Math.min(window.devicePixelRatio || 1, 2.5);
+  W = window.innerWidth; H = window.innerHeight;
+  cv.width = Math.round(W * DPR); cv.height = Math.round(H * DPR);
+  fitCamera(); layoutButtons(); renderStatic();
+  checkOrientation();
+}
+let allowPortrait = false;
+function checkOrientation() {
+  const el = document.getElementById('rotate');
+  const show = H > W && !allowPortrait && state !== 'menu' && !demo && 'ontouchstart' in window;
+  el.classList.toggle('show', show);
+}
+document.getElementById('portraitBtn').onclick = () => { allowPortrait = true; checkOrientation(); };
+window.addEventListener('resize', resize);
+window.addEventListener('orientationchange', () => setTimeout(resize, 200));
+
+// ---------- 菜单 ----------
+function $(id) { return document.getElementById(id); }
+function show(id, v) { $(id).classList.toggle('show', v); }
+function buildMenu() {
+  document.querySelectorAll('.seg').forEach(seg => {
+    const key = seg.dataset.key;
+    seg.querySelectorAll('button').forEach(b => {
+      b.classList.toggle('on', String(settings[key]) === b.dataset.v);
+      b.onclick = () => { settings[key] = b.dataset.v; saveSettings(); buildMenu(); };
+    });
+  });
+  const ce = $('chars'); ce.innerHTML = '';
+  CHARS.forEach((c, i) => {
+    const d = document.createElement('div');
+    d.className = 'char' + ((settings.char | 0) === i ? ' on' : '');
+    const bar = (n, v) => `<div style="display:flex;gap:4px;align-items:center"><span style="width:22px;color:#9fb0cc">${n}</span><div class="bar" style="flex:1"><i style="width:${v * 10}%"></i></div></div>`;
+    d.innerHTML = `<b style="color:${c.color}">${c.name}</b><span class="tag">${c.tag}</span>${bar('速度', c.spd)}${bar('力量', c.pow)}${bar('耐力', c.sta)}${bar('技术', c.tec)}`;
+    d.onclick = () => { settings.char = i; saveSettings(); buildMenu(); };
+    ce.appendChild(d);
+  });
+}
+function startGame(isDemo) {
+  audioInit();
+  demo = !!isDemo;
+  show('menu', false); show('result', false); show('pause', false);
+  paused = false;
+  newMatch();
+  checkOrientation();
+  try {
+    if (!isDemo && document.documentElement.requestFullscreen && 'ontouchstart' in window && !document.fullscreenElement) {
+      document.documentElement.requestFullscreen().then(() => { if (screen.orientation && screen.orientation.lock) screen.orientation.lock('landscape').catch(() => {}); }).catch(() => {});
+    }
+  } catch (e) {}
+}
+function togglePause(v) {
+  if (state === 'menu') return;
+  if (demo && v) { quitToMenu(); return; }
+  paused = v; show('pause', v);
+  for (const k in input.btns) input.btns[k] = false;
+  if (human) human.charge = null;
+  input.joy = null; touches.clear();
+}
+function quitToMenu() { paused = false; state = 'menu'; match = null; players = []; human = null; show('pause', false); show('result', false); show('menu', true); buildMenu(); checkOrientation(); }
+function showResult(w) {
+  const m = match;
+  if (!m || state !== 'over') return;
+  const win = w === 0;
+  $('resTitle').textContent = demo ? (win ? '近端方获胜' : '远端方获胜') : (win ? '🏆 比赛胜利！' : '比赛失利');
+  $('resTitle').style.color = win ? '#7dffb2' : '#ff8a7a';
+  $('resScore').textContent = m.gameScores.map(g => g.join(' - ')).join('   |   ');
+  const t0 = teamOf(0), t1 = teamOf(1);
+  const sum = (t, k) => t.reduce((a, p) => a + p.stats[k], 0);
+  const mx = (t, k) => Math.max(...t.map(p => p.stats[k]));
+  const rows = [
+    ['', demo ? '近端' : '你方', demo ? '远端' : '对方'],
+    ['局分', m.games[0], m.games[1]],
+    ['杀球次数', sum(t0, 'smash'), sum(t1, 'smash')],
+    ['最快杀球', mx(t0, 'maxSmash') + ' km/h', mx(t1, 'maxSmash') + ' km/h'],
+    ['制胜球', sum(t0, 'winners'), sum(t1, 'winners')],
+    ['失误(出界/下网)', sum(t0, 'errors'), sum(t1, 'errors')],
+    ['完美击球', sum(t0, 'perfect'), sum(t1, 'perfect')],
+    ['最长回合', m.longest + ' 拍', ''],
+  ];
+  $('resTable').innerHTML = rows.map((r, i) => `<tr>${r.map(c => i === 0 ? `<td style="color:#9fb0cc">${c}</td>` : `<td>${c}</td>`).join('')}</tr>`).join('');
+  show('result', true);
+}
+$('startBtn').onclick = () => startGame(false);
+$('demoBtn').onclick = () => startGame(true);
+$('helpBtn').onclick = () => show('help', true);
+$('helpBtn2').onclick = () => show('help', true);
+document.querySelectorAll('[data-close]').forEach(b => b.onclick = () => show(b.dataset.close, false));
+$('resumeBtn').onclick = () => togglePause(false);
+$('restartBtn').onclick = () => { show('pause', false); startGame(demo); };
+$('quitBtn').onclick = quitToMenu;
+$('againBtn').onclick = () => startGame(demo);
+$('menuBtn').onclick = quitToMenu;
+document.addEventListener('visibilitychange', () => { if (document.hidden && state !== 'menu' && !paused && !demo) togglePause(true); });
+
+buildMenu();
+resize();
+if (/[?&]demo=1/.test(location.search)) { if (/doubles/.test(location.search)) settings.mode = 'doubles'; startGame(true); }
+requestAnimationFrame(loop);
+// 测试钩子
+window.__game = { get state() { return state; }, get match() { return match; }, get players() { return players; }, get rallyPath() { return rallyPath; }, get pathT0() { return pathT0; }, get simT() { return simT; }, sh, update, settings, pressBtn, releaseBtn, planIntercept };
+</script>
+</body>
+</html>
