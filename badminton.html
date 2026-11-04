@@ -230,10 +230,10 @@ const CHARS = [
     skin: '#eab892', hair: '#4a2c18', hs: 'pony', shirt: '#ffb020', trim: '#1b1b1b', bottom: '#1b1b1b', shoe: '#ffffff', racket: '#1b1b1b', band: '#ffffff', desc: '左手持拍，攻守兼备' },
 ];
 const DIFF = {
-  easy:   { dp: 1.0, react: 0.36, spd: 0.80, tNoise: 0.055, err: 1.7, judge: 0.25, smash: 0.30, aimSkill: 0.25 },
-  normal: { dp: 0.62, react: 0.26, spd: 0.92, tNoise: 0.035, err: 1.15, judge: 0.55, smash: 0.50, aimSkill: 0.55 },
-  hard:   { dp: 0.5, react: 0.19, spd: 1.00, tNoise: 0.022, err: 0.8, judge: 0.8, smash: 0.65, aimSkill: 0.8 },
-  master: { dp: 0.4, react: 0.13, spd: 1.06, tNoise: 0.012, err: 0.55, judge: 0.93, smash: 0.75, aimSkill: 0.95 },
+  easy:   { dp: 1.0, read: 0.1, react: 0.36, spd: 0.80, tNoise: 0.055, err: 1.7, judge: 0.25, smash: 0.30, aimSkill: 0.25 },
+  normal: { dp: 0.6, read: 0.35, react: 0.26, spd: 0.92, tNoise: 0.035, err: 1.15, judge: 0.55, smash: 0.50, aimSkill: 0.55 },
+  hard:   { dp: 0.35, read: 0.55, react: 0.19, spd: 1.00, tNoise: 0.022, err: 0.8, judge: 0.8, smash: 0.65, aimSkill: 0.8 },
+  master: { dp: 0.2, read: 0.62, react: 0.13, spd: 1.06, tNoise: 0.012, err: 0.55, judge: 0.93, smash: 0.75, aimSkill: 0.95 },
 };
 const SHOT_NAME = {
   clear: '高远球', attclear: '平高球', lift: '挑球', drop: '吊球', slice: '劈吊', net: '放网', block: '挡网',
@@ -315,7 +315,7 @@ function fitCamera() {
 
 // ---------- 物理 ----------
 // 高速时球托裙摆收拢，阻力系数下降（杀球保持速度感）
-function dragF(sp) { return sp > 12 ? Math.max(0.3, 1 - (sp - 12) * 0.022) : 1; }
+function dragF(sp) { return sp > 12 ? Math.max(0.55, 1 - (sp - 12) * 0.012) : 1; }
 function stepS(s, h) {
   const sp = Math.sqrt(s.vx * s.vx + s.vy * s.vy + s.vz * s.vz), k = KD * sp * dragF(sp);
   s.vx -= k * s.vx * h; s.vy -= (G + k * s.vy) * h; s.vz -= k * s.vz * h;
@@ -570,7 +570,7 @@ function classify(p, btn, y, z, lunge, q, jumpOK) {
     else k = 'push';
   }
   if (lunge && (k === 'smash' || k === 'halfsmash' || k === 'kill' || k === 'attclear')) k = btn === 'C' || btn === 'D' ? 'push' : 'lift';
-  if (k === 'smash' && jumpOK) k = 'jsmash';
+  if ((k === 'smash' || k === 'kill') && jumpOK && y >= 2.0) k = 'jsmash';
   return k;
 }
 
@@ -627,15 +627,22 @@ function baseDepth(kind, pos, ce) {
 function launch(pos, tx, tz, mode, ang, spd, margin, hiDeg, err, keepSpeed) {
   let dx = tx - pos.x, dz = tz - pos.z;
   let D = Math.hypot(dx, dz) || 0.01;
-  const ux = dx / D, uz = dz / D;
-  const dn = Math.abs(uz) > 0.05 ? Math.max(0, -pos.z / uz) : 0;
+  let ux = dx / D, uz = dz / D;
+  let dn = Math.abs(uz) > 0.05 ? Math.max(0, -pos.z / uz) : 0;
   let r = mode === 'speed' ? solveSpeed(pos.y, ang, D, dn, margin) : solveAngle(pos.y, spd, D, dn, margin, hiDeg);
   if (keepSpeed) {
-    // 杀球：过网所需角度若使落点出底线，仅把球速降到刚好落在底线内
-    let tB = ((tz < 0 ? -1 : 1) * (HL - 0.2) - pos.z) / uz;
-    if (Math.abs(ux) > 0.02) { const tS = ((ux > 0 ? 1 : -1) * (hw() - 0.06) - pos.x) / ux; if (tS > 0) tB = Math.min(tB, tS); }
-    tB = Math.max(tB, D);
-    if (tB > dn + 0.5 && sim2(pos.y, r.v, r.ang, dn).land > tB) r = solveSpeed(pos.y, r.ang, tB - 0.15, dn, margin);
+    // 杀球：保持全速，取能过网的最低角度，落点可以比瞄准点更深；
+    // 若沿这条线会出边线，则把方向向内收，让球压边线落地（不降速）
+    const HWs = hw() - 0.06;
+    for (let it = 0; it < 3; it++) {
+      const L = sim2(pos.y, r.v, r.ang, dn).land;
+      const lx = pos.x + ux * L, lz = pos.z + uz * L;
+      if (Math.abs(lx) <= HWs) break;
+      const nx = Math.sign(lx) * HWs, nz = pos.z + Math.sign(uz) * Math.sqrt(Math.max(0.01, L * L - (nx - pos.x) ** 2));
+      dx = nx - pos.x; dz = nz - pos.z; D = Math.hypot(dx, dz) || 0.01; ux = dx / D; uz = dz / D;
+      dn = Math.abs(uz) > 0.05 ? Math.max(0, -pos.z / uz) : 0;
+      r = solveAngle(pos.y, spd, D, dn, margin, hiDeg);
+    }
   } else if (mode !== 'speed') {
     // 过网所需角度导致落点过远：降低球速，保证打到瞄准点
     const chk = sim2(pos.y, r.v, r.ang, dn);
@@ -668,9 +675,9 @@ function doHit(p, sw) {
   if (!p.isHuman && POWER[prevKind] && vsHuman) err *= 1 + 0.5 * p.prof.dp;
   if (q >= 0.88) err *= 0.45;
   const jumpNeeded = sh.y > p.maxH;
-  const jumpOK = !lunge && sw.btn === 'C' && sw.c > 0.55 && sh.y > 2.35 && p.stamina > 12 && Math.abs(sh.z) > 2.6;
+  const jumpOK = !lunge && sw.btn === 'C' && sw.c > 0.55 && sh.y > 2.35 && p.stamina > 12;
   let kind = classify(p, sw.btn, sh.y, sh.z, lunge, q, jumpOK);
-  if (window.__log2) window.__log2.push({ t: +simT.toFixed(2), ls: sh.lastSide, kind, prev: sh.kind, y: +sh.y.toFixed(2), z: +sh.z.toFixed(2), q: +q.toFixed(2), side: p.side });
+  if (window.__log2) window.__log2.push({ px: +p.x.toFixed(2), pz: +p.z.toFixed(2), t: +simT.toFixed(2), ls: sh.lastSide, kind, prev: sh.kind, y: +sh.y.toFixed(2), z: +sh.z.toFixed(2), q: +q.toFixed(2), side: p.side });
   const pos = { x: sh.x, y: sh.y, z: sh.z };
   const vel = computeShot(p, kind, sw.c, sw.aimX, sw.aimY, err, pos);
   sh.vx = vel.vx; sh.vy = vel.vy; sh.vz = vel.vz;
@@ -703,7 +710,9 @@ function doHit(p, sw) {
   onShuttleStruck(p);
 }
 
+let pathT0Prev = -1;
 function onShuttleStruck(p) {
+  pathT0Prev = pathT0;
   rallyPath = predictPath();
   pathT0 = simT;
   landMark = rallyPath.land ? { x: rallyPath.land.x, z: rallyPath.land.z, out: !inBounds(rallyPath.land.x, rallyPath.land.z, false) } : null;
@@ -712,7 +721,8 @@ function onShuttleStruck(p) {
     q.plan = null; q.leave = false; q.aiBtn = null;
     if (q.side !== p.side) {
       let r = q.prof.react * rnd(0.8, 1.25);
-      if (POWER[sh.kind] && p.isHuman) r = r * (1 + 0.45 * q.prof.dp) + (0.06 - 0.008 * q.tr.def + 0.004 * (p.power - 55)) * q.prof.dp;
+      if (POWER[sh.kind] && p.isHuman && q.antic && q.antic.key === pathT0Prev && q.antic.read) r *= 0.45;
+      else if (POWER[sh.kind] && p.isHuman) r = r * (1 + 0.45 * q.prof.dp) + (0.06 - 0.008 * q.tr.def + 0.004 * (p.power - 55)) * q.prof.dp;
       if (sh.kind === 'drop' || sh.kind === 'slice' || sh.kind === 'net') r += 0.015 * p.tr.decept;
       q.reactAt = simT + (q.isHuman ? 0 : r);
     }
@@ -796,7 +806,7 @@ function endRally(winSide, reason, x, z) {
   if (x !== undefined) lastLand = { x, z, t: 0, out: reason !== 'in' };
   sfx('crowd', winSide === 0 ? 1 : 0.6);
   m.pendingWin = winSide;
-  if (window.__log) window.__log.push({ winSide, reason, rally: m.rally, kind: sh.kind, hitter: lh ? lh.side : -1 });
+  if (window.__log) window.__log.push({ winSide, reason, rally: m.rally, kind: sh.kind, hitter: lh ? lh.side : -1, x, z });
 }
 function applyPoint() {
   const m = match, w = m.pendingWin;
@@ -1039,9 +1049,19 @@ function updateAI(p, dt) {
     if (p.leave) { moveToward(p, p.x, p.z, dt, 0); return; }
     // 对方刚击球、尚未反应：垫步原地制动
     if (sh.flying && sh.lastSide !== p.side && simT < p.reactAt) { accel(p, 0, 0, dt * 0.6); return; }
-    const b = basePosition(p);
+    let b = basePosition(p);
+    // 预判：对手（玩家）在高点蓄力杀球时，按难度概率读出方向并提前站位
+    const atk = opponentsOf(p).find(o => o.isHuman && o.charge && o.charge.btn === 'C' && o.charge.plan && o.charge.planKey === pathT0 && o.charge.plan.y > 2.0);
+    if (atk && sh.lastSide === p.side) {
+      if (!p.antic || p.antic.key !== pathT0) p.antic = { key: pathT0, read: Math.random() < p.prof.read };
+      if (p.antic.read) {
+        const tg = aimTarget(atk, atk.charge);
+        const zs = p.side === 0 ? 1 : -1;
+        b = [clamp(tg[0] * 0.7, -2.2, 2.2), zs * clamp(Math.abs(tg[1]) * 0.7 + 1.2, 3.0, 4.4)];
+      }
+    }
     p.base = b;
-    moveToward(p, b[0], b[1], dt, 0.55);
+    moveToward(p, b[0], b[1], dt, p.antic && p.antic.read && atk ? 1 : 0.55);
   }
 }
 function moveToward(p, tx, tz, dt, urgency) {
@@ -1970,7 +1990,7 @@ function aimTarget(p, c) {
   }
   const y = c.plan ? c.plan.y : 2.2, z = c.plan ? c.plan.z : p.z;
   const ce = c.btn === 'C' ? Math.min(c.t / 0.72, 1) : c.btn === 'B' ? 0.5 : 0.9;
-  const jumpOK = c.btn === 'C' && ce > 0.55 && y > 2.35 && Math.abs(z) > 2.6;
+  const jumpOK = c.btn === 'C' && ce > 0.55 && y > 2.35;
   const kind = classify(p, c.btn, y, z, false, 1, jumpOK);
   const dep = clamp(baseDepth(kind, null, ce) + (AIM_K[kind] || 1) * a[1] * 1.6, 0.45, HL - 0.08);
   return [clamp(a[0] * 1.08, -1, 1) * (HW - 0.07), p.side === 0 ? -dep : dep];
