@@ -230,10 +230,10 @@ const CHARS = [
     skin: '#eab892', hair: '#4a2c18', hs: 'pony', shirt: '#ffb020', trim: '#1b1b1b', bottom: '#1b1b1b', shoe: '#ffffff', racket: '#1b1b1b', band: '#ffffff', desc: '左手持拍，攻守兼备' },
 ];
 const DIFF = {
-  easy:   { dp: 1.0, read: 0.1, react: 0.36, spd: 0.80, tNoise: 0.055, err: 1.7, judge: 0.25, smash: 0.30, aimSkill: 0.25 },
-  normal: { dp: 0.6, read: 0.35, react: 0.26, spd: 0.92, tNoise: 0.035, err: 1.15, judge: 0.55, smash: 0.50, aimSkill: 0.55 },
-  hard:   { dp: 0.35, read: 0.55, react: 0.19, spd: 1.00, tNoise: 0.022, err: 0.8, judge: 0.8, smash: 0.65, aimSkill: 0.8 },
-  master: { dp: 0.2, read: 0.62, react: 0.13, spd: 1.06, tNoise: 0.012, err: 0.55, judge: 0.93, smash: 0.75, aimSkill: 0.95 },
+  easy:   { dp: 1.0, react: 0.36, spd: 0.80, tNoise: 0.055, err: 1.7, judge: 0.25, smash: 0.30, aimSkill: 0.25 },
+  normal: { dp: 0.6, react: 0.26, spd: 0.92, tNoise: 0.035, err: 1.15, judge: 0.55, smash: 0.50, aimSkill: 0.55 },
+  hard:   { dp: 0.35, react: 0.19, spd: 1.00, tNoise: 0.022, err: 0.8, judge: 0.8, smash: 0.65, aimSkill: 0.8 },
+  master: { dp: 0.2, react: 0.13, spd: 1.06, tNoise: 0.012, err: 0.55, judge: 0.93, smash: 0.75, aimSkill: 0.95 },
 };
 const SHOT_NAME = {
   clear: '高远球', attclear: '平高球', lift: '挑球', drop: '吊球', slice: '劈吊', net: '放网', block: '挡网',
@@ -315,7 +315,7 @@ function fitCamera() {
 
 // ---------- 物理 ----------
 // 高速时球托裙摆收拢，阻力系数下降（杀球保持速度感）
-function dragF(sp) { return sp > 12 ? Math.max(0.55, 1 - (sp - 12) * 0.012) : 1; }
+function dragF(sp) { return sp > 12 ? Math.max(0.3, 1 - (sp - 12) * 0.022) : 1; }
 function stepS(s, h) {
   const sp = Math.sqrt(s.vx * s.vx + s.vy * s.vy + s.vz * s.vz), k = KD * sp * dragF(sp);
   s.vx -= k * s.vx * h; s.vy -= (G + k * s.vy) * h; s.vz -= k * s.vz * h;
@@ -379,7 +379,7 @@ function makePlayer(side, idx, charIdx, isHuman, diff) {
   return {
     side, idx, isHuman, ch: c, prof: DIFF[diff], sc, hd: c.hd,
     tr: { def: c.def, net: c.net, jump: c.jump, decept: c.decept },
-    maxH: MAXH * (0.55 + 0.45 * sc), jumpH: JUMPH * (0.7 + 0.06 * c.jump),
+    maxH: MAXH * (0.55 + 0.45 * sc), jumpH: JUMPH * (0.9 + 0.07 * c.jump),
     vmax: 3.9 + 0.17 * c.spd, power: 42 + 2.2 * c.pow, drain: 1.5 - 0.07 * c.sta, tech: c.tec,
     x: 0, z: side === 0 ? 3.5 : -3.5, vx: 0, vz: 0, stamina: 100,
     court: 'R', charge: null, swing: null, lungeT: 0, lungeDir: [0, 0], jumpY: 0, jumpV: 0, recoverT: 0,
@@ -548,7 +548,7 @@ function startSwing(p, btn, c, aimX, aimY) {
   p.swing = { t: 0, btn, c, aimX: clamp(aimX, -1, 1), aimY: clamp(aimY, -1, 1), bestD: 1e9, bestT: 0, bestM: null, done: false, style: pr.style, hand: pr.hand, from, serve: isServe,
     contact: [pr.r, pr.y, pr.f] };
   // 起跳：高球必须跳，或蓄满力的杀球
-  if (!isServe && p.jumpY <= 0 && p.lungeT <= 0 && p.stamina > 8 && (pr.y > p.maxH - 0.05 || (btn === 'C' && c > 0.55 && pr.y > 2.35 && p.stamina > 12))) p.jumpV = 2.7;
+  if (!isServe && p.jumpY <= 0 && p.jumpV <= 0 && p.lungeT <= 0 && p.stamina > 8 && (pr.y > p.maxH - 0.05 || (btn === 'C' && c > 0.55 && pr.y > 2.35 && p.stamina > 12))) p.jumpV = 2.7;
 }
 
 function shotQualityLabel(q) { return q >= 0.88 ? ['完美!', '#ffd34d'] : q >= 0.68 ? ['很好', '#7dffb2'] : q >= 0.42 ? ['一般', '#cfe0ff'] : ['勉强', '#ff9b7a']; }
@@ -721,8 +721,7 @@ function onShuttleStruck(p) {
     q.plan = null; q.leave = false; q.aiBtn = null;
     if (q.side !== p.side) {
       let r = q.prof.react * rnd(0.8, 1.25);
-      if (POWER[sh.kind] && p.isHuman && q.antic && q.antic.key === pathT0Prev && q.antic.read) r *= 0.45;
-      else if (POWER[sh.kind] && p.isHuman) r = r * (1 + 0.45 * q.prof.dp) + (0.06 - 0.008 * q.tr.def + 0.004 * (p.power - 55)) * q.prof.dp;
+      if (POWER[sh.kind] && p.isHuman) r = r * (1 + 0.45 * q.prof.dp) + (0.06 - 0.008 * q.tr.def + 0.004 * (p.power - 55)) * q.prof.dp;
       if (sh.kind === 'drop' || sh.kind === 'slice' || sh.kind === 'net') r += 0.015 * p.tr.decept;
       q.reactAt = simT + (q.isHuman ? 0 : r);
     }
@@ -898,7 +897,7 @@ function outMargin(x, z, serve) {
   }
   return mg;
 }
-function planIntercept(p, elapsed) {
+function planIntercept(p, elapsed, preferJump) {
   const pts = rallyPath.pts;
   const spd = p.vmax * (p.isHuman ? AUTO_RUN : p.prof.spd) * staminaSpeed(p);
   const react = 0;
@@ -909,7 +908,7 @@ function planIntercept(p, elapsed) {
     if (tl < 0.12) continue;
     if ((p.side === 0 && pt.z < 0.15) || (p.side === 1 && pt.z > -0.15)) continue;
     if (pt.y < 0.2) continue;
-    const maxH = pass === 0 ? p.maxH - 0.08 : p.maxH + (p.stamina > 15 ? p.jumpH * 0.85 : 0);
+    const maxH = pass === 0 ? (preferJump && p.stamina > 12 ? p.maxH + p.jumpH * 0.92 : p.maxH - 0.08) : p.maxH + (p.stamina > 15 ? p.jumpH * 0.85 : 0);
     if (pt.y > maxH) continue;
     // 站位点：使球位于正手/反手理想击球点
     const rs = p.side === 0 ? 1 : -1, fs = p.side === 0 ? -1 : 1;
@@ -982,7 +981,7 @@ function aiChooseShot(p, pl) {
   }
   let c = clamp(0.7 + Math.random() * 0.35 + (pf.aimSkill - 0.5) * 0.1, 0.5, 1.02);
   if (btn === 'B') c = Math.random() < 0.35 + 0.3 * pf.aimSkill ? rnd(0.3, 0.7) : rnd(0.78, 1);
-  if (btn === 'C') c = rnd(0.25, 0.72);
+  if (btn === 'C') c = Math.random() < 0.15 ? rnd(0.56, 0.7) : rnd(0.1, 0.5);
   return { btn, aim: bestAim, c };
 }
 
@@ -1049,19 +1048,9 @@ function updateAI(p, dt) {
     if (p.leave) { moveToward(p, p.x, p.z, dt, 0); return; }
     // 对方刚击球、尚未反应：垫步原地制动
     if (sh.flying && sh.lastSide !== p.side && simT < p.reactAt) { accel(p, 0, 0, dt * 0.6); return; }
-    let b = basePosition(p);
-    // 预判：对手（玩家）在高点蓄力杀球时，按难度概率读出方向并提前站位
-    const atk = opponentsOf(p).find(o => o.isHuman && o.charge && o.charge.btn === 'C' && o.charge.plan && o.charge.planKey === pathT0 && o.charge.plan.y > 2.0);
-    if (atk && sh.lastSide === p.side) {
-      if (!p.antic || p.antic.key !== pathT0) p.antic = { key: pathT0, read: Math.random() < p.prof.read };
-      if (p.antic.read) {
-        const tg = aimTarget(atk, atk.charge);
-        const zs = p.side === 0 ? 1 : -1;
-        b = [clamp(tg[0] * 0.7, -2.2, 2.2), zs * clamp(Math.abs(tg[1]) * 0.7 + 1.2, 3.0, 4.4)];
-      }
-    }
+    const b = basePosition(p);
     p.base = b;
-    moveToward(p, b[0], b[1], dt, p.antic && p.antic.read && atk ? 1 : 0.55);
+    moveToward(p, b[0], b[1], dt, 0.55);
   }
 }
 function moveToward(p, tx, tz, dt, urgency) {
@@ -1193,7 +1182,7 @@ function updateHuman(p, dt) {
   const incoming = state === 'rally' && c && sh.flying && !sh.netted && sh.lastSide !== p.side && rallyPath && !rallyPath.netted && !(sh.isServe && match.receiver !== p);
   if (incoming) {
     if (c.planKey !== pathT0) {
-      c.plan = planIntercept(p, simT - pathT0);
+      c.plan = planIntercept(p, simT - pathT0, c.btn === 'C');
       c.planKey = pathT0;
       // 双打：玩家要接，AI 队友让出
       const mate = partnerOf(p);
@@ -1209,6 +1198,12 @@ function updateHuman(p, dt) {
       let tvx = 0, tvz = 0;
       if (d > 0.02) { const v = Math.min(spd, d * 7); tvx = dx / d * v; tvz = dz / d * v; }
       accel(p, tvx, tvz, dt * 1.3);
+      // 跳杀起跳：在击球时刻接近最高点
+      if (c.btn === 'C' && p.jumpY <= 0 && p.jumpV <= 0 && p.lungeT <= 0 && p.stamina > 12 && pl.y > p.maxH - 0.1) {
+        const need = clamp(pl.y - p.maxH + 0.15, 0.2, p.jumpH);
+        const jv = Math.sqrt(2 * G * need);
+        if (simT >= pathT0 + pl.t - jv / G) p.jumpV = jv;
+      }
       // 自动击球
       if (swingFree(p) && simT >= pathT0 + pl.t - SW_HIT) {
         const a = cmdAim(c);
