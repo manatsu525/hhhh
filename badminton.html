@@ -76,7 +76,6 @@ h1{margin:0;font-size:30px;letter-spacing:.08em;background:linear-gradient(90deg
       </div>
       <div>
         <div class="row"><label>落点提示</label><div class="seg" data-key="marker"><button data-v="1">开</button><button data-v="0">关</button></div></div>
-        <div class="row"><label>击球辅助</label><div class="seg" data-key="assist"><button data-v="0">关</button><button data-v="1">开(自动挥拍时机)</button></div></div>
         <div class="row"><label>游戏速度</label><div class="seg" data-key="speed"><button data-v="0.75">慢</button><button data-v="0.88">标准</button><button data-v="1">真实</button></div></div>
         <div class="row"><label>音效</label><div class="seg" data-key="sound"><button data-v="1">开</button><button data-v="0">关</button></div></div>
       </div>
@@ -94,23 +93,25 @@ h1{margin:0;font-size:30px;letter-spacing:.08em;background:linear-gradient(90deg
 <div id="help" class="overlay">
   <div class="box help">
     <h3>基本操作</h3>
-    <div>左半屏任意位置按住拖动 = <b>摇杆移动</b>；右下角 4 个击球键。<b>按住击球键蓄力，松开即挥拍</b>，球拍在松手后约 0.1 秒到达击球点。挥拍时机 + 站位决定击球质量（完美 / 很好 / 一般 / 勉强），时机太差会挥空或擦框。</div>
-    <div>松手瞬间摇杆的方向 = <b>击球方向</b>：左右控制落点左右（不推摇杆=打向中路），向上推=打得更深/更远，向下拉=更短更近网。蓄力越久球越有力、越深，但蓄力条进入红色区间会"用力过猛"导致失误增加。</div>
+    <div>左半屏任意位置按住拖动 = <b>摇杆自由移动</b>（回位、调整站位）。右下角 4 个击球键。</div>
+    <div><b>按住（或点一下）击球键 = 自动跑位 + 自动击球</b>：对方击球后，球员会自动冲向最佳击球点并在最佳时机挥拍，不需要自己把握时机。可以在对方出手前就提前按下，指令会一直保持到击球；中途按另一个键可以改变球路。</div>
+    <div><b>按住击球键并拖动 = 选择落点</b>：向左/右拖动 = 落点偏左/右，向上拖 = 打得更深，向下拖 = 更短更近网，不拖 = 打向中路默认深度。场上会显示彩色圈标出预计落点。</div>
+    <div><b>只有杀球需要蓄力</b>：按住[杀球]越久，杀球越重；蓄力过半（黄色以上）且球足够高时自动起跳 = <b>跳杀</b>，蓄满最重。其它球不需要蓄力。</div>
     <h3>击球键（随击球高度和位置自动变化）</h3>
     <table>
       <tr><th>按键</th><th>高点（头顶）</th><th>中路（胸前）</th><th>低点（膝下）</th></tr>
       <tr><td><span class="k">高远</span></td><td>高远球</td><td>挑高球</td><td>挑后场</td></tr>
-      <tr><td><span class="k">吊球</span></td><td>吊球（蓄力=劈吊）</td><td>挡网</td><td>网前搓/放网（离网近时）</td></tr>
+      <tr><td><span class="k">吊球</span></td><td>吊球</td><td>挡网</td><td>网前搓/放网（离网近时）</td></tr>
       <tr><td><span class="k">杀球</span></td><td>杀球 / 跳杀 / 网前扑球</td><td>点杀 / 扑球</td><td>推球</td></tr>
       <tr><td><span class="k">平抽</span></td><td>平高球（进攻高远）</td><td>平抽</td><td>推后场</td></tr>
     </table>
-    <div>发球时：<span class="k">吊球</span>=网前短发球，<span class="k">高远</span>=后场高远球，<span class="k">平抽</span>/<span class="k">杀球</span>=平快球，摇杆调整左右。高点球才能杀，蓄满力+球足够高会自动起跳杀球。够不到的低球会自动跨步/飞扑救球（质量下降、需要恢复时间）。</div>
+    <div>发球时：按住<span class="k">吊球</span>=网前短发球，<span class="k">高远</span>=后场高远球，<span class="k">平抽</span>/<span class="k">杀球</span>=平快球，拖动选落点，松开即发球。距离太远来不及时会自动跨步/飞扑救球（质量下降、需要恢复时间）。</div>
     <h3>体力</h3>
     <div>冲刺、跳杀、飞扑都会消耗体力；体力低时移动变慢、失误增加。每分之间会恢复一部分。</div>
     <h3>规则</h3>
     <div>每球得分制，先到 11/15/21 分且领先 2 分获胜（21 分制 29 平后 30 分封顶）。得分方发球，发球方分数为双数在右区、单数在左区发球，发到对角区。单打场地为内侧边线+端线，双打为外侧边线；双打发球不得超过双打后发球线。下网、出界、发球不到位均失分。双打中你的AI队友会根据攻守自动轮转站位（进攻前后站位、防守左右站位）。</div>
     <h3>电脑键盘（可选）</h3>
-    <div><span class="k">WASD</span>/方向键 移动，<span class="k">J</span>高远 <span class="k">K</span>吊球 <span class="k">L</span>杀球 <span class="k">I</span>平抽，<span class="k">P</span>暂停。</div>
+    <div><span class="k">WASD</span>/方向键 移动（按住击球键时用方向键选落点），<span class="k">J</span>高远 <span class="k">K</span>吊球 <span class="k">L</span>杀球 <span class="k">I</span>平抽，<span class="k">P</span>暂停。</div>
     <div class="actions"><button class="btn big" data-close="help">明白了</button></div>
   </div>
 </div>
@@ -153,6 +154,10 @@ const G = 9.81, VT = 6.8, KD = G / (VT * VT), PDT = 1 / 240, DEG = Math.PI / 180
 const HL = 6.7, SSL = 1.98, LSL_D = 5.94, HW_S = 2.59, HW_D = 3.05, NET_H = 1.524, POST_H = 1.55;
 const SW_HIT = 0.11, SW_W0 = 0.035, SW_W1 = 0.19, SW_END = 0.36;
 const REACH = 0.64, LUNGE_EXTRA = 0.5, MAXH = 2.68, JUMPH = 0.5;
+const H_REACH = 0.8, H_LUNGE = 0.8, AUTO_RUN = 1.18; // 玩家：更大的击球/飞扑范围、自动跑位加速
+function swingFree(p) { return !p.swing || p.swing.done || p.swing.t > SW_W1; }
+function reachOf(p) { return p.isHuman ? H_REACH : REACH; }
+function lungeOf(p) { return p.isHuman ? H_LUNGE : LUNGE_EXTRA; }
 
 const clamp = (v, a, b) => v < a ? a : v > b ? b : v;
 const lerp = (a, b, t) => a + (b - a) * t;
@@ -160,7 +165,7 @@ function gauss() { let u = 0; while (!u) u = Math.random(); return Math.sqrt(-2 
 const rnd = (a, b) => a + Math.random() * (b - a);
 
 // ---------- 设置 ----------
-const DEFAULTS = { mode: 'singles', diff: 'normal', games: '3', points: '21', marker: '1', assist: '0', speed: '0.88', sound: '1', char: 0 };
+const DEFAULTS = { mode: 'singles', diff: 'normal', games: '3', points: '21', marker: '1', speed: '0.88', sound: '1', char: 0 };
 let settings = Object.assign({}, DEFAULTS);
 try { Object.assign(settings, JSON.parse(localStorage.getItem('yujing_settings') || '{}')); } catch (e) {}
 function saveSettings() { try { localStorage.setItem('yujing_settings', JSON.stringify(settings)); } catch (e) {} }
@@ -422,7 +427,8 @@ function contactMetric(p, sx, sy, sz, px, pz) {
   if (sy > maxH) vex = sy - maxH; else if (sy < 0.06) vex = 0.06 - sy;
   const d = Math.sqrt(hd * hd + vex * vex * 3);
   const lungeOK = sy < 1.75;
-  return { d, hand, reach: REACH, reachL: REACH + (lungeOK ? LUNGE_EXTRA : 0), y: sy, lr, lf };
+  const R0 = reachOf(p);
+  return { d, hand, reach: R0, reachL: R0 + (lungeOK ? lungeOf(p) : 0), y: sy, lr, lf };
 }
 function canHit(p) {
   if (!sh.flying || sh.netted) return false;
@@ -454,9 +460,15 @@ function predictBest(p, horizon) {
 }
 
 function startCharge(p, btn) {
-  if (p.swing || p.lungeT > 0 || p.charge) return;
-  if (state === 'serve' && p !== match.server) { /* 接发球可提前蓄力 */ }
-  if (state === 'point' || state === 'over') return;
+  if (state === 'point' || state === 'over' || state === 'between') return;
+  if (p.isHuman) {
+    // 玩家：按下即锁定击球指令（自动跑位+自动击球），再按其它键可切换球路
+    if (p.charge) { if (p.charge.btn !== btn) { p.charge.btn = btn; p.charge.t = 0; } p.charge.held = true; return; }
+    if (state === 'serve' && p === match.server && p.swing) return;
+    p.charge = { btn, t: 0, held: true, aimX: 0, aimY: 0, plan: null, planKey: -1 };
+    return;
+  }
+  if (!swingFree(p) || p.lungeT > 0 || p.charge) return;
   p.charge = { btn, t: 0 };
 }
 function releaseCharge(p, aimX, aimY) {
@@ -545,8 +557,9 @@ function doHit(p, sw) {
   sw.done = true;
   const m = contactMetric(p, sh.x, sh.y, sh.z, p.x, p.z);
   const bestD = sw.bestD;
-  const lunge = bestD > REACH;
-  let posQ = lunge ? clamp(1 - (bestD - REACH) / LUNGE_EXTRA, 0, 1) * 0.42 + 0.12 : 1 - Math.pow(bestD / REACH, 1.6) * 0.85;
+  const R0 = reachOf(p), LX = lungeOf(p);
+  const lunge = bestD > R0;
+  let posQ = lunge ? clamp(1 - (bestD - R0) / LX, 0, 1) * 0.42 + 0.12 : 1 - Math.pow(bestD / R0, 1.6) * 0.85;
   const tErr = Math.abs(sw.bestT - SW_HIT) / (SW_W1 - SW_HIT);
   let q = clamp(posQ * (1 - 0.4 * tErr), 0, 1);
   // 状态因素
@@ -740,7 +753,7 @@ function aiThinkTeam(side) {
     const pl = planIntercept(p, elapsed);
     if (!pl) continue;
     let score = pl.slack;
-    if (p.isHuman) score += 0.05;
+    if (p.isHuman) score += p.charge ? 0.4 : -0.3;
     if (!best || score > best.score) best = { p, pl, score };
   }
   match.assignPending = false;
@@ -771,8 +784,8 @@ function outMargin(x, z, serve) {
 }
 function planIntercept(p, elapsed) {
   const pts = rallyPath.pts;
-  const spd = p.vmax * (p.isHuman ? 1 : p.prof.spd) * staminaSpeed(p);
-  const react = p.isHuman ? 0.12 : 0;
+  const spd = p.vmax * (p.isHuman ? AUTO_RUN : p.prof.spd) * staminaSpeed(p);
+  const react = 0;
   let fallback = null;
   for (let pass = 0; pass < 2; pass++) {
   for (const pt of pts) {
@@ -904,7 +917,7 @@ function updateAI(p, dt) {
     const pl = p.plan;
     moveToward(p, pl.sx, pl.sz, dt, 1);
     // 准备蓄力
-    if (!p.charge && !p.swing && simT >= pl.releaseAt - 0.38) {
+    if (!p.charge && swingFree(p) && simT >= pl.releaseAt - 0.38) {
       const ch = aiChooseShot(p, pl);
       p.aiBtn = ch.btn; p.aiAim = ch.aim; p.aiCharge = ch.c;
       p.charge = { btn: ch.btn, t: Math.max(0, (pl.releaseAt - simT) < 0.38 ? 0.38 - (pl.releaseAt - simT) : 0) };
@@ -966,7 +979,7 @@ cv.addEventListener('pointerdown', e => {
   if (Math.hypot(x - input.pauseBtn.x, y - input.pauseBtn.y) < 26) { togglePause(true); return; }
   if (paused) return;
   const b = btnAt(x, y);
-  if (b) { touches.set(e.pointerId, { type: 'btn', id: b.id }); pressBtn(b.id); }
+  if (b) { touches.set(e.pointerId, { type: 'btn', id: b.id, bx: b.x, by: b.y, r: b.r }); input.drag = { id: b.id, dx: 0, dy: 0 }; pressBtn(b.id); }
   else if (x < W * 0.55) {
     touches.set(e.pointerId, { type: 'joy' });
     input.joy = { id: e.pointerId, ox: x, oy: y, x, y };
@@ -976,12 +989,20 @@ cv.addEventListener('pointerdown', e => {
 cv.addEventListener('pointermove', e => {
   const t = touches.get(e.pointerId);
   if (t && t.type === 'joy' && input.joy) { input.joy.x = e.clientX; input.joy.y = e.clientY; }
+  if (t && t.type === 'btn') {
+    const R = t.r * 1.5;
+    let dx = (e.clientX - t.bx) / R, dy = (e.clientY - t.by) / R;
+    const l = Math.hypot(dx, dy); if (l > 1) { dx /= l; dy /= l; }
+    input.drag = { id: t.id, dx, dy };
+    const c = human && human.charge;
+    if (c && c.btn === t.id) { c.aimX = Math.abs(dx) < 0.12 ? 0 : dx; c.aimY = Math.abs(dy) < 0.12 ? 0 : -dy; c.kb = false; }
+  }
 }, { passive: false });
 function endPointer(e) {
   const t = touches.get(e.pointerId);
   if (!t) return;
   touches.delete(e.pointerId);
-  if (t.type === 'btn') releaseBtn(t.id);
+  if (t.type === 'btn') { releaseBtn(t.id); if (input.drag && input.drag.id === t.id) input.drag = null; }
   if (t.type === 'joy') input.joy = null;
 }
 cv.addEventListener('pointerup', endPointer);
@@ -1005,12 +1026,24 @@ function stick() {
   const s = (m - 0.14) / 0.86 / m;
   return { x: x * s, y: y * s, m: Math.min(1, (m - 0.14) / 0.86) };
 }
-function pressBtn(id) { input.btns[id] = true; if (human && human.isHuman && !paused) startCharge(human, id); }
+function pressBtn(id, kb) {
+  input.btns[id] = true;
+  if (human && human.isHuman && !paused) { startCharge(human, id); if (human.charge) human.charge.kb = !!kb; }
+}
 function releaseBtn(id) {
   input.btns[id] = false;
-  if (human && human.isHuman && human.charge && human.charge.btn === id && !paused) {
-    const s = stick(); releaseCharge(human, s.x, -s.y);
+  const c = human && human.charge;
+  if (!c || !human.isHuman || c.btn !== id || paused) return;
+  c.held = false; // 松手：指令保持锁定，蓄力停止
+  if (state === 'serve' && match.server === human && !human.swing) {
+    const a = cmdAim(c);
+    human.charge = null;
+    startSwing(human, id, 0.9, a[0], a[1]);
   }
+}
+function cmdAim(c) {
+  if (c.kb) { const s = stick(); return [s.x, -s.y]; }
+  return [c.aimX, c.aimY];
 }
 const KEYMAP = { j: 'A', k: 'B', l: 'C', i: 'D' };
 window.addEventListener('keydown', e => {
@@ -1019,7 +1052,7 @@ window.addEventListener('keydown', e => {
   if (k === 'p' || k === 'escape') { if (state !== 'menu') togglePause(!paused); return; }
   if (input.keys[k]) return;
   input.keys[k] = true;
-  if (KEYMAP[k] && state !== 'menu') pressBtn(KEYMAP[k]);
+  if (KEYMAP[k] && state !== 'menu') pressBtn(KEYMAP[k], true);
 });
 window.addEventListener('keyup', e => {
   const k = e.key.toLowerCase();
@@ -1028,9 +1061,38 @@ window.addEventListener('keyup', e => {
 });
 
 function updateHuman(p, dt) {
+  const c = p.charge;
+  const incoming = state === 'rally' && c && sh.flying && !sh.netted && sh.lastSide !== p.side && rallyPath && !rallyPath.netted;
+  if (incoming) {
+    if (c.planKey !== pathT0) {
+      c.plan = planIntercept(p, simT - pathT0);
+      c.planKey = pathT0;
+      // 双打：玩家要接，AI 队友让出
+      const mate = partnerOf(p);
+      if (c.plan && mate && mate.plan && c.plan.slack > -0.15) { mate.plan = null; mate.charge = null; }
+    }
+    const pl = c.plan;
+    if (pl) {
+      // 自动跑位
+      const dx = pl.sx - p.x, dz = pl.sz - p.z, d = Math.hypot(dx, dz);
+      let spd = p.vmax * staminaSpeed(p) * AUTO_RUN;
+      if (p.swing) spd *= 0.35;
+      if (p.lungeT > 0) spd = 0;
+      let tvx = 0, tvz = 0;
+      if (d > 0.02) { const v = Math.min(spd, d * 7); tvx = dx / d * v; tvz = dz / d * v; }
+      accel(p, tvx, tvz, dt * 1.3);
+      // 自动击球
+      if (swingFree(p) && simT >= pathT0 + pl.t - SW_HIT) {
+        const a = cmdAim(c);
+        const cc = c.btn === 'C' ? Math.min(c.t / 0.72, 1) : c.btn === 'B' ? 0.5 : 0.9;
+        p.charge = null;
+        startSwing(p, c.btn, cc, a[0], a[1]);
+      }
+      return;
+    }
+  }
   const s = stick();
   let spd = p.vmax * staminaSpeed(p) * s.m;
-  if (p.charge) spd *= 0.8;
   if (p.swing) spd *= 0.35;
   if (p.lungeT > 0) spd = 0;
   let tvx = 0, tvz = 0;
@@ -1039,11 +1101,6 @@ function updateHuman(p, dt) {
     if (p === match.server) { tvx *= 0.5; tvz *= 0.5; }
   }
   accel(p, tvx, tvz, dt);
-  // 击球辅助：按住时自动在最佳时机挥拍
-  if (settings.assist === '1' && p.charge && state === 'rally' && p.charge.t > 0.08) {
-    const b = predictBest(p, 0.32);
-    if (b && b.d < REACH + LUNGE_EXTRA && b.t <= SW_HIT + 0.012) { const st = stick(); releaseCharge(p, st.x, -st.y); }
-  }
 }
 
 // ---------- 主更新 ----------
@@ -1096,7 +1153,7 @@ function update(dt) {
 }
 function updatePlayersMove(dt) {
   for (const p of players) {
-    if (p.charge) p.charge.t += dt;
+    if (p.charge && p.charge.held !== false) p.charge.t += dt;
     if (state === 'rally' || state === 'serve') {
       if (p.isHuman) updateHuman(p, dt); else updateAI(p, dt);
     } else if (state === 'point' || state === 'between' || state === 'over') {
@@ -1436,6 +1493,24 @@ function drawRing(x, z, r, col, lw, dash) {
   if (dash) ctx.setLineDash([]);
 }
 
+function aimTarget(p, c) {
+  const a = cmdAim(c), HW = hw();
+  if (state === 'serve' && match.server === p) {
+    const rec = match.receiver, xs = courtXSign(rec.side, rec.court), back = match.doubles ? LSL_D : HL;
+    let tx = c.btn === 'B' ? xs * 0.6 + a[0] * HW * 0.35 : xs * HW * 0.55 + a[0] * HW * 0.4;
+    tx = xs > 0 ? clamp(tx, 0.18, HW - 0.15) : clamp(tx, -HW + 0.15, -0.18);
+    const dep = c.btn === 'B' ? SSL + 0.32 + 0.25 * a[1] : back - 0.45 + 0.25 * a[1];
+    return [tx, -dep];
+  }
+  const y = c.plan ? c.plan.y : 2.2, z = c.plan ? c.plan.z : p.z;
+  const nearNet = Math.abs(z) < 2.35;
+  let dep;
+  if (c.btn === 'A') dep = 5.75 + 0.45 * a[1];
+  else if (c.btn === 'B') dep = y < 1.75 && nearNet ? 0.87 + 0.32 * a[1] : y >= 2 ? 2.1 + 0.55 * a[1] : 1.8 + 0.45 * a[1];
+  else if (c.btn === 'C') dep = y >= 2 && !nearNet ? 3.6 + 1.3 * a[1] : nearNet && y > NET_H + 0.12 ? 2.6 + 1.3 * a[1] : 3.0 + 1.1 * a[1];
+  else dep = y >= 2 ? 6.0 + 0.4 * a[1] : 5.2 + 1.5 * a[1];
+  return [a[0] * 0.86 * HW, -clamp(dep, 0.5, 6.6)];
+}
 function addPopup(text, x, y, z, color, size) { popups.push({ text, x, y, z, color, size: size || 14, t: 0 }); if (popups.length > 8) popups.shift(); }
 function setBanner(text, dur, color) { banner = { text, t: 0, dur, color: color || '#ffffff' }; }
 
@@ -1467,7 +1542,15 @@ function render(dt) {
       if (b && b.d < REACH) col = 'rgba(110,255,160,0.75)';
       else if (b && b.d < REACH + LUNGE_EXTRA && b.y < 1.75) col = 'rgba(255,210,80,0.7)';
     }
-    drawRing(human.x, human.z, 0.62, col, 1.6, [5, 4]);
+    drawRing(human.x, human.z, H_REACH, col, 1.6, [5, 4]);
+    const hc = human.charge;
+    if (hc) {
+      const tg = aimTarget(human, hc);
+      const bc = { A: '#2f9bff', B: '#2fd47a', C: '#ff4d3d', D: '#ffb020' }[hc.btn];
+      drawRing(tg[0], tg[1], 0.3, bc, 2.5);
+      drawRing(tg[0], tg[1], 0.08, bc, 2.5);
+      if (hc.plan && hc.planKey === pathT0 && state === 'rally') drawRing(hc.plan.sx, hc.plan.sz, 0.18, 'rgba(255,255,255,0.6)', 1.5, [3, 3]);
+    }
   }
   // 阴影
   for (const p of players) drawShadow(p.x, p.z, 0.32, 0.32);
@@ -1537,21 +1620,21 @@ function drawHUD(dt) {
   }
   // 蓄力条（世界空间）
   for (const p of players) {
-    if (!p.charge || !(p.isHuman || demo)) continue;
-    const c = p.charge.t / 0.72;
+    if (!p.charge || !(p.isHuman || demo) || p.charge.btn !== 'C') continue;
+    const c = Math.min(p.charge.t / 0.72, 1);
     const q = P(p.x, 2.35 + p.jumpY, p.z);
     const bw = 44, bh = 6;
     ctx.fillStyle = 'rgba(0,0,0,0.6)'; ctx.fillRect(q.x - bw / 2 - 1, q.y - 1, bw + 2, bh + 2);
-    const f = Math.min(c, 1.35) / 1.35;
-    ctx.fillStyle = c > 1 ? '#ff4d3d' : c > 0.75 ? '#ffd34d' : '#5fd6ff';
-    ctx.fillRect(q.x - bw / 2, q.y, bw * f, bh);
-    ctx.fillStyle = 'rgba(255,255,255,0.7)'; ctx.fillRect(q.x - bw / 2 + bw / 1.35 - 0.5, q.y - 2, 1, bh + 4);
+    ctx.fillStyle = c >= 0.99 ? '#ff4d3d' : c > 0.55 ? '#ffd34d' : '#5fd6ff';
+    ctx.fillRect(q.x - bw / 2, q.y, bw * c, bh);
+    ctx.fillStyle = 'rgba(255,255,255,0.7)'; ctx.fillRect(q.x - bw / 2 + bw * 0.55 - 0.5, q.y - 2, 1, bh + 4);
+    if (c > 0.55) { ctx.font = 'bold 10px sans-serif'; ctx.textAlign = 'center'; ctx.fillStyle = '#ffd34d'; ctx.fillText('跳杀', q.x, q.y - 5); }
   }
   // 发球提示
   if (state === 'serve' && human.isHuman) {
     ctx.font = 'bold 13px sans-serif'; ctx.textAlign = 'center';
     ctx.fillStyle = 'rgba(255,255,255,0.9)';
-    const msg = m.server === human ? '你发球：按住[吊球]网前球 / [高远]后场高球 / [平抽]平快球，松开发球' :
+    const msg = m.server === human ? '你发球：按住[吊球]网前 / [高远]后场 / [平抽]平快，拖动选落点，松开发球' :
                 (m.receiver === human ? '准备接发球' : (m.server.side === 0 ? '队友发球' : '对方发球'));
     ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(0,0,0,0.55)';
     const my = banner ? sy + shh + 62 : sy + shh + 22;
@@ -1603,11 +1686,19 @@ function drawControls() {
     ctx.fillStyle = g; ctx.beginPath(); ctx.arc(b.x, b.y, b.r * (down ? 0.94 : 1), 0, Math.PI * 2); ctx.fill();
     ctx.strokeStyle = 'rgba(255,255,255,0.6)'; ctx.lineWidth = 1.5; ctx.stroke();
     if (hc && hc.btn === b.id) {
-      const c = Math.min(hc.t / 0.72, 1.35);
-      ctx.strokeStyle = c > 1 ? '#ff4d3d' : '#ffffff'; ctx.lineWidth = 4;
-      ctx.beginPath(); ctx.arc(b.x, b.y, b.r + 4, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * Math.min(c, 1)); ctx.stroke();
+      const c = b.id === 'C' ? Math.min(hc.t / 0.72, 1) : 1;
+      ctx.strokeStyle = b.id === 'C' && c >= 0.99 ? '#ff4d3d' : (hc.held ? '#ffffff' : 'rgba(255,255,255,0.55)'); ctx.lineWidth = 4;
+      ctx.beginPath(); ctx.arc(b.x, b.y, b.r + 4, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * c); ctx.stroke();
     }
     ctx.globalAlpha = 1;
+    const dr = input.drag;
+    if (dr && dr.id === b.id && (dr.dx || dr.dy)) {
+      const kx = b.x + dr.dx * b.r * 1.5, ky = b.y + dr.dy * b.r * 1.5;
+      ctx.strokeStyle = 'rgba(255,255,255,0.7)'; ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.moveTo(b.x, b.y); ctx.lineTo(kx, ky); ctx.stroke();
+      ctx.fillStyle = b.col; ctx.beginPath(); ctx.arc(kx, ky, b.r * 0.32, 0, Math.PI * 2); ctx.fill();
+      ctx.strokeStyle = '#fff'; ctx.stroke();
+    }
     ctx.fillStyle = '#fff'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
     ctx.font = `bold ${Math.round(b.r * 0.42)}px sans-serif`; ctx.fillText(b.label, b.x, b.y - b.r * 0.12);
     ctx.font = `${Math.round(b.r * 0.26)}px sans-serif`; ctx.fillStyle = 'rgba(255,255,255,0.8)'; ctx.fillText(b.sub, b.x, b.y + b.r * 0.32);
