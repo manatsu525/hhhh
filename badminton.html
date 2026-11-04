@@ -63,6 +63,17 @@ h1{margin:0;font-size:30px;letter-spacing:.08em;background:linear-gradient(90deg
 .res table{width:100%;border-collapse:collapse;font-size:13px;margin-top:8px}
 .res td{padding:4px 6px;border-bottom:1px solid var(--line);text-align:center}
 .res td:first-child{text-align:left;color:var(--muted)}
+.bracket{display:flex;gap:10px;align-items:stretch;overflow-x:auto;padding:4px 0}
+.bracket .rd{flex:1;min-width:150px;display:flex;flex-direction:column;justify-content:space-around;gap:6px}
+.bracket .rh{text-align:center;color:#9fe8c0;font-size:12px;font-weight:700;margin-bottom:2px}
+.bracket .mt{border:1px solid var(--line);border-radius:8px;background:rgba(255,255,255,.04);font-size:12px;overflow:hidden}
+.bracket .mt.me{border-color:#ffd34d;box-shadow:0 0 0 1px rgba(255,211,77,.35)}
+.bracket .tm{display:flex;justify-content:space-between;gap:6px;padding:3px 7px}
+.bracket .tm+.tm{border-top:1px solid var(--line)}
+.bracket .tm.w{font-weight:800;color:#7dffb2}.bracket .tm.l{color:#7f8da6}
+.bracket .tm.you{background:rgba(47,212,122,.12)}
+.bracket .sc{color:#9fb0cc;font-weight:400;white-space:nowrap}
+.bracket .champ{text-align:center;font-size:13px;border:1px dashed rgba(255,211,77,.6);border-radius:10px;padding:10px 6px;color:#ffd34d}
 #rotate{position:fixed;inset:0;z-index:20;display:none;align-items:center;justify-content:center;flex-direction:column;background:rgba(5,10,20,.96);text-align:center;padding:20px}
 #rotate.show{display:flex}
 #rotate .ph{width:60px;height:100px;border:4px solid #7dffb2;border-radius:12px;animation:rot 2s infinite ease-in-out;margin-bottom:20px}
@@ -89,11 +100,12 @@ h1{margin:0;font-size:30px;letter-spacing:.08em;background:linear-gradient(90deg
         <div class="row"><label>音效</label><div class="seg" data-key="sound"><button data-v="1">开</button><button data-v="0">关</button></div></div>
       </div>
     </div>
-    <div class="row" style="margin-top:4px"><label>选择球员</label><div class="seg" id="slotSeg"><button data-s="char">你的球员</button><button data-s="opp">对手</button><button data-s="mate">双打队友</button></div><button class="btn" id="randBtn" style="padding:4px 9px">随机</button></div>
+    <div class="row" style="margin-top:4px"><label>选择球员</label><div class="seg" id="slotSeg"><button data-s="char">你的球员</button><button data-s="opp">对手</button><button data-s="opp2">对手2</button><button data-s="mate">双打队友</button></div><button class="btn" id="randBtn" style="padding:4px 9px">随机</button></div>
     <div class="pickinfo" id="pickInfo"></div>
     <div class="chars" id="chars"></div>
     <div class="actions">
       <button class="btn big" id="startBtn">开始比赛</button>
+      <button class="btn big" id="cupBtn" style="background:linear-gradient(180deg,#ffd34d,#e09a12)">🏆 杯赛模式</button>
       <button class="btn alt" id="helpBtn">操作与规则</button>
       <button class="btn" id="demoBtn">观看AI演示</button>
     </div>
@@ -118,6 +130,8 @@ h1{margin:0;font-size:30px;letter-spacing:.08em;background:linear-gradient(90deg
       <tr><td><span class="k">平抽</span></td><td>平高球（进攻高远）</td><td>平抽</td><td>推后场</td></tr>
     </table>
     <div>发球时：按住<span class="k">吊球</span>=网前短发球，<span class="k">高远</span>=后场高远球，<span class="k">平抽</span>/<span class="k">杀球</span>=平快球，拖动选落点，松开即发球。距离太远来不及时会自动跨步/飞扑救球（质量下降、需要恢复时间）。</div>
+    <h3>杯赛模式</h3>
+    <div>主菜单点 <b>🏆 杯赛模式</b>：单打 8 人淘汰赛（八强 → 半决赛 → 决赛），双打 4 队淘汰赛（半决赛 → 决赛，用你选的队友）。首轮难度为菜单所选难度，之后每轮升一级。其他场次按球员实力自动模拟，赛程表实时更新；会记录你的历史最佳成绩。</div>
     <h3>体力</h3>
     <div>冲刺、跳杀、飞扑都会消耗体力；体力低时移动变慢、失误增加。每分之间会恢复一部分。</div>
     <h3>规则</h3>
@@ -137,6 +151,16 @@ h1{margin:0;font-size:30px;letter-spacing:.08em;background:linear-gradient(90deg
       <button class="btn" id="restartBtn">重新开始</button>
       <button class="btn" id="quitBtn">返回主菜单</button>
     </div>
+  </div>
+</div>
+
+<div id="cup" class="overlay">
+  <div class="box" style="width:min(900px,100%)">
+    <h1 id="cupTitle" style="font-size:24px">羽境公开赛</h1>
+    <div class="sub" id="cupSub"></div>
+    <div id="bracket" class="bracket"></div>
+    <div id="cupMsg" style="text-align:center;margin:6px 0;font-size:15px"></div>
+    <div class="actions"><button class="btn big" id="cupPlay">开始比赛</button><button class="btn" id="cupQuit">退出杯赛</button></div>
   </div>
 </div>
 
@@ -199,7 +223,7 @@ const CHARS = [
   { name: '陈思', tag: '网前魔术师', g: 'f', h: 1.65, hd: 1, num: 5, spd: 6, pow: 5, sta: 7, tec: 10, def: 6, net: 10, jump: 4, decept: 9,
     skin: '#f3cdab', hair: '#121212', hs: 'bun', shirt: '#8d4be8', trim: '#f2f2f2', bottom: '#f2f2f2', skirt: 1, shoe: '#f2f2f2', racket: '#8d4be8', desc: '网前搓球贴网，手法细腻' },
   { name: '唐悦', tag: '女子重炮', g: 'f', h: 1.74, hd: 1, num: 8, spd: 6, pow: 9, sta: 6, tec: 6, def: 5, net: 5, jump: 8, decept: 4,
-    skin: '#e3ad84', hair: '#3a2416', hs: 'bob', shirt: '#d62828', trim: '#ffd34d', bottom: '#1d1d1d', shoe: '#1d1d1d', racket: '#ffd34d', desc: '杀球凶狠，进攻压迫感强' },
+    skin: '#e3ad84', hair: '#3a2416', hs: 'long', shirt: '#d62828', trim: '#ffd34d', bottom: '#1d1d1d', shoe: '#1d1d1d', racket: '#ffd34d', desc: '杀球凶狠，进攻压迫感强' },
   { name: '白露', tag: '防守反击', g: 'f', h: 1.70, hd: 1, num: 2, spd: 7, pow: 6, sta: 9, tec: 7, def: 9, net: 7, jump: 5, decept: 5,
     skin: '#f5d2b3', hair: '#1a1a1a', hs: 'long', shirt: '#f4f6fa', trim: '#1f7ae0', bottom: '#1f7ae0', skirt: 1, shoe: '#1f7ae0', racket: '#1f7ae0', band: '#1f7ae0', desc: '防守韧性强，擅长拉吊消耗' },
   { name: '林小雨', tag: '左手全能', g: 'f', h: 1.67, hd: -1, num: 6, spd: 8, pow: 7, sta: 7, tec: 8, def: 7, net: 8, jump: 6, decept: 7,
@@ -290,15 +314,17 @@ function fitCamera() {
 }
 
 // ---------- 物理 ----------
+// 高速时球托裙摆收拢，阻力系数下降（杀球保持速度感）
+function dragF(sp) { return sp > 12 ? Math.max(0.3, 1 - (sp - 12) * 0.022) : 1; }
 function stepS(s, h) {
-  const sp = Math.sqrt(s.vx * s.vx + s.vy * s.vy + s.vz * s.vz), k = KD * sp;
+  const sp = Math.sqrt(s.vx * s.vx + s.vy * s.vy + s.vz * s.vz), k = KD * sp * dragF(sp);
   s.vx -= k * s.vx * h; s.vy -= (G + k * s.vy) * h; s.vz -= k * s.vz * h;
   s.x += s.vx * h; s.y += s.vy * h; s.z += s.vz * h;
 }
 function sim2(y0, v, ang, dn) {
   let h = 0, y = y0, vh = v * Math.cos(ang), vy = v * Math.sin(ang), yNet = dn <= 0 ? y0 : null, t = 0;
   while (t < 7) {
-    const sp = Math.sqrt(vh * vh + vy * vy), k = KD * sp;
+    const sp = Math.sqrt(vh * vh + vy * vy), k = KD * sp * dragF(sp);
     vh -= k * vh * PDT; vy -= (G + k * vy) * PDT;
     const ph = h, py = y; h += vh * PDT; y += vy * PDT; t += PDT;
     if (yNet === null && h >= dn) { const f = (dn - ph) / (h - ph || 1e-9); yNet = py + (y - py) * f; }
@@ -362,13 +388,13 @@ function makePlayer(side, idx, charIdx, isHuman, diff) {
   };
 }
 
-function newMatch() {
-  const doubles = settings.mode === 'doubles';
-  const diff = settings.diff;
-  const pc = clamp(settings.char | 0, 0, CHARS.length - 1);
+function newMatch(opts) {
+  const doubles = opts ? opts.t0.length > 1 : settings.mode === 'doubles';
+  const diff = opts ? opts.diff : settings.diff;
+  const pc = opts ? opts.t0[0] : clamp(settings.char | 0, 0, CHARS.length - 1);
   const used = new Set([pc]);
   const pick = (want) => { let i = +want; if (!(i >= 0 && i < CHARS.length) || used.has(i)) { const pool = CHARS.map((_, k) => k).filter(k => !used.has(k)); i = pool[Math.floor(Math.random() * pool.length)]; } used.add(i); return i; };
-  const oc = pick(settings.opp), mc = doubles ? pick(settings.mate) : -1, oc2 = doubles ? pick(-1) : -1;
+  const oc = pick(opts ? opts.t1[0] : settings.opp), mc = doubles ? pick(opts ? opts.t0[1] : settings.mate) : -1, oc2 = doubles ? pick(opts ? opts.t1[1] : settings.opp2) : -1;
   players = [];
   const partnerDiff = demo ? diff : (diff === 'easy') ? 'normal' : (diff === 'normal' ? 'hard' : diff);
   players.push(makePlayer(0, 0, pc, !demo, diff));
@@ -462,11 +488,12 @@ function contactMetric(p, sx, sy, sz, px, pz) {
   const d = Math.sqrt(hd * hd + vex * vex * 3);
   const lungeOK = sy < 1.75;
   let R0 = reachOf(p), LX = lungeOf(p);
-  if (!p.isHuman && POWER[sh.kind] && sh.lastSide !== p.side) { const k = p.prof.dp; R0 *= 1 - k * (0.14 - 0.01 * p.tr.def); LX *= 1 - k * (0.4 - 0.03 * p.tr.def); }
+  if (!p.isHuman && POWER[sh.kind] && sh.lastSide !== p.side && sh.lastHitter && sh.lastHitter.isHuman) { const k = p.prof.dp; R0 *= 1 - k * (0.14 - 0.01 * p.tr.def); LX *= 1 - k * (0.4 - 0.03 * p.tr.def); }
   return { d, hand, reach: R0, reachL: R0 + (lungeOK ? LX : 0), y: sy, lr, lf };
 }
 function canHit(p) {
   if (!sh.flying || sh.netted) return false;
+  if (sh.isServe && match && match.receiver && p !== match.receiver) return false;
   if (sh.lastSide === p.side) return false;
   if (p.side === 0 && sh.z < -0.08) return false;
   if (p.side === 1 && sh.z > 0.08) return false;
@@ -561,8 +588,8 @@ function computeShot(p, kind, c, aimX, aimY, err, pos) {
     case 'slice': mode = 'speed'; ang = -5 * DEG; depth = 2.5 + 0.6 * aimY; margin = 0.06; break;
     case 'net': mode = 'speed'; ang = (pos.y > NET_H ? -8 : 4) * DEG; depth = 0.55 + 0.32 * (aimY + 1); margin = 0.025; txMul = 0.8; break;
     case 'block': mode = 'speed'; ang = (pos.y > NET_H ? -4 : 8) * DEG; depth = 1.35 + 0.45 * (aimY + 1); margin = 0.05; break;
-    case 'smash': mode = 'angle'; spd = P0 * (0.58 + 0.32 * ce); depth = 3.8 + 1.3 * aimY; margin = 0.09; hiDeg = 12; txMul = 0.82; break;
-    case 'jsmash': mode = 'angle'; spd = P0 * (0.62 + 0.34 * ce) * (1.06 + 0.012 * p.tr.jump); depth = 3.5 + 1.3 * aimY; margin = 0.09; hiDeg = 12; txMul = 0.82; break;
+    case 'smash': mode = 'angle'; spd = P0 * (0.58 + 0.32 * ce); depth = 4.4 + 1.3 * aimY; margin = 0.09; hiDeg = 12; txMul = 0.82; break;
+    case 'jsmash': mode = 'angle'; spd = P0 * (0.62 + 0.34 * ce) * (1.06 + 0.012 * p.tr.jump); depth = 4.1 + 1.3 * aimY; margin = 0.09; hiDeg = 12; txMul = 0.82; break;
     case 'halfsmash': mode = 'angle'; spd = P0 * 0.5 * (0.8 + 0.25 * ce); depth = 3.0 + 1.1 * aimY; margin = 0.08; hiDeg = 15; break;
     case 'kill': mode = 'angle'; spd = P0 * (0.5 + 0.12 * ce); depth = 2.6 + 1.3 * aimY; margin = 0.06; hiDeg = 8; break;
     case 'drive': mode = 'angle'; spd = 19 + 14 * ce; depth = 4.4 + 1.5 * aimY; margin = 0.08; hiDeg = 22; break;
@@ -585,25 +612,31 @@ function computeShot(p, kind, c, aimX, aimY, err, pos) {
   if (p.isHuman && kind !== 'frame' && err < 0.4) { tx = clamp(tx, -HW + 0.03, HW - 0.03); depth = Math.min(depth, HL - 0.04); }
   if (kind === 'net' || kind === 'block' || kind === 'drop' || kind === 'slice') margin = Math.max(0.0, margin - 0.05 * err + gauss() * 0.04 * err);
   const tz = dirS * depth;
-  return launch(pos, tx, tz, mode, ang, spd, margin, hiDeg, err);
+  return launch(pos, tx, tz, mode, ang, spd, margin, hiDeg, err, !!POWER[kind]);
 }
 const AIM_K = { clear: 0.45, attclear: 0.4, lift: 0.45, drop: 0.55, slice: 0.6, net: 0.32, block: 0.45, smash: 1.3, jsmash: 1.3, halfsmash: 1.1, kill: 1.3, drive: 1.5, push: 1.4 };
 function baseDepth(kind, pos, ce) {
   switch (kind) {
     case 'clear': return 4.6 + 1.3 * ce; case 'attclear': return 5.2 + 0.9 * ce; case 'lift': return 4.3 + 1.55 * ce;
     case 'drop': return 1.9 + 0.2 * ce; case 'slice': return 2.5; case 'net': return 0.87; case 'block': return 1.8;
-    case 'smash': return 3.8; case 'jsmash': return 3.5; case 'halfsmash': return 3.0; case 'kill': return 2.6;
+    case 'smash': return 4.4; case 'jsmash': return 4.1; case 'halfsmash': return 3.4; case 'kill': return 2.8;
     case 'drive': return 4.4; case 'push': return 3.4;
   }
   return 3;
 }
-function launch(pos, tx, tz, mode, ang, spd, margin, hiDeg, err) {
+function launch(pos, tx, tz, mode, ang, spd, margin, hiDeg, err, keepSpeed) {
   let dx = tx - pos.x, dz = tz - pos.z;
   let D = Math.hypot(dx, dz) || 0.01;
   const ux = dx / D, uz = dz / D;
   const dn = Math.abs(uz) > 0.05 ? Math.max(0, -pos.z / uz) : 0;
   let r = mode === 'speed' ? solveSpeed(pos.y, ang, D, dn, margin) : solveAngle(pos.y, spd, D, dn, margin, hiDeg);
-  if (mode !== 'speed') {
+  if (keepSpeed) {
+    // 杀球：过网所需角度若使落点出底线，仅把球速降到刚好落在底线内
+    let tB = ((tz < 0 ? -1 : 1) * (HL - 0.2) - pos.z) / uz;
+    if (Math.abs(ux) > 0.02) { const tS = ((ux > 0 ? 1 : -1) * (hw() - 0.06) - pos.x) / ux; if (tS > 0) tB = Math.min(tB, tS); }
+    tB = Math.max(tB, D);
+    if (tB > dn + 0.5 && sim2(pos.y, r.v, r.ang, dn).land > tB) r = solveSpeed(pos.y, r.ang, tB - 0.15, dn, margin);
+  } else if (mode !== 'speed') {
     // 过网所需角度导致落点过远：降低球速，保证打到瞄准点
     const chk = sim2(pos.y, r.v, r.ang, dn);
     if (chk.land > D + 0.25) r = solveSpeed(pos.y, Math.max(r.ang, -0.2), D, dn, margin);
@@ -616,7 +649,7 @@ function launch(pos, tx, tz, mode, ang, spd, margin, hiDeg, err) {
 const POWER = { smash: 1, jsmash: 1, kill: 1, halfsmash: 1 };
 function doHit(p, sw) {
   sw.done = true;
-  const prevKind = sh.kind;
+  const prevKind = sh.kind, vsHuman = !!(sh.lastHitter && sh.lastHitter.isHuman);
   const m = contactMetric(p, sh.x, sh.y, sh.z, p.x, p.z);
   const bestD = sw.bestD;
   const R0 = sw.bestM ? sw.bestM.reach : reachOf(p), LX = sw.bestM ? Math.max(0.05, sw.bestM.reachL - sw.bestM.reach) : lungeOf(p);
@@ -625,14 +658,14 @@ function doHit(p, sw) {
   const tErr = Math.abs(sw.bestT - SW_HIT) / (SW_W1 - SW_HIT);
   let q = clamp(posQ * (1 - 0.4 * tErr), 0, 1);
   // AI 接杀：质量下降（防守属性可减轻）
-  if (!p.isHuman && POWER[prevKind]) q *= 1 - p.prof.dp * (0.38 - 0.025 * p.tr.def);
+  if (!p.isHuman && POWER[prevKind]) q *= vsHuman ? 1 - p.prof.dp * (0.38 - 0.025 * p.tr.def) : 0.92 + 0.008 * p.tr.def;
   else if (p.isHuman && POWER[prevKind]) q *= 0.85 + 0.015 * p.tr.def;
   // 状态因素
   const stF = 1 + (1 - p.stamina / 100) * 0.7;
   const techF = 1.32 - 0.055 * p.tech;
   const over = Math.max(0, sw.c - 1) / 0.35;
   let err = (1 - q) * 0.95 * stF * techF * (p.isHuman ? 1 : p.prof.err) + over * 0.6;
-  if (!p.isHuman && POWER[prevKind]) err *= 1 + 0.5 * p.prof.dp;
+  if (!p.isHuman && POWER[prevKind] && vsHuman) err *= 1 + 0.5 * p.prof.dp;
   if (q >= 0.88) err *= 0.45;
   const jumpNeeded = sh.y > p.maxH;
   const jumpOK = !lunge && sw.btn === 'C' && sw.c > 0.55 && sh.y > 2.35 && p.stamina > 12 && Math.abs(sh.z) > 2.6;
@@ -679,7 +712,7 @@ function onShuttleStruck(p) {
     q.plan = null; q.leave = false; q.aiBtn = null;
     if (q.side !== p.side) {
       let r = q.prof.react * rnd(0.8, 1.25);
-      if (POWER[sh.kind]) r = r * (1 + 0.45 * q.prof.dp) + (0.06 - 0.008 * q.tr.def + 0.004 * (p.power - 55)) * q.prof.dp;
+      if (POWER[sh.kind] && p.isHuman) r = r * (1 + 0.45 * q.prof.dp) + (0.06 - 0.008 * q.tr.def + 0.004 * (p.power - 55)) * q.prof.dp;
       if (sh.kind === 'drop' || sh.kind === 'slice' || sh.kind === 'net') r += 0.015 * p.tr.decept;
       q.reactAt = simT + (q.isHuman ? 0 : r);
     }
@@ -814,7 +847,8 @@ function finishMatch(w) {
 
 // ---------- AI ----------
 function aiThinkTeam(side) {
-  const team = teamOf(side);
+  // 发球只能由接发球员回击
+  const team = sh.isServe && match.receiver && match.receiver.side === side ? [match.receiver] : teamOf(side);
   if (!rallyPath || rallyPath.netted) return;
   if (sh.lastSide === side || !sh.flying) return;
   // 分配谁接球
@@ -898,7 +932,7 @@ function aiChooseShot(p, pl) {
   if (y >= 2.0) {
     if (nearNet && y > NET_H + 0.3) opts.push(['C', 5]);
     else {
-      opts.push(['C', pf.smash * (deep ? 1.0 : 2.0) * (dbl ? 1.6 : 1) * (p.stamina > 25 ? 1 : 0.4)]);
+      opts.push(['C', pf.smash * (deep ? 0.55 : 1.6) * (dbl ? 1.6 : 1) * (p.stamina > 25 ? 1 : 0.4)]);
       opts.push(['A', deep ? 1.0 : 0.45]);
       opts.push(['B', 0.75]);
       opts.push(['D', 0.35]);
@@ -938,7 +972,7 @@ function aiChooseShot(p, pl) {
   }
   let c = clamp(0.7 + Math.random() * 0.35 + (pf.aimSkill - 0.5) * 0.1, 0.5, 1.02);
   if (btn === 'B') c = Math.random() < 0.35 + 0.3 * pf.aimSkill ? rnd(0.3, 0.7) : rnd(0.78, 1);
-  if (btn === 'C') c = rnd(0.3, 0.8);
+  if (btn === 'C') c = rnd(0.25, 0.72);
   return { btn, aim: bestAim, c };
 }
 
@@ -1136,7 +1170,7 @@ window.addEventListener('keyup', e => {
 
 function updateHuman(p, dt) {
   const c = p.charge;
-  const incoming = state === 'rally' && c && sh.flying && !sh.netted && sh.lastSide !== p.side && rallyPath && !rallyPath.netted;
+  const incoming = state === 'rally' && c && sh.flying && !sh.netted && sh.lastSide !== p.side && rallyPath && !rallyPath.netted && !(sh.isServe && match.receiver !== p);
   if (incoming) {
     if (c.planKey !== pathT0) {
       c.plan = planIntercept(p, simT - pathT0);
@@ -2185,23 +2219,28 @@ function buildMenu() {
   if (!settings.slot) settings.slot = 'char';
   if (settings.opp === undefined) settings.opp = -1;
   if (settings.mate === undefined) settings.mate = -1;
+  if (settings.opp2 === undefined) settings.opp2 = -1;
   document.querySelectorAll('#slotSeg button').forEach(b => {
     b.classList.toggle('on', settings.slot === b.dataset.s);
-    b.style.display = b.dataset.s === 'mate' && settings.mode !== 'doubles' ? 'none' : '';
+    b.style.display = (b.dataset.s === 'mate' || b.dataset.s === 'opp2') && settings.mode !== 'doubles' ? 'none' : '';
+    if (b.dataset.s === 'opp') b.textContent = settings.mode === 'doubles' ? '对手1' : '对手';
     b.onclick = () => { settings.slot = b.dataset.s; buildMenu(); };
   });
-  if (settings.slot === 'mate' && settings.mode !== 'doubles') settings.slot = 'char';
+  if ((settings.slot === 'mate' || settings.slot === 'opp2') && settings.mode !== 'doubles') settings.slot = 'char';
   $('randBtn').style.display = settings.slot === 'char' ? 'none' : '';
   $('randBtn').onclick = () => { settings[settings.slot] = -1; saveSettings(); buildMenu(); };
   const nm = i => (+i >= 0 && CHARS[+i]) ? CHARS[+i].name : '随机';
   const me = CHARS[settings.char | 0];
-  $('pickInfo').innerHTML = `你：<b>${me.name}</b>（${me.desc}） · 对手：<b>${nm(settings.opp)}</b>` + (settings.mode === 'doubles' ? ` · 队友：<b>${nm(settings.mate)}</b>` : '');
+  $('pickInfo').innerHTML = settings.mode === 'doubles'
+    ? `你：<b>${me.name}</b> · 队友：<b>${nm(settings.mate)}</b> · 对手：<b>${nm(settings.opp)}</b> / <b>${nm(settings.opp2)}</b>`
+    : `你：<b>${me.name}</b>（${me.desc}） · 对手：<b>${nm(settings.opp)}</b>`;
   const ce = $('chars'); ce.innerHTML = '';
   CHARS.forEach((c, i) => {
     const d = document.createElement('div');
     let cls = 'char', badge = '';
     if ((settings.char | 0) === i) { cls += ' on'; badge = '<span class="badge" style="background:#2fd47a;color:#04210f">你</span>'; }
-    else if (+settings.opp === i) { cls += ' opp'; badge = '<span class="badge" style="background:#ff6a55;color:#fff">对手</span>'; }
+    else if (+settings.opp === i) { cls += ' opp'; badge = `<span class="badge" style="background:#ff6a55;color:#fff">${settings.mode === 'doubles' ? '对手1' : '对手'}</span>`; }
+    else if (+settings.opp2 === i && settings.mode === 'doubles') { cls += ' opp'; badge = '<span class="badge" style="background:#ff6a55;color:#fff">对手2</span>'; }
     else if (+settings.mate === i && settings.mode === 'doubles') { cls += ' mate'; badge = '<span class="badge" style="background:#4f9dff;color:#fff">队友</span>'; }
     d.className = cls;
     const bar = (n, v) => `<div><span>${n}</span><div class="bar"><i style="width:${v * 10}%"></i></div></div>`;
@@ -2212,19 +2251,136 @@ function buildMenu() {
     drawPortrait(d.querySelector('canvas'), c);
     d.onclick = () => {
       const slot = settings.slot;
-      if (slot === 'char') { if (+settings.opp === i) settings.opp = -1; if (+settings.mate === i) settings.mate = -1; settings.char = i; }
-      else { if ((settings.char | 0) === i) return; if (slot === 'opp' && +settings.mate === i) settings.mate = -1; if (slot === 'mate' && +settings.opp === i) settings.opp = -1; settings[slot] = i; }
+      if ((slot === 'char' ? -2 : settings.char | 0) === i) return;
+      for (const k of ['char', 'opp', 'opp2', 'mate']) if (k !== slot && +settings[k] === i) settings[k] = k === 'char' ? settings[slot] : -1;
+      settings[slot] = i;
+      if (!(+settings.char >= 0)) settings.char = 0;
       saveSettings(); buildMenu();
     };
     ce.appendChild(d);
   });
 }
-function startGame(isDemo) {
+// ---------- 杯赛 ----------
+let cup = null;
+const DIFF_ORDER = ['easy', 'normal', 'hard', 'master'];
+function shuffle(a) { for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; }
+function teamName(t) { return t.map(i => CHARS[i].name).join(' / '); }
+function cupRoundName(r) {
+  const left = cup.totalRounds - r;
+  return left === 1 ? '决赛' : left === 2 ? '半决赛' : left === 3 ? '八强' : '第' + (r + 1) + '轮';
+}
+function startCup() {
+  audioInit();
+  const doubles = settings.mode === 'doubles';
+  const me = clamp(settings.char | 0, 0, CHARS.length - 1);
+  let pool = shuffle(CHARS.map((_, i) => i).filter(i => i !== me));
+  let teams;
+  if (!doubles) teams = [[me], ...pool.slice(0, 7).map(i => [i])];
+  else {
+    const mate = (+settings.mate >= 0 && +settings.mate !== me) ? +settings.mate : pool[0];
+    pool = pool.filter(i => i !== mate);
+    teams = [[me, mate], [pool[0], pool[1]], [pool[2], pool[3]], [pool[4], pool[5]]];
+  }
+  const n = teams.length;
+  // 第一轮：你在上半区第一场，其余随机
+  const order = [0, ...shuffle(teams.map((_, i) => i).slice(1))];
+  const r0 = [];
+  for (let i = 0; i < n; i += 2) r0.push({ a: order[i], b: order[i + 1], w: -1, score: '' });
+  cup = { doubles, teams, rounds: [r0], round: 0, totalRounds: Math.log2(n), alive: true, champion: -1, lostRound: -1,
+    name: doubles ? '羽境双打杯' : '羽境公开赛', baseDiff: settings.diff };
+  show('menu', false);
+  showCup();
+}
+function cupDiff(r) { const i = DIFF_ORDER.indexOf(cup.baseDiff); return DIFF_ORDER[Math.min(3, Math.max(0, i) + r)]; }
+function teamRating(t) { return t.reduce((a, i) => { const c = CHARS[i]; return a + c.spd + c.pow + c.sta + c.tec + c.def + c.net + c.jump + c.decept; }, 0) / t.length; }
+function simScore(games) {
+  const need = Math.ceil(games / 2), out = []; let w = 0, l = 0;
+  const tgt = +settings.points;
+  while (w < need) {
+    const loserWins = l < need - 1 && Math.random() < 0.3;
+    const lose = Math.floor(rnd(tgt * 0.45, tgt - 2));
+    if (loserWins) { out.push([lose, tgt]); l++; } else { out.push([tgt, lose]); w++; }
+  }
+  return out;
+}
+function simMatch(mt) {
+  const ra = teamRating(cup.teams[mt.a]) + rnd(0, 14), rb = teamRating(cup.teams[mt.b]) + rnd(0, 14);
+  const aw = ra >= rb;
+  mt.w = aw ? mt.a : mt.b;
+  const sc = simScore(+settings.games);
+  mt.score = sc.map(g => aw ? g.join('-') : g[1] + '-' + g[0]).join(' ');
+}
+function advanceCup() {
+  const cur = cup.rounds[cup.round];
+  for (const mt of cur) if (mt.w < 0) simMatch(mt);
+  if (cur.length === 1) { cup.champion = cur[0].w; return; }
+  const nx = [];
+  for (let i = 0; i < cur.length; i += 2) nx.push({ a: cur[i].w, b: cur[i + 1].w, w: -1, score: '' });
+  cup.rounds.push(nx); cup.round++;
+}
+function cupRecord(win, gameScores) {
+  const mt = cup.rounds[cup.round].find(m => m.a === 0 || m.b === 0);
+  if (!mt) return;
+  const flip = mt.a !== 0;
+  mt.w = win ? 0 : (mt.a === 0 ? mt.b : mt.a);
+  mt.score = gameScores.map(g => flip ? g[1] + '-' + g[0] : g[0] + '-' + g[1]).join(' ');
+  if (!win) { cup.alive = false; cup.lostRound = cup.round; }
+  advanceCup();
+  // 被淘汰：把剩下的比赛模拟完
+  if (!cup.alive) while (cup.champion < 0) advanceCup();
+  const res = cup.champion === 0 ? '冠军' : cup.alive ? '' : cupRoundName(cup.lostRound);
+  try { if (res) { const k = 'yujing_cup_' + (cup.doubles ? 'd' : 's'); const rank = { '冠军': 4, '亚军': 3, '决赛': 3, '半决赛': 2, '八强': 1 }; const old = localStorage.getItem(k); if (!old || (rank[res] || 0) > (rank[old] || 0)) localStorage.setItem(k, res === '决赛' ? '亚军' : res); } } catch (e) {}
+}
+function showCup() {
+  const c = cup;
+  $('cupTitle').textContent = '🏆 ' + c.name;
+  let best = ''; try { best = localStorage.getItem('yujing_cup_' + (c.doubles ? 'd' : 's')) || ''; } catch (e) {}
+  $('cupSub').textContent = `${c.doubles ? '双打' : '单打'} · ${c.teams.length}${c.doubles ? '队' : '人'}淘汰赛 · ${+settings.games === 1 ? '1局' : '3局2胜'} ${settings.points}分制 · 每轮对手更强` + (best ? ` · 历史最佳：${best}` : '');
+  let html = '';
+  for (let r = 0; r < c.totalRounds; r++) {
+    const mts = c.rounds[r] || [];
+    const cnt = c.teams.length / Math.pow(2, r + 1);
+    html += `<div class="rd"><div class="rh">${cupRoundName(r)} · ${{ easy: '简单', normal: '普通', hard: '困难', master: '大师' }[cupDiff(r)]}</div>`;
+    for (let i = 0; i < cnt; i++) {
+      const mt = mts[i];
+      if (!mt) { html += `<div class="mt"><div class="tm l">待定</div><div class="tm l">待定</div></div>`; continue; }
+      const me = mt.a === 0 || mt.b === 0;
+      const row = (t, first) => {
+        const cls = mt.w < 0 ? '' : mt.w === t ? 'w' : 'l';
+        return `<div class="tm ${cls} ${t === 0 ? 'you' : ''}"><span>${t === 0 ? '★ ' : ''}${teamName(c.teams[t])}</span>${first && mt.score ? `<span class="sc">${mt.score}</span>` : ''}</div>`;
+      };
+      html += `<div class="mt ${me ? 'me' : ''}">${row(mt.a, true)}${row(mt.b, false)}</div>`;
+    }
+    html += `</div>`;
+  }
+  html += `<div class="rd" style="min-width:110px"><div class="rh">冠军</div><div class="champ">${c.champion >= 0 ? '🏆<br><b>' + teamName(c.teams[c.champion]) + '</b>' : '？'}</div></div>`;
+  $('bracket').innerHTML = html;
+  const play = $('cupPlay');
+  if (c.champion === 0) { $('cupMsg').innerHTML = '<b style="color:#ffd34d">🎉 恭喜夺冠！</b>'; play.style.display = 'none'; }
+  else if (!c.alive) { $('cupMsg').innerHTML = `<span style="color:#ff8a7a">${c.lostRound === c.totalRounds - 1 ? '🥈 获得亚军' : '你止步' + cupRoundName(c.lostRound)}</span>`; play.style.display = 'none'; }
+  else {
+    const mt = c.rounds[c.round].find(m => m.a === 0 || m.b === 0);
+    const opp = mt.a === 0 ? mt.b : mt.a;
+    $('cupMsg').innerHTML = `下一场：<b>${cupRoundName(c.round)}</b> 对阵 <b>${teamName(c.teams[opp])}</b>`;
+    play.style.display = ''; play.textContent = '开始' + cupRoundName(c.round);
+  }
+  $('cupQuit').textContent = (c.champion >= 0 || !c.alive) ? '返回主菜单' : '退出杯赛';
+  show('cup', true);
+}
+function playCupMatch() {
+  const mt = cup.rounds[cup.round].find(m => m.a === 0 || m.b === 0);
+  const opp = mt.a === 0 ? mt.b : mt.a;
+  startGame(false, { t0: cup.teams[0], t1: cup.teams[opp], diff: cupDiff(cup.round) });
+}
+
+let currentOpts = null;
+function startGame(isDemo, opts) {
   audioInit();
   demo = !!isDemo;
-  show('menu', false); show('result', false); show('pause', false);
+  currentOpts = opts || null;
+  show('menu', false); show('result', false); show('pause', false); show('cup', false);
   paused = false;
-  newMatch();
+  newMatch(currentOpts);
   checkOrientation();
   try {
     if (!isDemo && document.documentElement.requestFullscreen && 'ontouchstart' in window && !document.fullscreenElement) {
@@ -2240,7 +2396,7 @@ function togglePause(v) {
   if (human) human.charge = null;
   input.joy = null; touches.clear();
 }
-function quitToMenu() { paused = false; state = 'menu'; match = null; players = []; human = null; show('pause', false); show('result', false); show('menu', true); buildMenu(); checkOrientation(); }
+function quitToMenu() { cup = null; show('cup', false); paused = false; state = 'menu'; match = null; players = []; human = null; show('pause', false); show('result', false); show('menu', true); buildMenu(); checkOrientation(); }
 function showResult(w) {
   const m = match;
   if (!m || state !== 'over') return;
@@ -2262,6 +2418,12 @@ function showResult(w) {
     ['最长回合', m.longest + ' 拍', ''],
   ];
   $('resTable').innerHTML = rows.map((r, i) => `<tr>${r.map(c => i === 0 ? `<td style="color:#9fb0cc">${c}</td>` : `<td>${c}</td>`).join('')}</tr>`).join('');
+  $('againBtn').textContent = cup ? '查看赛程' : '再来一场';
+  if (cup && !demo) {
+    cupRecord(win, m.gameScores);
+    if (cup.champion === 0) $('resTitle').textContent = '🏆 夺得冠军！';
+    else if (!win) $('resTitle').textContent = cup.lostRound === cup.totalRounds - 1 ? '🥈 获得亚军' : '止步' + cupRoundName(cup.lostRound);
+  }
   show('result', true);
 }
 $('startBtn').onclick = () => startGame(false);
@@ -2270,9 +2432,12 @@ $('helpBtn').onclick = () => show('help', true);
 $('helpBtn2').onclick = () => show('help', true);
 document.querySelectorAll('[data-close]').forEach(b => b.onclick = () => show(b.dataset.close, false));
 $('resumeBtn').onclick = () => togglePause(false);
-$('restartBtn').onclick = () => { show('pause', false); startGame(demo); };
+$('restartBtn').onclick = () => { show('pause', false); startGame(demo, currentOpts); };
 $('quitBtn').onclick = quitToMenu;
-$('againBtn').onclick = () => startGame(demo);
+$('againBtn').onclick = () => { if (cup) { show('result', false); showCup(); } else startGame(demo); };
+$('cupBtn').onclick = startCup;
+$('cupPlay').onclick = playCupMatch;
+$('cupQuit').onclick = () => { cup = null; show('cup', false); quitToMenu(); };
 $('menuBtn').onclick = quitToMenu;
 document.addEventListener('visibilitychange', () => { if (document.hidden && state !== 'menu' && !paused && !demo) togglePause(true); });
 
