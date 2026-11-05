@@ -118,7 +118,7 @@ h1{margin:0;font-size:30px;letter-spacing:.08em;background:linear-gradient(90deg
     <div>左半屏任意位置按住拖动 = <b>摇杆自由移动</b>（回位、调整站位）。右下角 4 个击球键。</div>
     <div><b>按住（或点一下）击球键 = 自动跑位 + 自动击球</b>：对方击球后，球员会自动冲向最佳击球点并在最佳时机挥拍，不需要自己把握时机。可以在对方出手前就提前按下，指令会一直保持到击球；中途按另一个键可以改变球路。</div>
     <div><b>按住击球键并拖动 = 选择落点</b>：向左/右拖动 = 落点偏左/右，<b>拖到底 = 压边线</b>（杀边线、打大对角都靠它）；向上拖 = 打得更深（拖到底压底线），向下拖 = 更短更近网，不拖 = 打向中路。<b>落点自动限制在界内</b>，拖出界也只会瞄准贴线位置；只有击球质量很差时才可能出界。场上彩色圈标出预计落点。</div>
-    <div><b>只有杀球需要蓄力</b>：按住[杀球]越久，杀球越重；蓄力过半（黄色以上）且球足够高时自动起跳 = <b>跳杀</b>；<b>蓄满（红色）球速大幅提升，跳杀可达 400 km/h 以上</b>。快速杀球落地后会继续向前滑行。其它球不需要蓄力。</div>
+    <div><b>只有杀球需要蓄力</b>：按住[杀球]越久，杀球越重；蓄力过半（黄色以上）且球足够高时自动起跳 = <b>跳杀</b>；<b>蓄力后半程球速线性上升，蓄满（红色）跳杀可达 400 km/h 以上</b>。快速杀球落地后会继续向前滑行。其它球不需要蓄力。</div>
     <h3>球员</h3>
     <div>10 名男女球员，身高、左右手、外观各不相同。属性：速度（移动）、力量（杀球球速）、耐力（体力消耗）、技术（击球稳定性）、防守（接杀能力/范围）、网前（搓球贴网程度）、弹跳（跳杀高度与球速）、假动作（吊球/网前让对手反应变慢）。身高越高，击球点越高。菜单里可以分别选择你的球员、对手和双打队友。</div>
     <h3>击球键（随击球高度和位置自动变化）</h3>
@@ -129,7 +129,7 @@ h1{margin:0;font-size:30px;letter-spacing:.08em;background:linear-gradient(90deg
       <tr><td><span class="k">杀球</span></td><td>杀球 / 跳杀 / 网前扑球</td><td>点杀 / 扑球</td><td>推球</td></tr>
       <tr><td><span class="k">平抽</span></td><td>平高球（进攻高远）</td><td>平抽</td><td>推后场</td></tr>
     </table>
-    <div>发球时：按住<span class="k">吊球</span>=网前短发球，<span class="k">高远</span>=后场高远球，<span class="k">平抽</span>/<span class="k">杀球</span>=平快球，拖动选落点，松开即发球。距离太远来不及时会自动跨步/飞扑救球（质量下降、需要恢复时间）。</div>
+    <div>发球时：按住<span class="k">吊球</span>=网前短发球，<span class="k">高远</span>=后场高远球，<span class="k">平抽</span>/<span class="k">杀球</span>=平快球，拖动选落点，松开即发球。距离太远来不及时会自动跨步救球，低球更远时会<b>鱼跃扑救</b>（质量很低、倒地需要约 1 秒起身）。AI 也会鱼跃，但面对 300 km/h 以上的杀球大多接不起，350 km/h 以上基本接不到。</div>
     <h3>杯赛模式</h3>
     <div>主菜单点 <b>🏆 杯赛模式</b>：单打 8 人淘汰赛（八强 → 半决赛 → 决赛），双打 4 队淘汰赛（半决赛 → 决赛，用你选的队友）。首轮难度为菜单所选难度，之后每轮升一级。其他场次按球员实力自动模拟，赛程表实时更新；会记录你的历史最佳成绩。</div>
     <h3>体力</h3>
@@ -230,10 +230,10 @@ const CHARS = [
     skin: '#eab892', hair: '#4a2c18', hs: 'pony', shirt: '#ffb020', trim: '#1b1b1b', bottom: '#1b1b1b', shoe: '#ffffff', racket: '#1b1b1b', band: '#ffffff', desc: '左手持拍，攻守兼备' },
 ];
 const DIFF = {
-  easy:   { dp: 1.0, react: 0.36, spd: 0.80, tNoise: 0.055, err: 1.7, judge: 0.25, smash: 0.30, aimSkill: 0.25 },
-  normal: { dp: 0.6, react: 0.26, spd: 0.92, tNoise: 0.035, err: 1.15, judge: 0.55, smash: 0.50, aimSkill: 0.55 },
-  hard:   { dp: 0.35, react: 0.19, spd: 1.00, tNoise: 0.022, err: 0.8, judge: 0.8, smash: 0.65, aimSkill: 0.8 },
-  master: { dp: 0.2, react: 0.13, spd: 1.06, tNoise: 0.012, err: 0.55, judge: 0.93, smash: 0.75, aimSkill: 0.95 },
+  easy:   { reflex: 0.3, dp: 1.0, react: 0.36, spd: 0.80, tNoise: 0.055, err: 1.7, judge: 0.25, smash: 0.30, aimSkill: 0.25 },
+  normal: { reflex: 0.5, dp: 0.6, react: 0.26, spd: 0.92, tNoise: 0.035, err: 1.15, judge: 0.55, smash: 0.50, aimSkill: 0.55 },
+  hard:   { reflex: 0.7, dp: 0.35, react: 0.19, spd: 1.00, tNoise: 0.022, err: 0.8, judge: 0.8, smash: 0.65, aimSkill: 0.8 },
+  master: { reflex: 0.85, dp: 0.2, react: 0.13, spd: 1.06, tNoise: 0.012, err: 0.55, judge: 0.93, smash: 0.75, aimSkill: 0.95 },
 };
 const SHOT_NAME = {
   clear: '高远球', attclear: '平高球', lift: '挑球', drop: '吊球', slice: '劈吊', net: '放网', block: '挡网',
@@ -352,7 +352,8 @@ function solveAngle(y0, v, D, dn, margin, hiDeg) {
   let ang = (lo + hi) / 2;
   if (sim2(y0, v, ang, dn).yNet < NET_H + margin) {
     let a = ang, b = top;
-    if (sim2(y0, v, b, dn).yNet < NET_H + margin) return solveSpeed(y0, top, D, dn, margin);
+    // 最平角度仍过不了网：保持球速，继续抬角度直到刚好过网（不降成慢吊）
+    if (sim2(y0, v, b, dn).yNet < NET_H + margin) { a = top; b = 1.2; if (sim2(y0, v, b, dn).yNet < NET_H + margin) return solveSpeed(y0, top, D, dn, margin); }
     for (let i = 0; i < 18; i++) { const m = (a + b) / 2; if (sim2(y0, v, m, dn).yNet < NET_H + margin) a = m; else b = m; }
     ang = b;
   }
@@ -489,7 +490,8 @@ function contactMetric(p, sx, sy, sz, px, pz) {
   const lungeOK = sy < 1.75;
   let R0 = reachOf(p), LX = lungeOf(p);
   if (!p.isHuman && POWER[sh.kind] && sh.lastSide !== p.side && sh.lastHitter && sh.lastHitter.isHuman) { const k = p.prof.dp; R0 *= 1 - k * (0.14 - 0.01 * p.tr.def); LX *= 1 - k * (0.4 - 0.03 * p.tr.def); }
-  return { d, hand, reach: R0, reachL: R0 + (lungeOK ? LX : 0), y: sy, lr, lf };
+  const DIVE = sy < 1.0 ? 0.42 : 0; // 鱼跃救球：低球可额外扑出更远
+  return { d, hand, reach: R0, reachL: R0 + (lungeOK ? LX + DIVE : 0), y: sy, lr, lf, dive: DIVE };
 }
 function canHit(p) {
   if (!sh.flying || sh.netted) return false;
@@ -574,6 +576,12 @@ function classify(p, btn, y, z, lunge, q, jumpOK) {
   return k;
 }
 
+// 杀球蓄力曲线：前半程 a+b·c；后半程（c 0.5→1）线性上升到最大值（玩家满蓄力 ×1.85，跳杀约 375～475 km/h）
+function smashMul(p, c, a, b) {
+  if (c <= 0.5) return a + b * c;
+  const lo = a + b * 0.5, hi = (a + b) * (p.isHuman ? 1.85 : 1);
+  return lo + (hi - lo) * (c - 0.5) / 0.5;
+}
 function computeShot(p, kind, c, aimX, aimY, err, pos) {
   const dirS = p.side === 0 ? -1 : 1;
   const HW = hw();
@@ -582,23 +590,21 @@ function computeShot(p, kind, c, aimX, aimY, err, pos) {
   const P0 = p.power;
   switch (kind) {
     case 'clear': mode = 'speed'; ang = 47 * DEG; depth = 4.6 + 1.3 * ce + 0.45 * aimY; break;
-    case 'attclear': mode = 'speed'; ang = 24 * DEG; depth = 5.2 + 0.9 * ce + 0.4 * aimY; break;
+    case 'attclear': mode = 'angle'; spd = 32 + 10 * ce; depth = 5.6 + 0.6 * ce + 0.4 * aimY; margin = 0.35; hiDeg = 20; break;
     case 'lift': mode = 'speed'; ang = (pos.y < 0.8 ? 60 : 50) * DEG; depth = 4.3 + 1.55 * ce + 0.45 * aimY; break;
     case 'drop': mode = 'speed'; ang = 6 * DEG; depth = 1.9 + 0.55 * aimY + 0.2 * ce; margin = 0.06; break;
     case 'slice': mode = 'speed'; ang = -5 * DEG; depth = 2.5 + 0.6 * aimY; margin = 0.06; break;
     case 'net': mode = 'speed'; ang = (pos.y > NET_H ? -8 : 4) * DEG; depth = 0.55 + 0.32 * (aimY + 1); margin = 0.025; txMul = 0.8; break;
     case 'block': mode = 'speed'; ang = (pos.y > NET_H ? -4 : 8) * DEG; depth = 1.35 + 0.45 * (aimY + 1); margin = 0.05; break;
-    case 'smash': mode = 'angle'; spd = P0 * (0.58 + 0.32 * ce); depth = 4.4 + 1.3 * aimY; margin = 0.09; hiDeg = 12; txMul = 0.82; break;
-    case 'jsmash': mode = 'angle'; spd = P0 * (0.62 + 0.34 * ce) * (1.06 + 0.012 * p.tr.jump); depth = 4.1 + 1.3 * aimY; margin = 0.09; hiDeg = 12; txMul = 0.82; break;
+    case 'smash': mode = 'angle'; spd = P0 * smashMul(p, ce, 0.58, 0.32); depth = 4.4 + 1.3 * aimY; margin = 0.09; hiDeg = 12; txMul = 0.82; break;
+    case 'jsmash': mode = 'angle'; spd = P0 * smashMul(p, ce, 0.62, 0.34) * (1.06 + 0.012 * p.tr.jump); depth = 4.1 + 1.3 * aimY; margin = 0.09; hiDeg = 12; txMul = 0.82; break;
     case 'halfsmash': mode = 'angle'; spd = P0 * 0.5 * (0.8 + 0.25 * ce); depth = 3.0 + 1.1 * aimY; margin = 0.08; hiDeg = 15; break;
     case 'kill': mode = 'angle'; spd = P0 * (0.5 + 0.12 * ce); depth = 2.6 + 1.3 * aimY; margin = 0.06; hiDeg = 8; break;
-    case 'drive': mode = 'angle'; spd = 19 + 14 * ce; depth = 4.4 + 1.5 * aimY; margin = 0.08; hiDeg = 22; break;
-    case 'push': mode = 'angle'; spd = 13 + 9 * ce; depth = 3.4 + 1.4 * aimY; margin = 0.08; hiDeg = 32; break;
+    case 'drive': mode = 'angle'; spd = 28 + 12 * ce; depth = 4.6 + 1.5 * aimY; margin = 0.08; hiDeg = 16; break;
+    case 'push': mode = 'angle'; spd = 24 + 10 * ce; depth = 4.0 + 1.4 * aimY; margin = 0.08; hiDeg = 18; break;
     case 'frame': mode = 'speed'; ang = rnd(25, 70) * DEG; depth = rnd(0.6, 3.5); aimX = rnd(-1.3, 1.3); break;
   }
   // 玩家满蓄力杀球额外提速
-  // 玩家满蓄力杀球大幅提速：跳杀约 375～475 km/h
-  if (p.isHuman && ce >= 0.98 && (kind === 'smash' || kind === 'jsmash')) spd *= 1.85;
   let tx;
   if (p.isHuman && kind !== 'frame') {
     // 玩家落点：拖到底 = 压线；落点辅助保证瞄准点在界内
@@ -618,10 +624,10 @@ function computeShot(p, kind, c, aimX, aimY, err, pos) {
 const AIM_K = { clear: 0.45, attclear: 0.4, lift: 0.45, drop: 0.55, slice: 0.6, net: 0.32, block: 0.45, smash: 1.3, jsmash: 1.3, halfsmash: 1.1, kill: 1.3, drive: 1.5, push: 1.4 };
 function baseDepth(kind, pos, ce) {
   switch (kind) {
-    case 'clear': return 4.6 + 1.3 * ce; case 'attclear': return 5.2 + 0.9 * ce; case 'lift': return 4.3 + 1.55 * ce;
+    case 'clear': return 4.6 + 1.3 * ce; case 'attclear': return 5.6 + 0.6 * ce; case 'lift': return 4.3 + 1.55 * ce;
     case 'drop': return 1.9 + 0.2 * ce; case 'slice': return 2.5; case 'net': return 0.87; case 'block': return 1.8;
     case 'smash': return 4.4; case 'jsmash': return 4.1; case 'halfsmash': return 3.4; case 'kill': return 2.8;
-    case 'drive': return 4.4; case 'push': return 3.4;
+    case 'drive': return 4.6; case 'push': return 4.0;
   }
   return 3;
 }
@@ -634,9 +640,14 @@ function launch(pos, tx, tz, mode, ang, spd, margin, hiDeg, err, keepSpeed) {
   if (keepSpeed) {
     // 杀球：全速，取能过网的最低角度（solveAngle 已处理），落点在哪就是哪，不加任何下坠或修正
   } else if (mode !== 'speed') {
-    // 过网所需角度导致落点过远：降低球速，保证打到瞄准点
+    // 过网所需角度导致落点比瞄准点深：保持平快弧线；只有会出底线/边线时才把球速降到刚好落在界内
     const chk = sim2(pos.y, r.v, r.ang, dn);
-    if (chk.land > D + 0.25) r = solveSpeed(pos.y, Math.max(r.ang, -0.2), D, dn, margin);
+    if (chk.land > D + 0.25) {
+      let lim = (((uz < 0 ? -1 : 1) * (HL - 0.3)) - pos.z) / uz;
+      if (Math.abs(ux) > 0.02) { const tS = ((ux > 0 ? 1 : -1) * (hw() - 0.1) - pos.x) / ux; if (tS > 0) lim = Math.min(lim, tS); }
+      lim = Math.max(lim, D);
+      if (chk.land > lim) r = solveSpeed(pos.y, Math.max(r.ang, -0.2), lim, dn, margin);
+    }
   }
   let v = r.v * (1 + gauss() * 0.012 * err);
   const ch = v * Math.cos(r.ang);
@@ -644,6 +655,19 @@ function launch(pos, tx, tz, mode, ang, spd, margin, hiDeg, err, keepSpeed) {
 }
 
 const POWER = { smash: 1, jsmash: 1, kill: 1, halfsmash: 1 };
+function aiDefenseFail(p, m, stretched) {
+  const r = Math.random();
+  p.lungeT = stretched ? 0.8 : 0.45; p.dive = stretched && sh.y < 1.0; p.lungeDir = [m.lr, m.lf];
+  if (r < 0.45) { addPopup('没碰到!', sh.x, Math.max(1, sh.y + 0.4), sh.z, '#ff9b7a', 15); return; } // 碰不到，球继续飞
+  const dirS = p.side === 0 ? -1 : 1;
+  if (r < 0.75) { sh.vx = rnd(-1.5, 1.5); sh.vy = rnd(0.5, 2.5); sh.vz = dirS * rnd(3, 6); addPopup('接杀下网', sh.x, sh.y + 0.5, sh.z, '#ff9b7a', 15); }
+  else { sh.vx = (Math.random() < 0.5 ? -1 : 1) * rnd(7, 12); sh.vy = rnd(4, 8); sh.vz = dirS * rnd(-2, 6); addPopup('拍框飞出', sh.x, sh.y + 0.5, sh.z, '#ff9b7a', 15); }
+  sh.v0 = Math.hypot(sh.vx, sh.vy, sh.vz);
+  sh.lastSide = p.side; sh.lastHitter = p; sh.isServe = false; sh.kind = 'frame'; sh.trail = [];
+  match.rally++; p.stats.hits++;
+  sfx('hit', 0.35);
+  onShuttleStruck(p);
+}
 function doHit(p, sw) {
   sw.done = true;
   const prevKind = sh.kind, vsHuman = !!(sh.lastHitter && sh.lastHitter.isHuman);
@@ -651,11 +675,17 @@ function doHit(p, sw) {
   const bestD = sw.bestD;
   const R0 = sw.bestM ? sw.bestM.reach : reachOf(p), LX = sw.bestM ? Math.max(0.05, sw.bestM.reachL - sw.bestM.reach) : lungeOf(p);
   const lunge = bestD > R0;
-  let posQ = lunge ? clamp(1 - (bestD - R0) / LX, 0, 1) * 0.42 + 0.12 : 1 - Math.pow(bestD / R0, 1.6) * 0.85;
+  const dive = !!(sw.bestM && sw.bestM.dive && bestD > sw.bestM.reachL - sw.bestM.dive);
+  let posQ = dive ? 0.08 + 0.12 * Math.random() : lunge ? clamp(1 - (bestD - R0) / LX, 0, 1) * 0.42 + 0.12 : 1 - Math.pow(bestD / R0, 1.6) * 0.85;
+  // AI 接玩家的快杀：球速越快越难接（250 km/h 起，370 km/h 以上基本接不起）
+  const inKmh = (sh.v0 || 0) * 3.6;
+  const sev = !p.isHuman && vsHuman && POWER[prevKind] ? clamp((inKmh - 240) / 130, 0, 1) : 0;
+  if (sev > 0 && Math.random() < sev * 0.95) { aiDefenseFail(p, m, dive || lunge); return; }
   const tErr = Math.abs(sw.bestT - SW_HIT) / (SW_W1 - SW_HIT);
   let q = clamp(posQ * (1 - 0.4 * tErr), 0, 1);
   // AI 接杀：质量下降（防守属性可减轻）
   if (!p.isHuman && POWER[prevKind]) q *= vsHuman ? 1 - p.prof.dp * (0.38 - 0.025 * p.tr.def) : 0.92 + 0.008 * p.tr.def;
+  if (sev > 0) q = Math.min(q, 0.5 - 0.32 * sev); // 救起来的球质量也不高
   else if (p.isHuman && POWER[prevKind]) q *= 0.85 + 0.015 * p.tr.def;
   // 状态因素
   const stF = 1 + (1 - p.stamina / 100) * 0.7;
@@ -670,14 +700,15 @@ function doHit(p, sw) {
   if (window.__log2) window.__log2.push({ px: +p.x.toFixed(2), pz: +p.z.toFixed(2), t: +simT.toFixed(2), ls: sh.lastSide, kind, prev: sh.kind, y: +sh.y.toFixed(2), z: +sh.z.toFixed(2), q: +q.toFixed(2), side: p.side });
   const pos = { x: sh.x, y: sh.y, z: sh.z };
   const vel = computeShot(p, kind, sw.c, sw.aimX, sw.aimY, err, pos);
-  sh.vx = vel.vx; sh.vy = vel.vy; sh.vz = vel.vz;
+  sh.vx = vel.vx; sh.vy = vel.vy; sh.vz = vel.vz; sh.v0 = vel.v;
   sh.lastSide = p.side; sh.lastHitter = p; sh.isServe = false; sh.kind = kind; sh.trail = [];
   match.rally++;
   p.stats.hits++;
   if (q >= 0.88) p.stats.perfect++;
   // 动作/体力
   if (jumpNeeded || kind === 'jsmash') p.stamina -= kind === 'jsmash' ? 6.5 * p.drain : 3 * p.drain;
-  if (lunge) { p.lungeT = 0.5; p.lungeDir = [m.lr, m.lf]; p.stamina -= 4 * p.drain; }
+  if (dive) { p.lungeT = 0.95; p.dive = true; p.lungeDir = [m.lr, m.lf]; p.stamina -= 7 * p.drain; addPopup('鱼跃!', sh.x, 1.2, sh.z, '#ffd34d', 14); }
+  else if (lunge) { p.lungeT = 0.5; p.lungeDir = [m.lr, m.lf]; p.stamina -= 4 * p.drain; }
   if (kind === 'smash' || kind === 'halfsmash' || kind === 'kill') p.stamina -= 2.6 * p.drain;
   else if (kind === 'clear' || kind === 'lift') p.stamina -= 1.1 * p.drain;
   else p.stamina -= 0.5 * p.drain;
@@ -741,7 +772,7 @@ function doServe(p, sw) {
   if (kind === 'sShort') margin = Math.max(0, margin + gauss() * 0.05 * err);
   const pos = { x: sh.x, y: sh.y, z: sh.z };
   const vel = launch(pos, tx, dirS * depth, mode, ang, 0, margin, 30, err);
-  sh.vx = vel.vx; sh.vy = vel.vy; sh.vz = vel.vz;
+  sh.vx = vel.vx; sh.vy = vel.vy; sh.vz = vel.vz; sh.v0 = vel.v;
   sh.flying = true; sh.netted = false; sh.isServe = true; sh.lastSide = p.side; sh.lastHitter = p; sh.kind = kind; sh.trail = [];
   m.rally = 1;
   state = 'rally'; stateT = 0;
@@ -928,6 +959,10 @@ function aiChooseShot(p, pl) {
   const nearNet = Math.abs(z) < 2.35, deep = Math.abs(z) > 4.6;
   const pf = p.prof, dbl = match.doubles;
   const opts = [];
+  // 对手在网前 → 多起后场球；对手在后场 → 才多放网
+  const oppMinZ = Math.min(...opponentsOf(p).map(o => Math.abs(o.z)));
+  const oppNetF = oppMinZ < 2.8 ? 0.5 : oppMinZ > 4.2 ? 1.4 : 1;
+  const oppBackF = oppMinZ < 2.8 ? 1.6 : oppMinZ > 4.2 ? 0.8 : 1;
   if (y >= 2.0) {
     if (nearNet && y > NET_H + 0.3) opts.push(['C', 5]);
     else {
@@ -939,11 +974,11 @@ function aiChooseShot(p, pl) {
   } else if (y >= 1.1) {
     if (nearNet && y > NET_H + 0.3) opts.push(['C', 2.5]);
     else if (nearNet && y > NET_H + 0.12) opts.push(['C', 0.8]);
-    if (nearNet && y < NET_H + 0.05) { opts.push(['B', 1.4]); opts.push(['A', 0.9]); opts.push(['D', 0.35]); }
+    if (nearNet && y < NET_H + 0.05) { opts.push(['B', 0.8 * oppNetF]); opts.push(['A', 1.3 * oppBackF]); opts.push(['D', 0.5]); }
     else { opts.push(['D', 1.1]); opts.push(['B', 0.6]); opts.push(['A', 0.5]); }
     if (y > 1.45 && !nearNet) opts.push(['C', 0.5]);
   } else {
-    if (nearNet) { opts.push(['B', 1.2 + pf.aimSkill]); opts.push(['A', 1.0]); opts.push(['D', 0.35]); }
+    if (nearNet) { opts.push(['B', 0.75 * oppNetF]); opts.push(['A', 1.4 * oppBackF]); opts.push(['D', 0.5]); }
     else { opts.push(['A', 1.3]); opts.push(['B', 0.7]); opts.push(['D', 0.45]); }
   }
   if (POWER[sh.kind] && y < 2.0) { opts.length = 0; opts.push(['A', 1.3], ['B', 1.0], ['D', 0.35]); }
@@ -971,7 +1006,7 @@ function aiChooseShot(p, pl) {
   }
   let c = clamp(0.7 + Math.random() * 0.35 + (pf.aimSkill - 0.5) * 0.1, 0.5, 1.02);
   if (btn === 'B') c = Math.random() < 0.35 + 0.3 * pf.aimSkill ? rnd(0.3, 0.7) : rnd(0.78, 1);
-  if (btn === 'C') c = Math.random() < 0.15 ? rnd(0.56, 0.7) : rnd(0.1, 0.5);
+  if (btn === 'C') c = rnd(0.15, 0.5); // 任何难度 AI 杀球蓄力都不超过一半
   return { btn, aim: bestAim, c };
 }
 
@@ -1036,6 +1071,14 @@ function updateAI(p, dt) {
     }
   } else {
     if (p.leave) { moveToward(p, p.x, p.z, dt, 0); return; }
+    // 本能挡球：还没反应过来但快球就从身边经过 → 按难度概率直接伸拍挡/挑
+    if (sh.flying && !sh.netted && sh.lastSide !== p.side && !(sh.isServe && match.receiver !== p) && swingFree(p) && !p.charge && p.lungeT <= 0) {
+      const b = predictBest(p, 0.2);
+      if (b && b.d < b.m.reachL && b.t <= SW_HIT + 0.02) {
+        if (p.reflexKey !== pathT0) { p.reflexKey = pathT0; p.reflexOK = Math.random() < p.prof.reflex; }
+        if (p.reflexOK) { const btn = b.y < 1.2 ? (Math.random() < 0.6 ? 'A' : 'B') : (Math.random() < 0.5 ? 'B' : 'D'); startSwing(p, btn, rnd(0.3, 0.7), rnd(-0.6, 0.6), rnd(-0.5, 0.3)); }
+      }
+    }
     // 对方刚击球、尚未反应：垫步原地制动
     if (sh.flying && sh.lastSide !== p.side && simT < p.reactAt) { accel(p, 0, 0, dt * 0.6); return; }
     const b = basePosition(p);
@@ -1274,7 +1317,7 @@ function updatePlayersMove(dt) {
       const zs = p.side === 0 ? 1 : -1;
       moveToward(p, p.x * 0.98, zs * 3.6, dt, 0.2);
     }
-    if (p.lungeT > 0) { p.lungeT -= dt; p.vx *= 0.8; p.vz *= 0.8; }
+    if (p.lungeT > 0) { p.lungeT -= dt; p.vx *= 0.8; p.vz *= 0.8; if (p.lungeT <= 0) p.dive = false; }
     p.x += p.vx * dt; p.z += p.vz * dt;
     // 边界
     const zs = p.side === 0 ? 1 : -1;
@@ -1554,7 +1597,7 @@ function poseOf(p) {
       pose.lh = [pose.lh[0], pose.lh[1], pose.lh[2] + Math.sin(p.runPhase * 2) * 0.12 * clamp(sp / 3, 0, 1)];
     }
   }
-  if (p.lungeT > 0) { const k = clamp(p.lungeT / 0.2, 0, 1); pose.lean = lerp(pose.lean, 0.55, k); }
+  if (p.lungeT > 0) { const k = clamp(p.lungeT / 0.2, 0, 1); pose.lean = lerp(pose.lean, p.dive ? 1.3 : 0.55, k); if (p.dive) { pose.lh = [-0.45, 0.6, 0.5]; } }
   p.pose = pose;
   return pose;
 }
@@ -1581,7 +1624,11 @@ function footTargets(p) {
     const w = cw(p, [lead[0], 0, lead[1]], v[0], 0, v[2]);
     out.push([w[0], w[2]]);
   }
-  if (p.lungeT > 0) {
+  if (p.lungeT > 0 && p.dive) {
+    const d = lungeWorldDir(p), sx = -d[2] * 0.12 * sc, sz = d[0] * 0.12 * sc;
+    out[1] = [p.x - d[0] * 0.35 * sc + sx, p.z - d[2] * 0.35 * sc + sz];
+    out[0] = [p.x - d[0] * 0.55 * sc - sx, p.z - d[2] * 0.55 * sc - sz];
+  } else if (p.lungeT > 0) {
     const d = lungeWorldDir(p);
     out[1] = [p.x + d[0] * 0.8 * sc, p.z + d[2] * 0.8 * sc];
     out[0] = [p.x - d[0] * 0.38 * sc, p.z - d[2] * 0.38 * sc];
@@ -1634,11 +1681,12 @@ function updateAnim(p, dt) {
   // 骨盆位置/高度：受双脚约束
   const pose = p.pose;
   let pel = [p.x, p.z];
-  if (p.lungeT > 0) { const d = lungeWorldDir(p); const k = clamp(p.lungeT / 0.2, 0, 1); pel = [p.x + d[0] * 0.3 * sc * k, p.z + d[2] * 0.3 * sc * k]; }
+  if (p.lungeT > 0) { const d = lungeWorldDir(p); const k = clamp(p.lungeT / 0.2, 0, 1); const sh_ = p.dive ? 0.45 : 0.3; pel = [p.x + d[0] * sh_ * sc * k, p.z + d[2] * sh_ * sc * k]; }
   else pel = [(an.feet[0].x + an.feet[1].x) / 2 * 0.5 + p.x * 0.5, (an.feet[0].z + an.feet[1].z) / 2 * 0.5 + p.z * 0.5];
   an.pel = pel;
   const legL = 0.9 * sc;
   let target = 0.97 * sc - pose.crouch * sc + p.jumpY;
+  if (p.dive && p.lungeT > 0) target = Math.min(target, lerp(0.97 * sc, 0.36 * sc, clamp(p.lungeT / 0.25, 0, 1)));
   const hy = pose.yaw * 0.45;
   for (let i = 0; i < 2; i++) {
     const side = i === 0 ? -1 : 1;
