@@ -797,7 +797,7 @@ function predictPath() {
       const f = pz / (pz - s.z); const yc = py + (s.y - py) * f;
       if (yc < NET_H) return { pts, land: null, netted: true };
     }
-    if (s.y <= 0) { pts.push({ t, x: s.x, y: 0, z: s.z }); return { pts, land: { x: s.x, z: s.z }, netted: false }; }
+    if (s.y <= 0) { const f = py / ((py - s.y) || 1e-9); const lx = s.x - s.vx * PDT * (1 - f), lz = pz + (s.z - pz) * f; pts.push({ t, x: lx, y: 0, z: lz }); return { pts, land: { x: lx, z: lz }, netted: false }; }
     if (n % 4 === 0) pts.push({ t, x: s.x, y: s.y, z: s.z });
   }
   return { pts, land: null, netted: false };
@@ -1341,7 +1341,7 @@ function updatePlayersMove(dt) {
   }
 }
 function stepShuttle(h) {
-  const pz = sh.z, py = sh.y;
+  const pz = sh.z, py = sh.y, px = sh.x;
   stepS(sh, h);
   // 球网
   if (!sh.netted && pz * sh.z < 0 && Math.abs(sh.x) < HW_D + 0.05) {
@@ -1361,6 +1361,9 @@ function stepShuttle(h) {
     }
   }
   if (sh.y <= 0) {
+    // 精确落点：插值回到 y=0 的瞬间（只以第一落点判界，落地后的滑行不影响判罚）
+    const f = py / ((py - sh.y) || 1e-9);
+    sh.x = px + (sh.x - px) * f; sh.z = pz + (sh.z - pz) * f;
     sh.y = 0; sh.flying = false;
     sfx('land');
     const hs = Math.hypot(sh.vx, sh.vz);
