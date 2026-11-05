@@ -316,21 +316,16 @@ function fitCamera() {
 // ---------- 物理 ----------
 // 高速时球托裙摆收拢，阻力系数下降（杀球保持速度感）
 function dragF(sp) { return sp > 12 ? Math.max(0.3, 1 - (sp - 12) * 0.022) : 1; }
-let SIM_DM = 0;
-// 杀球下坠量 dm（0..1）：前一半只加一点额外重力（最多 +1g，不减速），后一半才恢复部分阻力（兜底）
-function dmG(dm) { return dm ? G * (1 + Math.min(dm, 0.5) * 2) : G; }
-function dfx(sp, dm) { const d = dragF(sp); const k = dm > 0.5 ? (dm - 0.5) * 2 : 0; return k ? d + (1 - d) * k : d; }
 function stepS(s, h) {
-  const dm = s.dm || 0;
-  const sp = Math.sqrt(s.vx * s.vx + s.vy * s.vy + s.vz * s.vz), k = KD * sp * dfx(sp, dm);
-  s.vx -= k * s.vx * h; s.vy -= (dmG(dm) + k * s.vy) * h; s.vz -= k * s.vz * h;
+  const sp = Math.sqrt(s.vx * s.vx + s.vy * s.vy + s.vz * s.vz), k = KD * sp * dragF(sp);
+  s.vx -= k * s.vx * h; s.vy -= (G + k * s.vy) * h; s.vz -= k * s.vz * h;
   s.x += s.vx * h; s.y += s.vy * h; s.z += s.vz * h;
 }
 function sim2(y0, v, ang, dn) {
   let h = 0, y = y0, vh = v * Math.cos(ang), vy = v * Math.sin(ang), yNet = dn <= 0 ? y0 : null, t = 0;
   while (t < 7) {
-    const sp = Math.sqrt(vh * vh + vy * vy), k = KD * sp * dfx(sp, SIM_DM);
-    vh -= k * vh * PDT; vy -= (dmG(SIM_DM) + k * vy) * PDT;
+    const sp = Math.sqrt(vh * vh + vy * vy), k = KD * sp * dragF(sp);
+    vh -= k * vh * PDT; vy -= (G + k * vy) * PDT;
     const ph = h, py = y; h += vh * PDT; y += vy * PDT; t += PDT;
     if (yNet === null && h >= dn) { const f = (dn - ph) / (h - ph || 1e-9); yNet = py + (y - py) * f; }
     if (y <= 0) { const f = py / (py - y || 1e-9); return { land: ph + (h - ph) * f, yNet: yNet === null ? -1 : yNet, t }; }
@@ -505,7 +500,7 @@ function canHit(p) {
   return true;
 }
 function predictStyle(p, t) {
-  const s = { x: sh.x, y: sh.y, z: sh.z, vx: sh.vx, vy: sh.vy, vz: sh.vz, dm: sh.dm || 0 };
+  const s = { x: sh.x, y: sh.y, z: sh.z, vx: sh.vx, vy: sh.vy, vz: sh.vz };
   if (sh.flying) { const n = Math.round(t / PDT); for (let i = 0; i < n; i++) stepS(s, PDT); }
   const l = localOf(p, s.x, s.z);
   const style = s.y > 1.8 * p.sc ? 'over' : s.y > 0.95 * p.sc ? 'side' : 'under';
@@ -513,7 +508,7 @@ function predictStyle(p, t) {
 }
 function predictBest(p, horizon) {
   if (!sh.flying || sh.netted || sh.lastSide === p.side) return null;
-  const s = { x: sh.x, y: sh.y, z: sh.z, vx: sh.vx, vy: sh.vy, vz: sh.vz, dm: sh.dm || 0 };
+  const s = { x: sh.x, y: sh.y, z: sh.z, vx: sh.vx, vy: sh.vy, vz: sh.vz };
   let best = null; const n = Math.round(horizon / PDT);
   for (let i = 1; i <= n; i++) {
     stepS(s, PDT);
@@ -635,41 +630,8 @@ function launch(pos, tx, tz, mode, ang, spd, margin, hiDeg, err, keepSpeed) {
   let ux = dx / D, uz = dz / D;
   let dn = Math.abs(uz) > 0.05 ? Math.max(0, -pos.z / uz) : 0;
   let r = mode === 'speed' ? solveSpeed(pos.y, ang, D, dn, margin) : solveAngle(pos.y, spd, D, dn, margin, hiDeg);
-  let dm = 0;
   if (keepSpeed) {
-    // 杀球：保持全速，取能过网的最低角度；若这条线会出界，则让这一拍「下扎」（末段减速下坠），
-    // 找到刚好能落在界内的最小下扎量；仍不够时再把方向向内收
-    const HWs = hw() - 0.06;
-    const limitOf = () => {
-      // 只看底线：出边线由后面的「方向内收」处理（不需要下坠）
-      return (((uz < 0 ? -1 : 1) * (HL - 0.08)) - pos.z) / uz;
-    };
-    const landAt = (d) => { SIM_DM = d; const rr = solveAngle(pos.y, spd, D, dn, margin, hiDeg); const L = sim2(pos.y, rr.v, rr.ang, dn).land; SIM_DM = 0; return { rr, L }; };
-    // 交替处理：底线超出 → 加一点下坠（最小量）；边线超出 → 方向内收（目标点不超过底线）
-    for (let round = 0; round < 4; round++) {
-      const lim = limitOf();
-      let cur = landAt(dm);
-      if (cur.L > lim && lim > dn + 0.3) {
-        const full = landAt(1);
-        if (full.L <= lim) {
-          let lo = dm, hi = 1, best = full;
-          for (let i = 0; i < 12; i++) { const m = (lo + hi) / 2, t = landAt(m); if (t.L > lim) lo = m; else { hi = m; best = t; } }
-          dm = hi; cur = best;
-        } else { dm = 1; cur = full; }
-      }
-      r = cur.rr;
-      SIM_DM = dm;
-      const L = sim2(pos.y, r.v, r.ang, dn).land;
-      SIM_DM = 0;
-      const lx = pos.x + ux * L;
-      if (Math.abs(lx) <= HWs) break;
-      const nx = Math.sign(lx) * HWs;
-      let nz = pos.z + Math.sign(uz) * Math.sqrt(Math.max(0.01, L * L - (nx - pos.x) ** 2));
-      if (Math.abs(nz) > HL - 0.08) nz = Math.sign(nz) * (HL - 0.08);
-      dx = nx - pos.x; dz = nz - pos.z; D = Math.hypot(dx, dz) || 0.01; ux = dx / D; uz = dz / D;
-      dn = Math.abs(uz) > 0.05 ? Math.max(0, -pos.z / uz) : 0;
-    }
-    SIM_DM = 0;
+    // 杀球：全速，取能过网的最低角度（solveAngle 已处理），落点在哪就是哪，不加任何下坠或修正
   } else if (mode !== 'speed') {
     // 过网所需角度导致落点过远：降低球速，保证打到瞄准点
     const chk = sim2(pos.y, r.v, r.ang, dn);
@@ -677,7 +639,7 @@ function launch(pos, tx, tz, mode, ang, spd, margin, hiDeg, err, keepSpeed) {
   }
   let v = r.v * (1 + gauss() * 0.012 * err);
   const ch = v * Math.cos(r.ang);
-  return { vx: ch * ux, vy: v * Math.sin(r.ang), vz: ch * uz, v, dm };
+  return { vx: ch * ux, vy: v * Math.sin(r.ang), vz: ch * uz, v };
 }
 
 const POWER = { smash: 1, jsmash: 1, kill: 1, halfsmash: 1 };
@@ -707,7 +669,7 @@ function doHit(p, sw) {
   if (window.__log2) window.__log2.push({ px: +p.x.toFixed(2), pz: +p.z.toFixed(2), t: +simT.toFixed(2), ls: sh.lastSide, kind, prev: sh.kind, y: +sh.y.toFixed(2), z: +sh.z.toFixed(2), q: +q.toFixed(2), side: p.side });
   const pos = { x: sh.x, y: sh.y, z: sh.z };
   const vel = computeShot(p, kind, sw.c, sw.aimX, sw.aimY, err, pos);
-  sh.vx = vel.vx; sh.vy = vel.vy; sh.vz = vel.vz; sh.dm = vel.dm || 0;
+  sh.vx = vel.vx; sh.vy = vel.vy; sh.vz = vel.vz;
   sh.lastSide = p.side; sh.lastHitter = p; sh.isServe = false; sh.kind = kind; sh.trail = [];
   match.rally++;
   p.stats.hits++;
@@ -778,7 +740,7 @@ function doServe(p, sw) {
   if (kind === 'sShort') margin = Math.max(0, margin + gauss() * 0.05 * err);
   const pos = { x: sh.x, y: sh.y, z: sh.z };
   const vel = launch(pos, tx, dirS * depth, mode, ang, 0, margin, 30, err);
-  sh.vx = vel.vx; sh.vy = vel.vy; sh.vz = vel.vz; sh.dm = vel.dm || 0;
+  sh.vx = vel.vx; sh.vy = vel.vy; sh.vz = vel.vz;
   sh.flying = true; sh.netted = false; sh.isServe = true; sh.lastSide = p.side; sh.lastHitter = p; sh.kind = kind; sh.trail = [];
   m.rally = 1;
   state = 'rally'; stateT = 0;
@@ -788,7 +750,7 @@ function doServe(p, sw) {
 }
 
 function predictPath() {
-  const s = { x: sh.x, y: sh.y, z: sh.z, vx: sh.vx, vy: sh.vy, vz: sh.vz, dm: sh.dm || 0 };
+  const s = { x: sh.x, y: sh.y, z: sh.z, vx: sh.vx, vy: sh.vy, vz: sh.vz };
   const pts = []; let t = 0, n = 0;
   while (t < 6) {
     const pz = s.z, py = s.y;
