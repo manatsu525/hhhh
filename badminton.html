@@ -223,9 +223,9 @@ const CHARS = [
   { name: '陈思', tag: '网前魔术师', g: 'f', h: 1.65, hd: 1, num: 5, spd: 6, pow: 5, sta: 7, tec: 10, def: 6, net: 10, jump: 4, decept: 9,
     skin: '#f3cdab', hair: '#121212', hs: 'bun', shirt: '#8d4be8', trim: '#f2f2f2', bottom: '#f2f2f2', skirt: 1, shoe: '#f2f2f2', racket: '#8d4be8', desc: '网前搓球贴网，手法细腻' },
   { name: '唐悦', tag: '女子重炮', g: 'f', h: 1.74, hd: 1, num: 8, spd: 6, pow: 9, sta: 6, tec: 6, def: 5, net: 5, jump: 8, decept: 4,
-    skin: '#e3ad84', hair: '#e8c25a', hs: 'long', shirt: '#d62828', trim: '#ffd34d', bottom: '#1d1d1d', skirt: 1, shoe: '#1d1d1d', racket: '#ffd34d', desc: '杀球凶狠，进攻压迫感强' },
+    skin: '#e3ad84', hair: '#e8c25a', hs: 'long', hlen: 0.62, shirt: '#d62828', trim: '#ffd34d', bottom: '#1d1d1d', skirt: 1, shoe: '#1d1d1d', racket: '#ffd34d', desc: '杀球凶狠，进攻压迫感强' },
   { name: '白露', tag: '防守反击', g: 'f', h: 1.70, hd: 1, num: 2, spd: 7, pow: 6, sta: 9, tec: 7, def: 9, net: 7, jump: 5, decept: 5,
-    skin: '#f5d2b3', hair: '#1a1a1a', hs: 'long', shirt: '#f4f6fa', trim: '#1f7ae0', bottom: '#1f7ae0', skirt: 1, shoe: '#1f7ae0', racket: '#1f7ae0', band: '#1f7ae0', desc: '防守韧性强，擅长拉吊消耗' },
+    skin: '#f5d2b3', hair: '#1a1a1a', hs: 'long', hlen: 0.34, shirt: '#f4f6fa', trim: '#1f7ae0', bottom: '#1f7ae0', skirt: 1, shoe: '#1f7ae0', racket: '#1f7ae0', band: '#1f7ae0', desc: '防守韧性强，擅长拉吊消耗' },
   { name: '林小雨', tag: '左手全能', g: 'f', h: 1.67, hd: -1, num: 6, spd: 8, pow: 7, sta: 7, tec: 8, def: 7, net: 8, jump: 6, decept: 7,
     skin: '#eab892', hair: '#4a2c18', hs: 'pony', shirt: '#ffb020', trim: '#1b1b1b', bottom: '#1b1b1b', shoe: '#ffffff', racket: '#1b1b1b', band: '#ffffff', desc: '左手持拍，攻守兼备' },
 ];
@@ -1870,6 +1870,27 @@ function drawPlayer(p) {
     ctx.strokeStyle = ch.racket; ctx.lineWidth = Math.max(1.2, 0.02 * hcS.s); ctx.stroke();
   });
   // 头与发型
+  // 长发：沿背部向下的一串发束，单独按「背后」的深度排序（正面看在身体后面，背面看盖在背上）
+  if (ch.hs === 'long') {
+    const backV = cdir(p, rotY([0, 0, -1], pose.yaw * 0.7));
+    const R3 = 0.108 * sc, L = (ch.hlen || 0.35) * sc;
+    const sway = cdir(p, [p.an.pony * 0.6, 0, 0]);
+    const pts = [add3(add3(head, [0, 1, 0], 0.02 * sc), headFwd, -0.55 * R3), add3(neck, backV, 0.1 * sc)];
+    const n = Math.max(2, Math.round(L / (0.12 * sc)));
+    for (let i = 1; i <= n; i++) {
+      const t = i / n, d = L * t;
+      let q = add3(add3(chest, spine, -d), backV, (0.15 + 0.02 * t) * sc);
+      q = add3(q, sway, t * t);
+      pts.push(q);
+    }
+    const depthPt = add3(add3(chest, spine, -L * 0.4), backV, 0.25 * sc);
+    push(depthPt, () => {
+      for (let i = 0; i < pts.length - 1; i++) {
+        const t0 = i / (pts.length - 1), t1 = (i + 1) / (pts.length - 1);
+        capS(Pv(pts[i]), Pv(pts[i + 1]), (0.105 - 0.03 * t0) * sc, (0.105 - 0.03 * t1) * sc, shade(ch.hair, 0.96 - 0.06 * t1));
+      }
+    });
+  }
   push(head, () => drawHead(p, head, headFwd, neck));
   items.sort((a, b) => b.d - a.d);
   ctx.lineCap = 'round'; ctx.lineJoin = 'round';
@@ -1896,9 +1917,6 @@ function drawHead(p, head, headFwd, neck) {
       const end = add3(add3(add3(base, headFwd, -0.1 * sc), [0, -1, 0], 0.2 * sc), sway, 1);
       const mid = add3(mix3(base, end, 0.5), headFwd, -0.03 * sc);
       capS(Pv(base), Pv(mid), 0.035 * sc, 0.04 * sc, hair); capS(Pv(mid), Pv(end), 0.04 * sc, 0.02 * sc, hair);
-    } else if (ch.hs === 'long') {
-      const b0 = add3(head, headFwd, -0.4 * R3), b1 = add3(add3(b0, [0, -1, 0], 0.3 * sc), headFwd, -0.04 * sc);
-      capS(Pv(b0), Pv(b1), R3 * 0.95, R3 * 0.8, hair);
     } else if (ch.hs === 'bun') {
       const b = add3(add3(backPt, [0, 1, 0], 0.75 * R3), headFwd, 0.1 * R3);
       const q = Pv(b); ctx.fillStyle = hair; ctx.beginPath(); ctx.arc(q.x, q.y, Math.max(1.2, 0.055 * sc * q.s), 0, 7); ctx.fill();
@@ -1942,7 +1960,7 @@ function drawPortrait(cv2, ch) {
   g.fillStyle = bg; g.fillRect(0, 0, w, h);
   const cx = w / 2, R = w * 0.19, cy = h * 0.42;
   const sw = (ch.g === 'f' ? 0.38 : 0.46) * w * (ch.build || 1);
-  if (ch.hs === 'long' || ch.hs === 'bob') { g.fillStyle = ch.hair; g.beginPath(); g.ellipse(cx, cy + R * (ch.hs === 'long' ? 0.7 : 0.25), R * 1.18, R * (ch.hs === 'long' ? 1.7 : 1.2), 0, 0, 7); g.fill(); }
+  if (ch.hs === 'long' || ch.hs === 'bob') { const lg = ch.hs === 'long' ? 1 + (ch.hlen || 0.35) * 1.6 : 1.2; g.fillStyle = ch.hair; g.beginPath(); g.ellipse(cx, cy + R * (ch.hs === 'long' ? lg - 1 : 0.25), R * 1.18, R * lg, 0, 0, 7); g.fill(); }
   if (ch.hs === 'pony') { g.fillStyle = ch.hair; g.beginPath(); g.ellipse(cx + R * 1.05, cy + R * 0.3, R * 0.3, R * 0.75, -0.3, 0, 7); g.fill(); }
   // 身体
   g.fillStyle = ch.shirt; g.beginPath();
