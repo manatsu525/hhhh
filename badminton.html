@@ -1075,7 +1075,12 @@ function updateAI(p, dt) {
     if (sh.flying && !sh.netted && sh.lastSide !== p.side && !(sh.isServe && match.receiver !== p) && swingFree(p) && !p.charge && p.lungeT <= 0) {
       const b = predictBest(p, 0.2);
       if (b && b.d < b.m.reachL && b.t <= SW_HIT + 0.02) {
-        if (p.reflexKey !== pathT0) { p.reflexKey = pathT0; p.reflexOK = Math.random() < p.prof.reflex; }
+        if (p.reflexKey !== pathT0) {
+          // 来球越快越难本能挡：300 km/h 以下不衰减，300→350 线性降到 35%，350 以上指数衰减（几乎碰不到）
+          const k = (sh.v0 || 0) * 3.6;
+          const f = k <= 300 ? 1 : k <= 350 ? 1 - 0.65 * (k - 300) / 50 : 0.35 * Math.exp(-(k - 350) / 12);
+          p.reflexKey = pathT0; p.reflexOK = Math.random() < p.prof.reflex * f;
+        }
         if (p.reflexOK) { const btn = b.y < 1.2 ? (Math.random() < 0.6 ? 'A' : 'B') : (Math.random() < 0.5 ? 'B' : 'D'); startSwing(p, btn, rnd(0.3, 0.7), rnd(-0.6, 0.6), rnd(-0.5, 0.3)); }
       }
     }
