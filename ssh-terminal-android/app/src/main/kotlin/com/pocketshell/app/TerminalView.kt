@@ -239,13 +239,13 @@ class TerminalView(context: Context) : View(context) {
     override fun onCheckIsTextEditor() = true
 
     override fun onCreateInputConnection(outAttrs: EditorInfo): InputConnection {
-        // 默认用"可见密码"类型：输入法不做联想/组词，按一个键就立刻发一个字符，最适合敲命令。
+        // 默认用 TYPE_NULL（和 Termux 默认一致）：输入法不做联想/组词，按一个键就立刻发一个字符。
+        // 不能用"可见密码"类型——小米等系统会因此弹出安全键盘并禁止截图。
         // 中文输入模式下用普通文本类型，这样拼音等输入法可以正常组词。
         outAttrs.inputType = if (Store.cjkInput) {
             InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS
         } else {
-            InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_VISIBLE_PASSWORD or
-                InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS
+            InputType.TYPE_NULL
         }
         outAttrs.imeOptions = EditorInfo.IME_FLAG_NO_FULLSCREEN or EditorInfo.IME_FLAG_NO_EXTRACT_UI or
             EditorInfo.IME_ACTION_NONE
