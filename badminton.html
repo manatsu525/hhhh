@@ -3054,8 +3054,9 @@ function drawPlayerGL(p, J) {
       const deg = Math.abs(a) * 180 / Math.PI;
       const fringe = .315 + .04 * Math.sin((a * 180 / Math.PI + 9) * .065);
       // 脸旁的发束略短（到锁骨），后面的到肩背；发梢只做很轻的参差
-      const full = (EAR + drop * lerp(.42, 1, sm((deg - 62) / 40))) * (1 + .012 * Math.sin(a * 7) + .01 * Math.sin(a * 13 + 1));
-      return lerp(fringe, full, sm((deg - 36) / 14));
+      // 脸旁的发束和后面的头发是同一片：从胸前到后背发梢连成一条平缓的斜线（前面略短）
+      const full = (EAR + drop * lerp(.8, 1, sm((deg - 48) / 75))) * (1 + .012 * Math.sin(a * 7) + .01 * Math.sin(a * 13 + 1));
+      return lerp(fringe, full, sm((deg - 34) / 11));
     };
     const strand = (a, sn, cs, t) => {
       const sg = t * strandLen(a);
@@ -3071,8 +3072,15 @@ function drawPlayerGL(p, J) {
       let P = add3(add3(add3(at(0, e[0] + .004, e[3] - .004), UP, -h), X, w * sn), Fd, d * cs);
       // 贴着肩背/锁骨披下来：落进躯干轮廓里的部分顶到衣服外面
       const rel = sub3(P, chestRef), us = dot3(rel, spine), m = clamp((S(.135) - us) / S(.06), 0, 1);
+      let l = dot3(rel, X0);
+      if (cs >= .2) {
+        // 垂到胸前的发束向两边摊开成一片（从锁骨内侧到肩头），而不是细细一绺
+        const u = clamp((Math.abs(a) * 180 / Math.PI - 34) / 45, 0, 1), k2 = sm((h - S(.06)) / S(.16));
+        const l2 = lerp(l, (l < 0 ? -1 : 1) * S(lerp(.022, .155, u)), k2);
+        P = add3(P, X0, l2 - l); l = l2;
+      }
       if (m > 0) {
-        const l = dot3(rel, X0), fz = dot3(rel, F0), q = 1 - (l / Ae) * (l / Ae);
+        const fz = dot3(rel, F0), q = 1 - (l / Ae) * (l / Ae);
         if (q > 0) {
           const edge = Be * Math.sqrt(q) * (cs < .2 ? -1 : 1);
           if (cs < .2 ? fz > edge : fz < edge) P = add3(P, F0, (edge - fz) * m);
@@ -3081,7 +3089,7 @@ function drawPlayerGL(p, J) {
       return add3(P, sway, t * t * .5);
     };
     const rows = Array.from({ length: NR }, (_, i) => Math.pow(i / (NR - 1), 1.6));
-    G.surface(rows.map(t => [head, Xh, F, 0, 0, t]), hair, MAT.hair, looseHairTex(ch), (i, a, sn, cs) => sub3(strand(a, sn, cs, rows[i]), head));
+    G.surface(rows.map(t => [head, Xh, F, 0, 0, t]), hair, MAT.hair, looseHairTex(ch), (i, a, sn, cs) => sub3(strand(a, sn, cs, rows[i]), head), faceWarp);
   }
   // --- 球拍 ---
   const hand = armR.end, hc = add3(hand, rdW, 0.58);
