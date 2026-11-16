@@ -216,38 +216,38 @@ function saveSettings() { try { localStorage.setItem('yujing_settings', JSON.str
 
 // 球员：g 性别；h 身高；hd 1=右手 -1=左手；hs 发型；属性 1-10：spd 速度 pow 力量 sta 耐力 tec 技术 def 防守 net 网前 jump 弹跳 decept 假动作
 const CHARS = [
-  { name: '林远', en: 'LIN Y.', cele: 'fist', tag: '全面型', g: 'm', h: 1.80, hd: 1, num: 1, spd: 7, pow: 7, sta: 7, tec: 7, def: 7, net: 6, jump: 6, decept: 6,
+  { name: '林远', en: 'LIN Y.', cele: 'fist', tag: '全面型', g: 'm', h: 1.80, hd: 1, spd: 7, pow: 7, sta: 7, tec: 7, def: 7, net: 6, jump: 6, decept: 6,
     skin: '#e8b48a', hair: '#1b1b1b', hs: 'short', shirt: '#2f7cf6', trim: '#ffffff', bottom: '#1b2440', shoe: '#f4f4f4', racket: '#2f7cf6', desc: '攻守均衡，没有短板' },
-  { name: '霍刚', en: 'HUO G.', cele: 'roar', tag: '重炮手', g: 'm', h: 1.88, hd: 1, num: 7, build: 1.1, spd: 5, pow: 10, sta: 6, tec: 6, def: 5, net: 4, jump: 8, decept: 3,
+  { name: '霍刚', en: 'HUO G.', cele: 'roar', tag: '重炮手', g: 'm', h: 1.88, hd: 1, build: 1.1, spd: 5, pow: 10, sta: 6, tec: 6, def: 5, net: 4, jump: 8, decept: 3,
     skin: '#d9a47a', hair: '#2a1a10', hs: 'crew', shirt: '#e2392f', trim: '#151515', bottom: '#151515', shoe: '#e2392f', racket: '#151515', desc: '跳杀球速全场最快，移动偏慢' },
-  { name: '叶锋', en: 'YE F.', cele: 'point', tag: '左手鬼才', g: 'm', h: 1.76, hd: -1, num: 11, spd: 7, pow: 6, sta: 6, tec: 9, def: 6, net: 9, jump: 5, decept: 10,
+  { name: '叶锋', en: 'YE F.', cele: 'point', tag: '左手鬼才', g: 'm', h: 1.76, hd: -1, spd: 7, pow: 6, sta: 6, tec: 9, def: 6, net: 9, jump: 5, decept: 10,
     skin: '#f0c49c', hair: '#3b2a1e', hs: 'spiky', shirt: '#151b2b', trim: '#f5c518', bottom: '#151b2b', shoe: '#f5c518', racket: '#f5c518', band: '#f5c518', desc: '左手持拍，吊球假动作让对手迟疑' },
-  { name: '韩铁', en: 'HAN T.', cele: 'calm', tag: '铁壁防守', g: 'm', h: 1.82, hd: 1, num: 4, spd: 7, pow: 6, sta: 10, tec: 6, def: 10, net: 6, jump: 5, decept: 4,
+  { name: '韩铁', en: 'HAN T.', cele: 'calm', tag: '铁壁防守', g: 'm', h: 1.82, hd: 1, spd: 7, pow: 6, sta: 10, tec: 6, def: 10, net: 6, jump: 5, decept: 4,
     skin: '#c98e64', hair: '#151515', hs: 'buzz', shirt: '#f08a1c', trim: '#202020', bottom: '#202020', shoe: '#ffffff', racket: '#f08a1c', desc: '接杀稳定，体力充沛' },
-  { name: '秦朗', en: 'QIN L.', cele: 'jump', tag: '速度飞人', g: 'm', h: 1.78, hd: 1, num: 9, spd: 10, pow: 7, sta: 7, tec: 6, def: 6, net: 5, jump: 10, decept: 5,
+  { name: '秦朗', en: 'QIN L.', cele: 'jump', tag: '速度飞人', g: 'm', h: 1.78, hd: 1, spd: 10, pow: 7, sta: 7, tec: 6, def: 6, net: 5, jump: 10, decept: 5,
     skin: '#e5ad80', hair: '#5a3a1e', hs: 'swept', shirt: '#13b38a', trim: '#ffffff', bottom: '#0e3b30', shoe: '#13b38a', racket: '#0e3b30', desc: '步伐最快，弹跳惊人' },
-  { name: '苏影', en: 'SU Y.', cele: 'spin', tag: '灵动型', g: 'f', h: 1.68, hd: 1, num: 3, spd: 10, pow: 5, sta: 7, tec: 7, def: 7, net: 7, jump: 6, decept: 6,
+  { name: '苏影', en: 'SU Y.', cele: 'spin', tag: '灵动型', g: 'f', h: 1.68, hd: 1, spd: 10, pow: 5, sta: 7, tec: 7, def: 7, net: 7, jump: 6, decept: 6,
     skin: '#f1c6a0', hair: '#2b1a10', hs: 'pony', shirt: '#ff4f8b', trim: '#ffffff', bottom: '#2b2b3a', skirt: 1, shoe: '#ffffff', racket: '#ff4f8b', desc: '移动迅速，覆盖面大' },
-  { name: '陈思', en: 'CHEN S.', cele: 'racket', tag: '网前魔术师', g: 'f', h: 1.65, hd: 1, num: 5, spd: 6, pow: 5, sta: 7, tec: 10, def: 6, net: 10, jump: 4, decept: 9,
+  { name: '陈思', en: 'CHEN S.', cele: 'racket', tag: '网前魔术师', g: 'f', h: 1.65, hd: 1, spd: 6, pow: 5, sta: 7, tec: 10, def: 6, net: 10, jump: 4, decept: 9,
     skin: '#f3cdab', hair: '#121212', hs: 'bun', shirt: '#8d4be8', trim: '#f2f2f2', bottom: '#f2f2f2', skirt: 1, shoe: '#f2f2f2', racket: '#8d4be8', desc: '网前搓球贴网，手法细腻' },
-  { name: '唐悦', en: 'TANG Y.', cele: 'roar', tag: '女子重炮', g: 'f', h: 1.74, hd: 1, num: 8, spd: 6, pow: 9, sta: 6, tec: 6, def: 5, net: 5, jump: 8, decept: 4,
+  { name: '唐悦', en: 'TANG Y.', cele: 'roar', tag: '女子重炮', g: 'f', h: 1.74, hd: 1, spd: 6, pow: 9, sta: 6, tec: 6, def: 5, net: 5, jump: 8, decept: 4,
     skin: '#e3ad84', hair: '#e8c25a', hs: 'long', hlen: 0.34, shirt: '#d62828', trim: '#ffd34d', bottom: '#1d1d1d', skirt: 1, shoe: '#1d1d1d', racket: '#ffd34d', desc: '杀球凶狠，进攻压迫感强' },
-  { name: '白露', en: 'BAI L.', cele: 'calm', tag: '防守反击', g: 'f', h: 1.70, hd: 1, num: 2, spd: 7, pow: 6, sta: 9, tec: 7, def: 9, net: 7, jump: 5, decept: 5,
+  { name: '白露', en: 'BAI L.', cele: 'calm', tag: '防守反击', g: 'f', h: 1.70, hd: 1, spd: 7, pow: 6, sta: 9, tec: 7, def: 9, net: 7, jump: 5, decept: 5,
     skin: '#f5d2b3', hair: '#1a1a1a', hs: 'long', hlen: 0.34, shirt: '#f4f6fa', trim: '#1f7ae0', bottom: '#1f7ae0', skirt: 1, shoe: '#1f7ae0', racket: '#1f7ae0', band: '#1f7ae0', desc: '防守韧性强，擅长拉吊消耗' },
-  { name: '林小雨', en: 'LIN X.Y.', cele: 'jump', tag: '左手全能', g: 'f', h: 1.67, hd: -1, num: 6, spd: 8, pow: 7, sta: 7, tec: 8, def: 7, net: 8, jump: 6, decept: 7,
+  { name: '林小雨', en: 'LIN X.Y.', cele: 'jump', tag: '左手全能', g: 'f', h: 1.67, hd: -1, spd: 8, pow: 7, sta: 7, tec: 8, def: 7, net: 8, jump: 6, decept: 7,
     skin: '#eab892', hair: '#4a2c18', hs: 'pony', shirt: '#ffb020', trim: '#1b1b1b', bottom: '#1b1b1b', shoe: '#ffffff', racket: '#1b1b1b', band: '#ffffff', desc: '左手持拍，攻守兼备' },
   // 以下为新增球员（男 3 / 女 3），让男双、女双杯赛各凑满 4 对
-  { name: '周锐', en: 'ZHOU R.', cele: 'fist', tag: '网前抢攻', g: 'm', h: 1.79, hd: 1, num: 12, spd: 8, pow: 7, sta: 6, tec: 8, def: 5, net: 9, jump: 6, decept: 7,
+  { name: '周锐', en: 'ZHOU R.', cele: 'fist', tag: '网前抢攻', g: 'm', h: 1.79, hd: 1, spd: 8, pow: 7, sta: 6, tec: 8, def: 5, net: 9, jump: 6, decept: 7,
     skin: '#e6b089', hair: '#202020', hs: 'short', shirt: '#0fa3b1', trim: '#ffffff', bottom: '#0b2f36', shoe: '#ffffff', racket: '#0fa3b1', desc: '封网凶，抢点快' },
-  { name: '赵毅', en: 'ZHAO Y.', cele: 'calm', tag: '稳健控球', g: 'm', h: 1.84, hd: 1, num: 10, spd: 6, pow: 7, sta: 8, tec: 8, def: 8, net: 6, jump: 5, decept: 6,
+  { name: '赵毅', en: 'ZHAO Y.', cele: 'calm', tag: '稳健控球', g: 'm', h: 1.84, hd: 1, spd: 6, pow: 7, sta: 8, tec: 8, def: 8, net: 6, jump: 5, decept: 6,
     skin: '#dca67c', hair: '#1a120c', hs: 'crew', shirt: '#3b3f4a', trim: '#9cff57', bottom: '#1c1e24', shoe: '#9cff57', racket: '#9cff57', desc: '拉吊稳定，失误少' },
-  { name: '许航', en: 'XU H.', cele: 'roar', tag: '后场重杀', g: 'm', h: 1.86, hd: 1, num: 14, build: 1.05, spd: 7, pow: 9, sta: 7, tec: 6, def: 6, net: 5, jump: 8, decept: 4,
+  { name: '许航', en: 'XU H.', cele: 'roar', tag: '后场重杀', g: 'm', h: 1.86, hd: 1, build: 1.05, spd: 7, pow: 9, sta: 7, tec: 6, def: 6, net: 5, jump: 8, decept: 4,
     skin: '#cf9a70', hair: '#2e1d12', hs: 'swept', shirt: '#1e3a8a', trim: '#ff7a1a', bottom: '#ffffff', shoe: '#1e3a8a', racket: '#ff7a1a', desc: '后场连续重杀，压制力强' },
-  { name: '何晴', en: 'HE Q.', cele: 'spin', tag: '平抽快攻', g: 'f', h: 1.69, hd: 1, num: 12, spd: 8, pow: 7, sta: 7, tec: 7, def: 6, net: 7, jump: 6, decept: 6,
+  { name: '何晴', en: 'HE Q.', cele: 'spin', tag: '平抽快攻', g: 'f', h: 1.69, hd: 1, spd: 8, pow: 7, sta: 7, tec: 7, def: 6, net: 7, jump: 6, decept: 6,
     skin: '#f0c39c', hair: '#1c1410', hs: 'bob', shirt: '#00a676', trim: '#ffffff', bottom: '#0b3a2c', skirt: 1, shoe: '#ffffff', racket: '#00a676', desc: '平抽挡速度快，擅长前三拍' },
-  { name: '程曦', en: 'CHENG X.', cele: 'point', tag: '全能控网', g: 'f', h: 1.66, hd: 1, num: 9, spd: 7, pow: 6, sta: 8, tec: 9, def: 7, net: 9, jump: 5, decept: 8,
+  { name: '程曦', en: 'CHENG X.', cele: 'point', tag: '全能控网', g: 'f', h: 1.66, hd: 1, spd: 7, pow: 6, sta: 8, tec: 9, def: 7, net: 9, jump: 5, decept: 8,
     skin: '#f4d0ae', hair: '#2a1a12', hs: 'bun', shirt: '#ffd60a', trim: '#1b1b1b', bottom: '#1b1b1b', skirt: 1, shoe: '#1b1b1b', racket: '#1b1b1b', desc: '网前控制细腻，节奏多变' },
-  { name: '宋雪', en: 'SONG X.', cele: 'racket', tag: '高点进攻', g: 'f', h: 1.76, hd: 1, num: 15, spd: 6, pow: 9, sta: 7, tec: 6, def: 6, net: 5, jump: 9, decept: 5,
+  { name: '宋雪', en: 'SONG X.', cele: 'racket', tag: '高点进攻', g: 'f', h: 1.76, hd: 1, spd: 6, pow: 9, sta: 7, tec: 6, def: 6, net: 5, jump: 9, decept: 5,
     skin: '#e9b994', hair: '#3a2416', hs: 'pony', shirt: '#5e2ca5', trim: '#ff9ff3', bottom: '#2a1450', skirt: 1, shoe: '#ffffff', racket: '#ff9ff3', band: '#ff9ff3', desc: '身高优势，后场下压凶' },
 ];
 const DIFF = {
@@ -2341,7 +2341,7 @@ const LIGHT = norm([-0.45, 0.8, 0.6]);
 function litF(n) { return 0.78 + 0.32 * Math.max(0, dot3(n, LIGHT)); }
 
 // ---------- WebGL 立体球员渲染 ----------
-// 球员由骨骼驱动的立体部件（椭圆截面的变径管 / 椭球）组成，逐像素光照；脸部用程序绘制的贴图。
+// 球员网格沿原有骨骼变形，头部、球衣和球鞋使用内嵌的程序化贴图。
 // 画面分三层画布叠放：底层 2D（场地、阴影、落点圈）→ WebGL（球员、球网）→ 顶层 2D（球、文字、HUD）。
 // 不支持 WebGL 时退回单画布的 2D 球员画法。
 function makeGL(c) {
@@ -2354,25 +2354,41 @@ vec4 proj(vec3 p){ vec3 d = p-uCam; float xc = dot(d,uR), yc = dot(d,uU), zc = d
   const VS = `attribute vec4 a;
 uniform vec3 uA,uB,uX,uY,uZ,uSa,uSb;
 ` + HEAD + `
-varying vec3 vN; varying vec3 vV; varying vec3 vL;
+varying vec3 vN; varying vec3 vV; varying vec3 vL; varying vec2 vUV;
 void main(){
+  vUV = vec2(0.0);
   vec3 s = mix(uSa,uSb,a.w); vec3 l = a.xyz*s;
   vec3 p = mix(uA,uB,a.w) + uX*l.x + uY*l.y + uZ*l.z;
   vec3 nl = a.xyz/s; vN = uX*nl.x + uY*nl.y + uZ*nl.z; vV = uCam-p; vL = a.xyz;
   gl_Position = proj(p);
 }`;
+  const SVS = `attribute vec3 aPos,aNormal; attribute vec2 aUV;
+` + HEAD + `
+varying vec3 vN; varying vec3 vV; varying vec3 vL; varying vec2 vUV;
+void main(){
+  vN = aNormal; vV = uCam-aPos; vL = vec3(0.0,1.0,0.0); vUV = aUV;
+  gl_Position = proj(aPos);
+}`;
   const FS = `precision mediump float;
-varying vec3 vN; varying vec3 vV; varying vec3 vL;
+varying vec3 vN; varying vec3 vV; varying vec3 vL; varying vec2 vUV;
 uniform vec3 uCol,uL; uniform vec4 uMat; uniform sampler2D uTex;
 void main(){
   vec3 n = normalize(vN); vec3 v = normalize(vV);
   vec3 base = uCol;
-  if (uMat.w > 0.5) { vec3 l = normalize(vL); base = texture2D(uTex, vec2(atan(l.x, l.y)/6.2831853 + 0.5, 0.5 - l.z*0.5)).rgb; }
+  if (uMat.w > 2.5) {
+    vec2 lines = abs(fract(vL.xz*4.8+0.5)-0.5);
+    float edge = smoothstep(0.15,0.52,abs(dot(n,v)));
+    float stringLine = 1.0-smoothstep(0.045,0.15,min(lines.x,lines.y));
+    float alpha = mix(0.09,0.74,stringLine*edge);
+    gl_FragColor = vec4(base*alpha,alpha);
+    return;
+  }
+  if (uMat.w > 1.5) base = texture2D(uTex,vUV).rgb;
   float hemi = n.y*0.5+0.5;
   vec3 amb = mix(vec3(0.30,0.32,0.31), vec3(0.60,0.61,0.64), hemi);
   float ndl = dot(n,uL);
-  float wrap = max((ndl+0.25)/1.25, 0.0);
-  vec3 col = base*(amb + vec3(1.0,0.96,0.9)*wrap*0.72);
+  float wrap = max((ndl+0.35)/1.35, 0.0);
+  vec3 col = base*(amb + vec3(1.0,0.96,0.92)*wrap*0.63);
   vec3 h = normalize(uL+v);
   col += vec3(1.0,0.98,0.94)*pow(max(dot(n,h),0.0),32.0)*uMat.x;
   float rim = pow(1.0-max(dot(n,v),0.0),3.5);
@@ -2398,9 +2414,10 @@ void main(){
     if (!gl.getProgramParameter(pr, gl.LINK_STATUS)) throw new Error('link: ' + gl.getProgramInfoLog(pr));
     return pr;
   };
-  let prog, nprog; const U = {}, NU = {};
-  try { prog = mk(VS, FS); nprog = mk(NVS, NFS); } catch (e) { console.warn('WebGL 初始化失败，使用 2D 球员', e); return { ok: false }; }
+  let prog, sprog, nprog; const U = {}, SU = {}, NU = {};
+  try { prog = mk(VS, FS); sprog = mk(SVS, FS); nprog = mk(NVS, NFS); } catch (e) { console.warn('WebGL 初始化失败，使用 2D 球员', e); return { ok: false }; }
   for (const k of ['uA', 'uB', 'uX', 'uY', 'uZ', 'uSa', 'uSb', 'uCam', 'uR', 'uU', 'uF', 'uProj', 'uCol', 'uL', 'uMat', 'uTex']) U[k] = gl.getUniformLocation(prog, k);
+  for (const k of ['uCam', 'uR', 'uU', 'uF', 'uProj', 'uCol', 'uL', 'uMat', 'uTex']) SU[k] = gl.getUniformLocation(sprog, k);
   for (const k of ['uCam', 'uR', 'uU', 'uF', 'uProj', 'uK']) NU[k] = gl.getUniformLocation(nprog, k);
   // 模板网格：单位球按赤道切成两半，下半球跟随 A 端、上半球跟随 B 端，中间一圈拉成侧面
   const M = 20, N = 7, verts = [], idx = [];
@@ -2415,6 +2432,20 @@ void main(){
   const nb = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, nb);
   gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-HW_D, NET_H - 0.76, 0, HW_D, NET_H - 0.76, 0, -HW_D, NET_H, 0, HW_D, NET_H, 0]), gl.STATIC_DRAW);
   const loc = gl.getAttribLocation(prog, 'a'), nloc = gl.getAttribLocation(nprog, 'a');
+  const surfLoc = ['aPos', 'aNormal', 'aUV'].map(k => gl.getAttribLocation(sprog, k));
+  const surfaceVB = gl.createBuffer(), surfaceIB = gl.createBuffer();
+  const columns = 32, maxRows = 25, pitch = columns + 1;
+  const coords = new Float32Array(maxRows * pitch * 8), faces = [];
+  for (let row = 0; row < maxRows - 1; row++) for (let j = 0; j < columns; j++) {
+    const a = row * pitch + j, b = a + pitch;
+    faces.push(a, b, a + 1, a + 1, b, b + 1);
+  }
+  gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, surfaceIB);
+  gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(faces), gl.STATIC_DRAW);
+  const angles = Array.from({length: pitch}, (_, i) => {
+    const a = (i / columns - 0.5) * Math.PI * 2;
+    return [a, Math.sin(a), Math.cos(a)];
+  });
   const cc = {};
   const rgb = (col) => {
     let v = cc[col]; if (v) return v;
@@ -2424,12 +2455,32 @@ void main(){
   };
   const late = [], texs = {};
   const L3 = norm([-0.4, 0.85, 0.6]);
-  let vw = 1, vh = 1;
+  let vw = 1, vh = 1, drawingSurface = false;
   const camU = (u) => {
     gl.uniform3fv(u.uCam, CAM.pos); gl.uniform3fv(u.uR, cR); gl.uniform3fv(u.uU, cU); gl.uniform3fv(u.uF, cF);
     gl.uniform4f(u.uProj, 2 * FOC / vw, 2 * FOC / vh, 2 * OX / vw - 1, 1 - 2 * OY / vh);
   };
+  const texture = (tex) => {
+    let t = texs[tex.id];
+    if (!t) {
+      t = texs[tex.id] = gl.createTexture();
+      gl.bindTexture(gl.TEXTURE_2D, t);
+      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, tex.cv);
+      gl.generateMipmap(gl.TEXTURE_2D);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+    } else gl.bindTexture(gl.TEXTURE_2D, t);
+  };
+  const primitives = () => {
+    if (drawingSurface) surfLoc.forEach(a => gl.disableVertexAttribArray(a));
+    drawingSurface = false;
+    gl.useProgram(prog);
+    gl.bindBuffer(gl.ARRAY_BUFFER, vb); gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, ib);
+    gl.enableVertexAttribArray(loc); gl.vertexAttribPointer(loc, 4, gl.FLOAT, false, 0, 0);
+  };
   const put = (A, B, X, Y, Z, sa, sb, col, mat) => {
+    if (drawingSurface) primitives();
     gl.uniform3fv(U.uA, A); gl.uniform3fv(U.uB, B); gl.uniform3fv(U.uX, X); gl.uniform3fv(U.uY, Y); gl.uniform3fv(U.uZ, Z);
     gl.uniform3fv(U.uSa, sa); gl.uniform3fv(U.uSb, sb); gl.uniform3fv(U.uCol, rgb(col)); gl.uniform4fv(U.uMat, mat);
     gl.drawElements(gl.TRIANGLES, idx.length, gl.UNSIGNED_SHORT, 0);
@@ -2450,33 +2501,65 @@ void main(){
       gl.viewport(0, 0, pw, ph);
       gl.clearColor(0, 0, 0, 0); gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
       gl.enable(gl.DEPTH_TEST); gl.depthMask(true); gl.disable(gl.BLEND); gl.disable(gl.CULL_FACE);
-      gl.useProgram(prog);
-      gl.bindBuffer(gl.ARRAY_BUFFER, vb); gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, ib);
-      gl.enableVertexAttribArray(loc); gl.vertexAttribPointer(loc, 4, gl.FLOAT, false, 0, 0);
+      primitives();
       camU(U); gl.uniform3fv(U.uL, L3); gl.uniform1i(U.uTex, 0);
+      gl.useProgram(sprog);
+      camU(SU); gl.uniform3fv(SU.uL, L3); gl.uniform1i(SU.uTex, 0);
+      gl.useProgram(prog);
       late.length = 0;
     },
     // 圆截面变径胶囊 A→B
     cap(A, B, ra, rb, col, mat) { const F = frame(A, B); put(A, B, F[0], F[1], F[2], [ra, ra, ra], [rb, rb, rb], col, mat || MAT.cloth); },
     // 椭圆截面变径管：Xh 指定截面"宽"的朝向；sa/sb = [半宽, 半厚, 端帽高度]
     tube(A, B, Xh, sa, sb, col, mat) { const F = frame(A, B, Xh); put(A, B, F[0], F[1], F[2], sa, sb, col, mat || MAT.cloth); },
-    // 椭球：中心 C，三个正交轴及半径；tex 传入贴图画布时按经纬度贴图
-    ell(C, X, Y, Z, rx, ry, rz, col, mat, tex) {
+    // 椭球：中心 C、三个正交轴及半径。半透明部件在不透明几何体之后绘制。
+    ell(C, X, Y, Z, rx, ry, rz, col, mat) {
       const s = [rx, ry, rz];
       if (mat && mat[2] < 1) { late.push([C, X, Y, Z, s, col, mat]); return; }
-      if (tex) {
-        let t = texs[tex.id];
-        if (!t) {
-          t = texs[tex.id] = gl.createTexture(); gl.bindTexture(gl.TEXTURE_2D, t);
-          gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, tex.cv);
-          gl.generateMipmap(gl.TEXTURE_2D);
-          gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
-          gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-        } else gl.bindTexture(gl.TEXTURE_2D, t);
-        put(C, C, X, Y, Z, s, s, col, [mat[0], mat[1], 1, 1]);
-        return;
-      }
       put(C, C, X, Y, Z, s, s, col, mat || MAT.cloth);
+    },
+    // 截面沿骨骼排布，共用顶点和法线。角度从背部接缝开始，正面位于 u=0.5。
+    surface(rings, col, mat, tex, deform) {
+      const count = rings.length * pitch * 8;
+      const last = rings.length - 1;
+      for (let i = 0; i <= last; i++) {
+        const [C, X, F, width, depth, v = i / last] = rings[i];
+        for (let j = 0; j <= columns; j++) {
+          const [ang, sn, cs] = angles[j];
+          const q = (i * pitch + j) * 8;
+          const D = deform ? deform(i, ang, sn, cs) : null;
+          for (let k = 0; k < 3; k++) coords[q + k] = C[k] + X[k] * width * sn + F[k] * depth * cs + (D ? D[k] : 0);
+          coords[q + 6] = j / columns; coords[q + 7] = v;
+        }
+      }
+      for (let i = 0; i <= last; i++) for (let j = 0; j <= columns; j++) {
+        const q = (i * pitch + j) * 8;
+        const a = (i * pitch + (j + columns - 1) % columns) * 8;
+        const b = (i * pitch + (j + 1) % columns) * 8;
+        const c = (Math.max(0, i - 1) * pitch + j) * 8;
+        const d = (Math.min(last, i + 1) * pitch + j) * 8;
+        const tx = coords[b] - coords[a], ty = coords[b+1] - coords[a+1], tz = coords[b+2] - coords[a+2];
+        const sx = coords[d] - coords[c], sy = coords[d+1] - coords[c+1], sz = coords[d+2] - coords[c+2];
+        const nx = ty * sz - tz * sy, ny = tz * sx - tx * sz, nz = tx * sy - ty * sx;
+        const [, X, F] = rings[i], [, sn, cs] = angles[j];
+        const direction = nx * (X[0] * sn + F[0] * cs) + ny * (X[1] * sn + F[1] * cs) + nz * (X[2] * sn + F[2] * cs);
+        const length = Math.hypot(nx, ny, nz) || 1;
+        const sign = (direction < 0 ? -1 : 1) / length;
+        coords[q+3] = nx * sign; coords[q+4] = ny * sign; coords[q+5] = nz * sign;
+      }
+      if (!drawingSurface) {
+        drawingSurface = true;
+        gl.disableVertexAttribArray(loc);
+        gl.useProgram(sprog);
+        gl.bindBuffer(gl.ARRAY_BUFFER, surfaceVB); gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, surfaceIB);
+        for (let k = 0; k < surfLoc.length; k++) {
+          gl.enableVertexAttribArray(surfLoc[k]); gl.vertexAttribPointer(surfLoc[k], k === 2 ? 2 : 3, gl.FLOAT, false, 32, [0, 12, 24][k]);
+        }
+      }
+      gl.bufferData(gl.ARRAY_BUFFER, coords.subarray(0, count), gl.STREAM_DRAW);
+      if (tex) texture(tex);
+      gl.uniform3fv(SU.uCol, rgb(col)); gl.uniform4f(SU.uMat, mat[0], mat[1], mat[2], tex ? 2 : 0);
+      gl.drawElements(gl.TRIANGLES, last * columns * 6, gl.UNSIGNED_SHORT, 0);
     },
     // 球网（半透明网面 + 白色网带）与网柱
     net() {
@@ -2485,14 +2568,14 @@ void main(){
         this.cap([x, 0.03, 0], [x, POST_H, 0], 0.022, 0.02, '#cfd3da', MAT.gloss);
         this.ell([x, 0.012, 0], [1, 0, 0], [0, 0, 1], [0, 1, 0], 0.2, 0.2, 0.02, '#c23232', MAT.cloth);
       }
-      gl.useProgram(nprog); camU(NU);
+      gl.disableVertexAttribArray(loc); gl.useProgram(nprog); camU(NU);
       const d = Math.hypot(CAM.pos[0], CAM.pos[1] - 1.2, CAM.pos[2]);
       gl.uniform1f(NU.uK, clamp((FOC / d * 0.06 - 2.2) / 5, 0, 1));
       gl.bindBuffer(gl.ARRAY_BUFFER, nb); gl.enableVertexAttribArray(nloc); gl.vertexAttribPointer(nloc, 3, gl.FLOAT, false, 0, 0);
       gl.enable(gl.BLEND); gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA); gl.depthMask(false);
       gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
       gl.depthMask(true); gl.disable(gl.BLEND);
-      gl.useProgram(prog); gl.bindBuffer(gl.ARRAY_BUFFER, vb); gl.vertexAttribPointer(loc, 4, gl.FLOAT, false, 0, 0);
+      gl.disableVertexAttribArray(nloc); primitives();
     },
     end() {
       if (late.length) {
@@ -2508,167 +2591,414 @@ const glCv = document.getElementById('gl3d');
 const GLR = makeGL(glCv);
 if (!GLR.ok) { glCv.style.display = 'none'; topCv.style.display = 'none'; }
 let GLP = null, curG = GLR; // GLP：菜单头像用的离屏 WebGL
-const MAT = { cloth: [0.03, 0.16, 1, 0], skin: [0.09, 0.14, 1, 0], hair: [0.16, 0.2, 1, 0], shoe: [0.25, 0.2, 1, 0], gloss: [0.55, 0.2, 1, 0], string: [0.0, 0.1, 0.2, 0] };
+const MAT = { cloth: [0.018, 0.12, 1, 0], skin: [0.045, 0.08, 1, 0], hair: [0.07, 0.12, 1, 0], shoe: [0.10, 0.12, 1, 0], gloss: [0.55, 0.2, 1, 0], string: [0, 0, 0.2, 3] };
 const glPost = [];
 
-// 脸部贴图（经纬度展开，正脸在中间）：眼窝阴影、眼白/虹膜/眼睑、眉、鼻翼阴影与鼻梁高光、上下唇
-const _faceTex = {};
+// 贴图随网格变形。正面位于中心，背面的姓名和国家缩写跨过纹理接缝。
+const modelTextures = new Map();
+function modelTexture(id, w, h, paint) {
+  if (!modelTextures.has(id)) {
+    const cv = document.createElement('canvas'); cv.width = w; cv.height = h;
+    paint(cv.getContext('2d'), w, h);
+    modelTextures.set(id, {id, cv});
+  }
+  return modelTextures.get(id);
+}
 function faceTex(ch) {
-  if (_faceTex[ch.name]) return _faceTex[ch.name];
-  const TW = 1024, TH = 512, cvs = document.createElement('canvas'); cvs.width = TW; cvs.height = TH;
-  const g = cvs.getContext('2d'), fem = ch.g === 'f';
-  const X = (deg) => TW / 2 + deg / 360 * TW, Y = (z) => (0.5 - z * 0.5) * TH, dx = TW / 360, dz = TH / 2;
-  g.fillStyle = ch.skin; g.fillRect(0, 0, TW, TH);
-  // 肤色层次：额头略亮、下颌略暗、两颊略红润
-  let gr = g.createLinearGradient(0, Y(0.9), 0, Y(-0.9));
-  gr.addColorStop(0, 'rgba(255,240,225,0.10)'); gr.addColorStop(0.45, 'rgba(255,255,255,0)'); gr.addColorStop(1, 'rgba(90,40,20,0.20)');
-  g.fillStyle = gr; g.fillRect(0, 0, TW, TH);
-  const blob = (deg, z, rx, rz, col) => { const x = X(deg), y = Y(z), r = Math.max(rx * dx, rz * dz); const q = g.createRadialGradient(x, y, 0, x, y, r); q.addColorStop(0, col); q.addColorStop(1, col.replace(/[\d.]+\)$/, '0)')); g.save(); g.translate(x, y); g.scale(rx * dx / r, rz * dz / r); g.translate(-x, -y); g.fillStyle = q; g.fillRect(x - r, y - r, 2 * r, 2 * r); g.restore(); };
-  for (const sd of [-1, 1]) {
-    blob(sd * 42, -0.22, 20, 0.2, `rgba(${fem ? '225,110,110,0.20' : '190,95,75,0.13'})`); // 面颊
-    blob(sd * 23, 0.13, 15, 0.16, 'rgba(70,35,20,0.34)');                                   // 眼窝
-    blob(sd * 62, -0.1, 12, 0.5, 'rgba(60,30,18,0.18)');                                    // 脸侧收暗
-  }
-  blob(0, -0.68, 22, 0.1, 'rgba(60,30,18,0.2)');
-  blob(0, -1.0, 70, 0.3, 'rgba(50,25,15,0.35)');                                           // 下颌底                                          // 下唇下方/下巴阴影
-  const brow = mulC(ch.hair[0] === '#' ? ch.hair : '#2a2a2a', 0.75);
-  for (const sd of [-1, 1]) {
-    const ex = X(sd * 23), ey = Y(0.1), ew = 9.5 * dx, eh = (fem ? 0.062 : 0.05) * dz;
-    // 眼白（杏仁形）
-    g.fillStyle = '#efe9e2'; g.beginPath(); g.moveTo(ex - ew, ey + eh * 0.15); g.quadraticCurveTo(ex, ey - eh * 1.5, ex + ew, ey + eh * 0.1); g.quadraticCurveTo(ex, ey + eh * 1.25, ex - ew, ey + eh * 0.15); g.fill();
-    g.save(); g.clip();
-    g.fillStyle = '#4a2c18'; g.beginPath(); g.arc(ex, ey - eh * 0.1, eh * 1.02, 0, 7); g.fill();       // 虹膜
-    g.fillStyle = '#120a06'; g.beginPath(); g.arc(ex, ey - eh * 0.1, eh * 0.5, 0, 7); g.fill();        // 瞳孔
-    g.fillStyle = 'rgba(255,255,255,0.85)'; g.beginPath(); g.arc(ex - eh * 0.35, ey - eh * 0.45, eh * 0.22, 0, 7); g.fill();
-    g.fillStyle = 'rgba(40,20,10,0.25)'; g.fillRect(ex - ew, ey - eh * 1.6, ew * 2, eh * 0.9);        // 上睑投影
-    g.restore();
-    // 上眼睑线 / 睫毛、双眼皮褶、下睑
-    g.strokeStyle = '#1c110b'; g.lineWidth = fem ? 3.2 : 2.4; g.lineCap = 'round';
-    g.beginPath(); g.moveTo(ex - ew * 1.05, ey + eh * 0.2); g.quadraticCurveTo(ex, ey - eh * 1.6, ex + ew * 1.08, ey + eh * 0.05); g.stroke();
-    if (fem) { g.lineWidth = 2; g.beginPath(); g.moveTo(ex + sd * ew * 1.02, ey); g.lineTo(ex + sd * ew * 1.35, ey - eh * 0.6); g.stroke(); }
-    g.strokeStyle = 'rgba(90,50,30,0.5)'; g.lineWidth = 1.5;
-    g.beginPath(); g.moveTo(ex - ew * 0.9, ey - eh * 0.75); g.quadraticCurveTo(ex, ey - eh * 2.3, ex + ew * 0.95, ey - eh * 0.8); g.stroke();
-    g.strokeStyle = 'rgba(110,60,40,0.35)'; g.beginPath(); g.moveTo(ex - ew * 0.8, ey + eh * 0.75); g.quadraticCurveTo(ex, ey + eh * 1.5, ex + ew * 0.85, ey + eh * 0.6); g.stroke();
-    // 眉：眉头粗、眉尾细并略下垂
-    g.fillStyle = brow; g.beginPath();
-    const b0 = X(sd * 10), b1 = X(sd * 24), b2 = X(sd * 37), by = Y(0.3), bt = (fem ? 0.022 : 0.034) * dz;
-    g.moveTo(b0, by + bt * 0.6); g.quadraticCurveTo(b1, by - bt * 2.4, b2, by + bt * 0.2); g.quadraticCurveTo(b1, by - bt * 0.6, b0, by + bt * 2.2); g.fill();
-    // 鼻翼阴影、鼻孔
-    g.strokeStyle = 'rgba(90,45,25,0.26)'; g.lineWidth = 5; g.beginPath(); g.moveTo(X(sd * 6), Y(0.2)); g.quadraticCurveTo(X(sd * 5), Y(-0.05), X(sd * 10), Y(-0.24)); g.stroke();
-    g.fillStyle = 'rgba(50,22,12,0.55)'; g.beginPath(); g.ellipse(X(sd * 5.5), Y(-0.285), 2.6 * dx, 0.018 * dz, 0, 0, 7); g.fill();
-    // 法令纹（很淡）
-    g.strokeStyle = 'rgba(90,45,25,0.12)'; g.lineWidth = 3; g.beginPath(); g.moveTo(X(sd * 12), Y(-0.27)); g.quadraticCurveTo(X(sd * 19), Y(-0.42), X(sd * 18), Y(-0.55)); g.stroke();
-  }
-  g.strokeStyle = 'rgba(255,245,235,0.22)'; g.lineWidth = 6; g.lineCap = 'round'; g.beginPath(); g.moveTo(X(0), Y(0.22)); g.lineTo(X(0), Y(-0.16)); g.stroke(); // 鼻梁高光
-  // 嘴唇
-  const lipC = fem ? '#bf4f5c' : '#a8665a', my = Y(-0.5), mw = 13 * dx, lh = 0.05 * dz;
-  g.fillStyle = mulC(lipC, 0.82); g.beginPath(); g.moveTo(X(0) - mw, my); g.quadraticCurveTo(X(0) - mw * 0.4, my - lh * 1.3, X(0), my - lh * 0.7); g.quadraticCurveTo(X(0) + mw * 0.4, my - lh * 1.3, X(0) + mw, my); g.quadraticCurveTo(X(0), my + lh * 0.3, X(0) - mw, my); g.fill();
-  g.fillStyle = lipC; g.beginPath(); g.moveTo(X(0) - mw * 0.92, my); g.quadraticCurveTo(X(0), my + lh * 2.3, X(0) + mw * 0.92, my); g.quadraticCurveTo(X(0), my + lh * 0.35, X(0) - mw * 0.92, my); g.fill();
-  g.strokeStyle = 'rgba(70,20,20,0.7)'; g.lineWidth = 1.6; g.beginPath(); g.moveTo(X(0) - mw, my); g.quadraticCurveTo(X(0), my + lh * 0.35, X(0) + mw, my); g.stroke();
-  g.fillStyle = 'rgba(255,255,255,0.16)'; g.beginPath(); g.ellipse(X(0), my + lh * 1.0, mw * 0.4, lh * 0.35, 0, 0, 7); g.fill();
-  // 发际线：额头上缘和两鬓过渡到发色，避免头发与皮肤硬切
-  const hc = ch.hs === 'buzz' ? mulC(ch.hair, 1.5) : ch.hair;
-  gr = g.createLinearGradient(0, Y(0.92), 0, Y(0.62)); gr.addColorStop(0, hc); gr.addColorStop(0.6, hc); gr.addColorStop(1, hc.length === 7 ? hc + '00' : 'rgba(0,0,0,0)');
-  if (hc.length === 7) { g.fillStyle = gr; g.fillRect(0, 0, TW, Y(0.6)); }
-  return (_faceTex[ch.name] = { id: ch.name, cv: cvs });
+  return modelTexture('face:' + ch.name, 512, 256, (g, w, h) => {
+    const fem = ch.g === 'f', kind = ch.hs;
+    const X = deg => w * (0.5 + deg / 360), Y = v => h * v;
+    const box = (x, y, rx, ry, color) => {
+      g.fillStyle = color; g.beginPath(); g.ellipse(X(x), Y(y), rx * w / 360, ry * h, 0, 0, 7); g.fill();
+    };
+    const wash = (x,y,rx,ry,color) => {
+      g.save(); g.translate(X(x), Y(y)); g.scale(rx * w / 360, ry * h);
+      const grad = g.createRadialGradient(0, 0, 0, 0, 0, 1);
+      grad.addColorStop(0, color); grad.addColorStop(1, 'transparent');
+      g.fillStyle = grad; g.fillRect(-1,-1,2,2); g.restore();
+    };
+    const curve = (points, color, width) => {
+      g.beginPath(); g.moveTo(X(points[0]), Y(points[1]));
+      g.quadraticCurveTo(X(points[2]), Y(points[3]), X(points[4]), Y(points[5]));
+      g.strokeStyle = color; g.lineWidth = width; g.lineCap = 'round'; g.stroke();
+    };
+    const tone = g.createLinearGradient(0, 0, 0, h);
+    tone.addColorStop(0, mulC(ch.skin, 1.09)); tone.addColorStop(0.55, ch.skin); tone.addColorStop(1, mulC(ch.skin, 0.82));
+    g.fillStyle = tone; g.fillRect(0,0,w,h);
+    const spread = ({crew: 25, buzz: 24, spiky: 23, swept: 24, pony: 23, bun: 23, bob: 24})[kind] || 23;
+    const eye = fem ? 0.465 : 0.47;
+    const eyeHalf = fem ? 10.5 : 9.5, lid = fem ? 0.026 : 0.022;
+    for (const side of [-1, 1]) {
+      const x = side * spread;
+      wash(side * 36, 0.60, 23, 0.12, fem ? 'rgba(196,75,59,.23)' : 'rgba(172,81,48,.19)');
+      wash(x, eye - 0.026, 14, .055, 'rgba(96,44,28,.23)');
+      g.beginPath(); g.moveTo(X(x-eyeHalf), Y(eye + .003));
+      g.quadraticCurveTo(X(x), Y(eye - lid * 1.6), X(x+eyeHalf), Y(eye));
+      g.quadraticCurveTo(X(x), Y(eye + lid * 1.2), X(x-eyeHalf), Y(eye + .003));
+      g.fillStyle = '#fff1de'; g.fill();
+      g.save(); g.clip();
+      box(x, eye - .003, 5.5, lid * .76, '#573a2c');
+      box(x, eye - .004, 3.5, lid * .57, '#241b19');
+      box(x - 1.6, eye - lid * .27, 1.15, .006, '#ffeacf');
+      g.restore();
+      curve([x-eyeHalf,eye+.003,x,eye-lid*1.66,x+eyeHalf,eye], '#32211d', fem ? 2.4 : 2);
+      const browY = eye - (kind === 'crew' || kind === 'spiky' ? .064 : .075);
+      curve([x-side*10,browY+.013,x+side*1,browY-.018,x+side*12,browY+.007],mulC(ch.hair, .76),fem ? 2.9 : 3.7);
+      box(side*6, .616, 3, .009, 'rgba(105,52,37,.51)');
+    }
+    wash(0,.578,10,.063,'rgba(255,232,195,.39)');
+    wash(0,.654,13,.031,'rgba(113,56,38,.18)');
+    wash(0,.738,17,.058, fem ? 'rgba(169,55,57,.24)' : 'rgba(157,73,58,.20)');
+    const mouth = fem ? 13.6 : 15;
+    curve([-mouth,.73,0,.756,mouth,.729], 'rgba(103,46,39,.77)', 2.2);
+    curve([-8,.754,0,.765,8,.754], 'rgba(255,200,171,.48)', 1.8);
+
+    // 发际线按头部周向绘制，眼睛所在的正面保持露出。
+    const fringe = ({buzz:.265, crew:.272, short:.293, spiky:.295, swept:.33, pony:.287, bun:.271, bob:.35, long:.329})[kind];
+    const loose = kind === 'long' || kind === 'bob';
+    const hairEdge = deg => {
+      const a = Math.abs(deg), temples = Math.min(1, Math.max(0, (a - 38) / 48));
+      const wave = kind === 'swept' || loose ? 0.045 * Math.sin((deg + 9) * .065) : 0.010 * Math.cos(deg * .15);
+      return fringe + temples * (loose ? .37 : .24) + Math.min(1, Math.max(0,(a-89)/62)) * (loose ? .09 : .18) + wave * (1 - temples);
+    };
+    const hair = kind === 'buzz' ? mulC(ch.hair,1.48) : ch.hair;
+    const hg = g.createLinearGradient(0,0,0,h*.83);
+    hg.addColorStop(0,mulC(hair,1.34)); hg.addColorStop(.46,hair); hg.addColorStop(1,mulC(hair,.69));
+    g.beginPath(); g.moveTo(0,0); g.lineTo(w,0);
+    for (let d = 180; d >= -180; d -= 3) g.lineTo(X(d),Y(hairEdge(d)));
+    g.closePath(); g.fillStyle = hg; g.fill();
+    if (kind !== 'buzz') {
+      g.save(); g.clip();
+      for (let d = -177; d < 180; d += 9) {
+        const s = kind === 'swept' || loose ? 29 : 10;
+        curve([d-s,.08,d-8,.18,d,hairEdge(d)-.012], 'rgba(255,234,211,.075)', kind === 'crew' ? 1.2 : 2);
+      }
+      g.restore();
+    }
+    if (ch.band) {
+      g.fillStyle = mulC(ch.band,.76); g.fillRect(0,Y(.326),w,h*.072);
+      g.fillStyle = ch.band; g.fillRect(0,Y(.336),w,h*.049);
+      g.fillStyle = 'rgba(255,255,255,.48)'; g.fillRect(X(-5),Y(.350),10*w/360,h*.008);
+    }
+  });
+}
+function jerseyTex(ch) {
+  return modelTexture('jersey:' + ch.name, 512, 256, (g, w, h) => {
+    const ink = shade(ch.shirt, .66), low = shade(ch.shirt, .84);
+    const grad = g.createLinearGradient(0,0,0,h);
+    grad.addColorStop(0,mulC(ch.shirt,1.12)); grad.addColorStop(.50,ch.shirt); grad.addColorStop(1,low);
+    g.fillStyle = grad; g.fillRect(0,0,w,h);
+    const panel = (points,color) => {
+      g.beginPath(); points.forEach(([x,y],i) => i ? g.lineTo(x*w,y*h) : g.moveTo(x*w,y*h));
+      g.closePath(); g.fillStyle = color; g.fill();
+    };
+    for (const x of [.25,.75]) {
+      panel([[x-.045,0],[x+.045,0],[x+.043,.21],[x+.034,.54],[x+.056,1],[x-.056,1],[x-.034,.54],[x-.043,.21]],ink);
+      panel([[x-.045,.08],[x-.034,.08],[x-.027,.54],[x-.048,.97],[x-.054,.97],[x-.034,.54]],ch.trim);
+      panel([[x+.045,.08],[x+.034,.08],[x+.027,.54],[x+.048,.97],[x+.054,.97],[x+.034,.54]],ch.trim);
+    }
+    panel([[.34,.26],[.54,.37],[.665,.27],[.67,.38],[.56,.46],[.34,.37]],mulC(ch.shirt,1.16));
+    panel([[.37,.28],[.47,.338],[.45,.35],[.365,.303]],ch.trim);
+    panel([[.62,.28],[.645,.27],[.645,.31],[.619,.32]],ch.trim);
+    g.fillStyle = low; g.fillRect(0,h*.95,w,h*.05);
+    g.fillStyle = 'rgba(255,255,255,.095)'; g.fillRect(0,h*.373,w,h*.004);
+    const color = ['#f4f6fa','#ffd60a','#ffb020'].includes(ch.shirt) ? '#172134' : '#f5f7ff';
+    g.fillStyle = color; g.textAlign = 'center'; g.textBaseline = 'middle';
+    for (const x of [0,w]) {
+      g.font = 'bold 18px Arial, sans-serif'; g.fillText(ch.en, x, h*.38, 72);
+      g.font = 'bold 14px Arial, sans-serif'; g.fillText('CHN', x, h*.51);
+    }
+  });
+}
+
+// 披发从后脑铺过后颈，沿肩背整片自然下垂。头部转动只带动发根。
+function looseHair(p, head, headFwd, chest, spine, chestFwd) {
+  const {sc, ch, an} = p, up = [0,1,0];
+  const headSide = cross3(up,headFwd);
+  const back = norm(add3(chestFwd,spine,-dot3(chestFwd,spine))).map(v => -v);
+  const backSide = norm(cross3(back,spine));
+  const sway = cdir(p,[an.pony,0,0]);
+  const length = ch.hlen || .34;
+  const points = [
+    // [头部沿竖直方向的偏移、头部后方的深度、躯干高度、躯干后方的深度、躯干跟随比例、半宽、半厚]
+    [.073,.052,.150,.070,0,.060,.025],
+    [.039,.067,.122,.084,0,.083,.035],
+    [-.020,.075,.092,.097,.12,.094,.039],
+    [-.083,.084,.044,.111,.38,.101,.036],
+    [-.127,.099,-.020,.130,.74,.109,.030],
+    [-.156,.127,-.091,.140,1,.121,.027],
+    [-.196,.134,-length*.55,.138,1,.120,.023],
+    [-.232,.137,-length*.84,.132,1,.108,.019],
+    [-.280,.140,-length,.125,1,.078,.012],
+    [-.303,.140,-length-.018,.121,1,.038,.006],
+  ];
+  return points.map(([y,z,dy,dz,follow,width,depth],i) => {
+    const root = add3(add3(head,up,y*sc),headFwd,-z*sc);
+    const shoulder = add3(add3(chest,spine,dy*sc),back,dz*sc);
+    const motion = (i / (points.length - 1)) ** 2;
+    const center = add3(mix3(root,shoulder,follow),sway,motion*.56);
+    const side = norm(mix3(headSide,backSide,follow));
+    const rear = norm(mix3(headFwd.map(v => -v),back,follow));
+    return [center,side,rear,width*sc,depth*sc];
+  });
+}
+
+function looseHairTex(ch) {
+  return modelTexture('loose-hair:' + ch.name,512,256,(g,w,h) => {
+    const grad = g.createLinearGradient(0,0,0,h);
+    grad.addColorStop(0,mulC(ch.hair,.78)); grad.addColorStop(.07,mulC(ch.hair,1.0)); grad.addColorStop(.16,mulC(ch.hair,1.3));
+    grad.addColorStop(.3,mulC(ch.hair,1.02)); grad.addColorStop(.72,mulC(ch.hair,.96)); grad.addColorStop(1,mulC(ch.hair,.8));
+    g.fillStyle = grad; g.fillRect(0,0,w,h);
+    // 发丝：细密的明暗条纹，成缕处更暗
+    let seed = 7; const rnd_ = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+    for (let i = 0; i < w; i += 2) {
+      const bend = Math.sin(i*.19)*4 + Math.sin(i*.053)*6, r = rnd_();
+      g.beginPath(); g.moveTo(i,0);
+      g.bezierCurveTo(i+bend*.3,h*.34,i-bend*.5,h*.66,i+bend,h);
+      g.lineWidth = 1 + r*1.6;
+      g.strokeStyle = r < .42 ? `rgba(20,10,6,${.1 + r*.3})` : `rgba(255,236,205,${.05 + (r-.42)*.22})`;
+      g.stroke();
+    }
+    for (let i = 0; i < w; i += 30 + rnd_()*26) { // 发缕之间的深色缝
+      g.beginPath(); g.moveTo(i,h*.2); g.bezierCurveTo(i+5,h*.45,i-6,h*.7,i+3,h);
+      g.lineWidth = 3 + rnd_()*3; g.strokeStyle = 'rgba(12,6,4,.22)'; g.stroke();
+    }
+  });
 }
 
 function drawPlayerGL(p, J) {
-  const { sc, ch, fem, pel, spine, chest, shL, shR, hipL, hipR, neck, head, headFwd, chestFwd, legs, armL, armR, rdW, latC, latH, shW, hipW, an } = J;
-  const G = curG, bw = ch.build || 1, slim = fem ? 0.88 : 1, am = (fem ? 0.84 : 1) * bw, S = (v) => v * sc, UP = [0, 1, 0];
-  const skin = ch.skin, shirt = ch.shirt, trim = ch.trim, bottom = ch.bottom, hair = ch.hs === 'buzz' ? mulC(ch.hair, 1.5) : ch.hair;
-  const skinD = mulC(skin, 0.9);
-  const ortho = (v) => norm(sub3(v, [spine[0] * dot3(v, spine), spine[1] * dot3(v, spine), spine[2] * dot3(v, spine)]));
-  const X0 = ortho(latC), Y0 = cross3(spine, X0), Xm = ortho(norm([latC[0] + latH[0], 0, latC[2] + latH[2]]));
-  // --- 躯干：胯 → 腰 → 胸，连续的椭圆截面（腰收、肩宽、胸腔有厚度） ---
-  const hipHW = hipW / 2 + S(0.06 * bw), hipD = S((fem ? 0.098 : 0.104) * bw);
-  const wHW = S((fem ? 0.118 : 0.148) * bw), wD = S((fem ? 0.084 : 0.1) * bw);
-  const cHW = shW * 0.5 * 0.9, cD = S((fem ? 0.1 : 0.116) * bw);
-  const pA = add3(pel, UP, -S(0.03)), pB = add3(pel, spine, S(0.09)), wC = add3(pel, spine, S(0.22)), cC = add3(pel, spine, S(0.45));
-  G.tube(pA, pB, latH, [hipHW, hipD, S(0.07)], [hipHW * 0.97, hipD * 0.97, S(0.02)], bottom);
-  G.tube(add3(pel, spine, S(0.075)), wC, Xm, [hipHW * 1.0 + S(0.004), hipD + S(0.004), S(0.03)], [wHW, wD, S(0.02)], shirt);
-  G.tube(wC, cC, X0, [wHW, wD, S(0.02)], [cHW, cD, S(0.075)], shirt);
-  // 斜方肌到肩、三角肌
-  const nb = add3(neck, spine, -S(0.03));
-  for (const sh of [shL, shR]) {
-    G.cap(nb, mix3(sh, nb, 0.2), S(0.052), S(0.05 * am), shirt);
-    G.ell(sh, X0, Y0, spine, S(0.068 * am), S(0.07 * am), S(0.064 * am), shirt);
-  }
-  // 领口
-  if (ch.skirt) {
-    G.tube(add3(pel, UP, S(0.07)), add3(pel, UP, -S(0.2)), latH, [hipHW * 0.96, hipD, S(0.02)], [hipHW + S(0.09), hipD + S(0.125), S(0.012)], bottom);
-    G.tube(add3(pel, UP, -S(0.185)), add3(pel, UP, -S(0.212)), latH, [hipHW + S(0.088), hipD + S(0.123), S(0.006)], [hipHW + S(0.096), hipD + S(0.131), S(0.006)], trim);
-  }
-  // --- 腿 ---
-  for (const L of legs) {
-    const q = add3(mix3(L.hip, L.knee, 0.4), L.fd, S(0.014));
-    G.cap(L.hip, q, S(0.09 * slim * bw), S(0.084 * slim * bw), skin, MAT.skin);
-    G.cap(q, L.knee, S(0.084 * slim * bw), S(0.052 * slim * bw), skin, MAT.skin);
-    if (!ch.skirt) {
-      const e = mix3(L.hip, L.knee, 0.5);
-      G.cap(L.hip, e, S(0.106 * bw), S(0.094 * bw), bottom);
-      G.cap(mix3(L.hip, L.knee, 0.485), mix3(L.hip, L.knee, 0.515), S(0.097 * bw), S(0.096 * bw), trim);
-    }
-    const cf = add3(mix3(L.knee, L.ankle, 0.28), L.fd, -S(0.022));
-    G.cap(L.knee, cf, S(0.052 * slim * bw), S(0.063 * slim * bw), skin, MAT.skin);
-    G.cap(cf, L.ankle, S(0.063 * slim * bw), S(0.034), skin, MAT.skin);
-    G.cap(mix3(L.knee, L.ankle, 0.74), L.ankle, S(0.04), S(0.038), '#f1f1f1');
-    // 球鞋：鞋底 + 鞋面 + 鞋帮 + 侧条
-    const dn = [0, -S(0.024), 0];
-    G.cap(add3(L.heel, dn, 1), add3(L.toe, dn, 1), S(0.046), S(0.04), '#ededed', MAT.shoe);
-    G.cap(L.heel, mix3(L.heel, L.toe, 0.92), S(0.052), S(0.04), ch.shoe, MAT.shoe);
-    G.cap(L.ankle, mix3(L.heel, L.toe, 0.3), S(0.042), S(0.05), ch.shoe, MAT.shoe);
-    G.cap(add3(mix3(L.heel, L.toe, 0.35), UP, S(0.03)), add3(mix3(L.heel, L.toe, 0.7), UP, S(0.012)), S(0.028), S(0.024), ch.shoe === trim ? '#ffffff' : trim, MAT.shoe);
-  }
-  // --- 手臂 ---
-  const arm = (A, Sh, isR) => {
-    G.cap(Sh, A.mid, S(0.052 * am), S(0.04 * am), skin, MAT.skin);
-    G.cap(Sh, mix3(Sh, A.mid, 0.46), S(0.07 * am), S(0.058 * am), shirt);
-    G.cap(mix3(Sh, A.mid, 0.445), mix3(Sh, A.mid, 0.475), S(0.061 * am), S(0.0605 * am), trim);
-    const f1 = mix3(A.mid, A.end, 0.28);
-    G.cap(A.mid, f1, S(0.04 * am), S(0.045 * am), skin, MAT.skin);
-    G.cap(f1, A.end, S(0.045 * am), S(0.028), skin, MAT.skin);
-    if (isR && ch.band) G.cap(mix3(A.mid, A.end, 0.8), mix3(A.mid, A.end, 0.93), S(0.035), S(0.033), ch.band);
-    const dir = isR ? rdW : norm(sub3(A.end, A.mid));
-    const palm = add3(A.end, dir, S(isR ? 0.03 : 0.05));
-    G.cap(A.end, palm, S(0.03), S(0.04), skin, MAT.skin);
-    G.cap(palm, add3(palm, dir, S(0.028)), S(0.04), S(0.03), skinD, MAT.skin);
+  const { sc, ch, fem, pel, spine, chest, shL, shR, neck, head, headFwd, chestFwd, legs, armL, armR, rdW, latC, latH, shW, hipW, an } = J;
+  const G = curG, bw = ch.build || 1, S = v => v * sc, UP = [0,1,0];
+  const {skin, shirt, trim, bottom} = ch;
+  const darkSkin = mulC(skin,.89), hair = ch.hair, st = ch.hs;
+  const ortho = (v, axis) => {
+    const projected = add3(v,axis,-dot3(v,axis));
+    if (Math.hypot(...projected) > .0001) return norm(projected);
+    return norm(cross3(axis,Math.abs(axis[1]) > .9 ? [1,0,0] : UP));
   };
-  arm(armR, shR, true); arm(armL, shL, false);
-  // --- 头颈：真人比例的头（宽 16 / 深 19.5 / 高 23 cm），脸部贴图 ---
-  const hs = fem ? 0.95 : 1, F = headFwd, Xh = cross3(UP, F), R = (v) => S(v * hs);
-  const at = (x, y, f) => [head[0] + Xh[0] * R(x) + F[0] * R(f), head[1] + R(y), head[2] + Xh[2] * R(x) + F[2] * R(f)];
-  G.cap(neck, add3(head, UP, -S(0.07)), S(0.05), S(0.047), skinD, MAT.skin);
-  G.ell(head, Xh, F, UP, R(0.083), R(0.099), R(0.109), skin, MAT.skin, faceTex(ch));
-  G.tube(at(0, 0.014, 0.092), at(0, -0.028, 0.099), Xh, [R(0.006), R(0.006), R(0.006)], [R(0.012), R(0.0105), R(0.009)], skin, MAT.skin); // 鼻
-  for (const sd of [-1, 1]) G.ell(at(sd * 0.083, -0.008, -0.006), Xh, F, UP, R(0.008), R(0.017), R(0.026), skinD, MAT.skin); // 耳
-  const em = p.emote && p.emote.t > p.emote.delay ? p.emote : null;
-  if (em && em.win && (em.type === 'roar' || em.type === 'fist' || em.type === 'jump' || em.type === 'spin'))
-    G.ell(at(0, -0.055, 0.083), Xh, F, UP, R(0.02), R(0.012), R(0.016), '#5a1c1c', MAT.cloth); // 呐喊张嘴
-  // 头发
-  const st = ch.hs, hv = st === 'buzz' ? 1.03 : st === 'crew' ? 1.06 : 1.1, hb = st === 'buzz' || st === 'crew' ? 0.012 : 0.017;
-  G.ell(at(0, 0.022, -hb), Xh, F, UP, R(0.083 * hv), R(0.099 * hv), R(0.109 * hv), hair, MAT.hair);
-  if (fem) {
-    // 斜刘海 + 两侧鬓发（贴着头型，不做成"卷"）
-    G.ell(at(-0.015, 0.06, 0.073), Xh, F, UP, R(0.066), R(0.024), R(0.032), hair, MAT.hair);
-    for (const sd of [-1, 1]) G.ell(at(sd * 0.078, -0.005, 0.012), Xh, F, UP, R(0.013), R(0.03), R(0.06), hair, MAT.hair);
-  } else if (st === 'swept') G.ell(at(0.028, 0.074, 0.06), Xh, F, UP, R(0.056), R(0.036), R(0.03), hair, MAT.hair);
+  const X0 = ortho(latC, spine), X1 = ortho(latH, spine);
+  const F0 = ortho(chestFwd, spine), F1 = cross3(spine, X1);
+  const hipF = dot3(F1,F0) < 0 ? add3([0,0,0],F1,-1) : F1;
+  const hipHW = hipW * .5 + S(.057 * bw), shD = S((fem ? .108 : .111) * bw);
+  const waistW = S((fem ? .133 : .151) * bw), waistD = S((fem ? .083 : .091) * bw);
+  // 球衣横轴随胸口，而持拍手的左右镜像只用于动作。
+  const shirtSign = dot3(cross3(spine,F0),X0) < 0 ? -1 : 1;
+  const shoulderTilt = (shR[1] - shL[1]) * .5 * shirtSign;
+  const torso = [
+    [.586,.058,.057,0], [.558,shW/sc*.32,.076,.15],
+    [.528,shW/sc*.49,shD/sc*.90,.30], [.460,shW/sc*.475,shD/sc,.36],
+    [.375,shW/sc*.425,shD/sc*.99,.49], [.270,waistW/sc*1.04,waistD/sc,.63],
+    [.186,waistW/sc,waistD/sc*.98,.74], [.105,hipHW/sc*.94,waistD/sc*1.04,.87],
+    [.052,hipHW/sc,waistD/sc*1.1,1],
+  ].map(([y,w,d,v]) => {
+    const t = Math.min(1,y/.4);
+    return [add3(pel,spine,S(y)),norm(mix3(X1,X0,t).map(c => c * shirtSign)),norm(mix3(hipF,F0,t)),S(w),S(d),v];
+  });
+  G.surface(torso,shirt,MAT.cloth,jerseyTex(ch),(i,a,sn,cs) => {
+    const y = [1,.75,.85,.55,.27,.16,.18,.24,.2][i] * shoulderTilt * sn - (i === 0 ? S(.026) * Math.max(0,cs) : 0);
+    const folds = S(.003) * Math.sin(a*4+i*.72) * (i > 4 ? 1 : .35);
+    return add3([0,y,0],F0,folds*cs);
+  });
+  const collar = add3(neck,spine,-S(.012));
+  G.tube(add3(collar,spine,-S(.014)),collar,X0,[S(.061),S(.061),S(.004)],[S(.055),S(.055),S(.003)],trim);
 
-  const sway = cdir(p, [an.pony, 0, 0]);
-  if (st === 'spiky') for (let i = -2; i <= 2; i++) G.cap(at(i * 0.03, 0.1, 0.01 - Math.abs(i) * 0.008), at(i * 0.048, 0.18 - Math.abs(i) * 0.015, 0.03), R(0.034), R(0.004), hair, MAT.hair);
-  if (st === 'pony') {
-    const b = at(0, 0.055, -0.1), m = add3(at(0, -0.02, -0.165), sway, 0.5), e = add3(at(0, -0.19, -0.175), sway, 1);
-    G.cap(b, m, R(0.03), R(0.042), hair, MAT.hair); G.cap(m, e, R(0.042), R(0.012), hair, MAT.hair);
-    G.ell(b, Xh, F, UP, R(0.026), R(0.026), R(0.026), trim);
+  // 用连续截面包出肘、膝和肌肉。袖口、裤脚、袜口也沿各自骨骼转动。
+  const limb = (a,b,c,hint,sections,col,mat=MAT.skin) => {
+    const ab = norm(sub3(b,a)), bc = norm(sub3(c,b));
+    const rings = sections.map(([t,w,d]) => {
+      const tangent = norm(mix3(ab,bc,clamp((t-.78)/.44,0,1)));
+      const x = ortho(hint,tangent);
+      return [t <= 1 ? mix3(a,b,t) : mix3(b,c,t-1),x,cross3(tangent,x),S(w),S(d)];
+    });
+    G.surface(rings,col,mat);
+  };
+  const armWidth = (fem ? .86 : 1) * bw;
+  const arm = (A, Sh, holdsRacket) => {
+    const overall = norm(sub3(A.end,Sh)), cross = cross3(sub3(A.mid,Sh),sub3(A.end,A.mid));
+    const hint = Math.hypot(...cross) > .003 ? norm(cross) : norm(cross3(overall,Math.abs(overall[1]) > .85 ? X0 : UP));
+    const w = armWidth;
+    limb(Sh,A.mid,A.end,hint,[
+      [.32,.051*w,.048*w],[.63,.046*w,.043*w],[.91,.036*w,.039*w],
+      [1.07,.036*w,.038*w],[1.30,.043*w,.043*w],[1.52,.039*w,.038*w],[1.91,.026,.028],[2,.025,.026],
+    ],skin);
+    limb(Sh,A.mid,A.end,hint,[
+      [-.26,.001*w,.001*w],[-.13,.046*w,.050*w],[.02,.062*w,.060*w],[.19,.066*w,.063*w],[.44,.063*w,.059*w],[.52,.061*w,.058*w],
+    ],shirt,MAT.cloth);
+    limb(Sh,A.mid,A.end,hint,[[.462,.064*w,.061*w],[.527,.061*w,.058*w],[.543,.051*w,.049*w]],trim,MAT.cloth);
+    if (holdsRacket && ch.band) limb(Sh,A.mid,A.end,hint,[[1.79,.032,.035],[1.96,.029,.031]],ch.band,MAT.cloth);
+    const fore = norm(sub3(A.end,A.mid)), dir = holdsRacket ? norm(add3(fore,rdW,.38)) : fore;
+    const hX = ortho(hint,dir), hF = cross3(dir,hX);
+    const palm = add3(A.end,dir,S(.031));
+    G.ell(palm,hX,hF,dir,S(.030),S(.023),S(holdsRacket ? .042 : .051),skin,MAT.skin);
+    G.ell(add3(add3(palm,hX,S(.021)),hF,S(.012)),hX,hF,dir,S(.012),S(.016),S(.023),darkSkin,MAT.skin);
+  };
+  arm(armR,shR,true); arm(armL,shL,false);
+
+  const hips = [[-.083,hipHW*.83,waistD],[-.018,hipHW*.99,waistD*1.13],[.065,hipHW*.98,waistD*1.08]];
+  G.surface(hips.map(([y,w,d])=>[add3(pel,spine,S(y)),X1,hipF,w,d]),bottom,MAT.cloth);
+  if (ch.skirt) {
+    const skirt = [[.07,.97,1.08],[.017,1.04,1.16],[-.070,1.15,1.32],[-.168,1.30,1.50],[-.195,1.35,1.55]];
+    const skirtRings = skirt.map(([y,w,d],i)=>[add3(pel,spine,S(y)),X1,hipF,hipHW*w,waistD*d,i/4]);
+    const pleats = (i,a,sn,cs,start=0) => {
+      const t = (start + i) / 4;
+      const r = S(.010) * t * Math.cos(a*11);
+      return add3(add3([0,S(.006)*t*Math.sin(a*11),0],X1,r*sn),hipF,r*cs);
+    };
+    G.surface(skirtRings,bottom,MAT.cloth,null,pleats);
+    const hem = skirtRings.slice(-2).map(([C,X,F,w,d])=>[C,X,F,w+S(.0014),d+S(.0014)]);
+    G.surface(hem,trim,MAT.cloth,null,(i,a,sn,cs)=>pleats(i,a,sn,cs,3));
   }
-  if (st === 'bun') { G.ell(at(0, 0.11, -0.075), Xh, F, UP, R(0.05), R(0.05), R(0.047), hair, MAT.hair); G.ell(at(0, 0.085, -0.055), Xh, F, UP, R(0.034), R(0.034), R(0.016), trim); }
-  if (st === 'bob' || st === 'long') G.ell(at(0, -0.035, -0.03), Xh, F, UP, R(0.094), R(0.098), R(0.112), hair, MAT.hair);
+  const lw = (fem ? .89 : 1) * bw;
+  for (const L of legs) {
+    const footSide = cross3(UP,L.fd);
+    const legHint = norm(add3(footSide,X1,dot3(footSide,X1) < 0 ? -.4 : .4));
+    limb(L.hip,L.knee,L.ankle,legHint,[
+      [-.10,.078*lw,.087*lw],[.12,.091*lw,.094*lw],[.39,.089*lw,.087*lw],
+      [.70,.068*lw,.069*lw],[.96,.049*lw,.052*lw],[1.10,.050*lw,.053*lw],
+      [1.30,.058*lw,.063*lw],[1.53,.047*lw,.056*lw],[1.77,.034,.042],[2,.029,.032],
+    ],skin);
+    const shorts = ch.skirt ? .32 : .58;
+    limb(L.hip,L.knee,L.ankle,legHint,[
+      [-.13,.087*bw,.093*bw],[.08,.103*bw,.104*bw],[shorts-.12,.098*bw,.100*bw],[shorts,.094*bw,.093*bw],
+    ],bottom,MAT.cloth);
+    if (!ch.skirt) limb(L.hip,L.knee,L.ankle,legHint,[[.537,.098*bw,.098*bw],[.58,.095*bw,.094*bw],[.59,.088*bw,.085*bw]],mulC(bottom,1.32),MAT.cloth);
+    limb(L.hip,L.knee,L.ankle,legHint,[[1.71,.037,.043],[1.78,.038,.044],[1.91,.035,.039],[2,.035,.037]],'#edf0f5',MAT.cloth);
+    limb(L.hip,L.knee,L.ankle,legHint,[[1.741,.039,.045],[1.765,.039,.045]],mulC(shirt,.91),MAT.cloth);
+
+    // 平底球鞋：外底、中底和低鞋头。
+    const sole = (t,y) => {
+      const q = mix3(L.heel,L.toe,t);
+      return [q[0],L.F.y+S(y),q[2]];
+    };
+    const shoe = [
+      [-.075,.026,.031], [.015,.043,.055], [.18,.049,.067], [.36,.050,.067],
+      [.55,.052,.054], [.77,.054,.042], [.93,.048,.030], [1.02,.029,.023], [1.055,.004,.008],
+    ];
+    const shoeTex = modelTexture('shoe:' + ch.name,256,128,(g,w,h) => {
+      g.fillStyle = ch.shoe; g.fillRect(0,0,w,h);
+      const accent = ch.shoe === trim ? mulC(shirt,.73) : trim;
+      for (const x of [w*.21,w*.79]) {
+        g.strokeStyle = accent; g.lineWidth = 8; g.beginPath();
+        g.moveTo(x-13,h*.24); g.lineTo(x+9,h*.46); g.lineTo(x-7,h*.72); g.stroke();
+      }
+      g.fillStyle = 'rgba(24,30,43,.30)'; g.fillRect(w*.44,h*.25,w*.12,h*.36);
+      g.strokeStyle = '#eeeaf0'; g.lineWidth = 2;
+      for (let y = .31; y < .61; y += .070) {
+        g.beginPath(); g.moveTo(w*.44,h*y); g.lineTo(w*.56,h*(y-.028)); g.stroke();
+      }
+    });
+    G.surface(shoe.map(([t,w,h])=>[sole(t,.022),footSide,UP,S(w),S(h)]),ch.shoe,MAT.shoe,shoeTex,
+      (i,a,sn,cs)=>[0,S(Math.max(0,-cs))*shoe[i][2],0]);
+    const soleRings=shoe.map(([t,w])=>[sole(t,.015),footSide,UP,S(w*1.042),S(.013)]);
+    G.surface(soleRings,'#c3c8cc',MAT.cloth);
+    G.surface(shoe.map(([t,w])=>[sole(t,.008),footSide,UP,S(w*1.048),S(.0075)]),'#a87851',MAT.cloth);
+  }
+
+  const F = headFwd, Xh = cross3(UP,F), hs = fem ? .98 : 1, R = v => S(v*hs);
+  const at = (x,y,f) => add3(add3(add3(head,Xh,R(x)),UP,R(y)),F,R(f));
+  G.tube(neck,add3(head,UP,-S(.071)),Xh,[S(.047),S(.046),S(.012)],[S(.042),S(.044),S(.017)],darkSkin,MAT.skin);
+  const jaw = ({crew:1.1,buzz:1.06,spiky:.96,short:1.02,swept:.97})[st] || .96;
+  const headShape = [
+    [.131,.0004,.0005,-.022,0],[.121,.042,.048,-.017,.091],[.093,.073,.077,-.010,.18],
+    [.061,.086,.093,-.008,.278],[.021,.087,.095,.000,.407],[-.016,.083,.095,.004,.505],
+    [-.049,.077,.091,.006,.624],[-.078,.065*jaw,.074,.013,.748],[-.101,.045*jaw,.050,.016,.846],
+    [-.114,.021,.028,.018,.926],[-.117,.0005,.0006,.017,1],
+  ];
+  G.surface(headShape.map(([y,w,d,f,v])=>[at(0,y,f),Xh,F,R(w),R(d),v]),skin,MAT.skin,faceTex(ch),(i,a,sn,cs) => {
+    // 鼻梁和眉骨与脸部网格连成一体。
+    const nose = [0,0,0,0,.003,.014,.019,.002,0,0,0][i] * Math.exp(-a*a*48);
+    const brow = i === 4 ? .004 * Math.exp(-Math.pow((Math.abs(a)-.42)*7,2)) : 0;
+    const crown = [1,.93,.53,.15,0,0,0,0,0,0,0][i];
+    const lift = st === 'swept' ? .022 + .012*Math.sin(a+.7) : st === 'short' ? .011 : st === 'spiky' ? .010 : .003;
+    const wave = st === 'swept' ? .006*Math.sin(a*5+.5) : st === 'short' ? .004*Math.cos(a*5) : 0;
+    return add3([0,R((lift+wave)*crown),0],F,R(nose+brow));
+  });
+  if (st !== 'long') for (const sd of [-1,1]) {
+    G.ell(at(sd*.082,-.014,-.002),Xh,F,UP,R(.012),R(.019),R(.026),skin,MAT.skin);
+    G.ell(at(sd*.089,-.017,.009),Xh,F,UP,R(.005),R(.007),R(.012),darkSkin,MAT.skin);
+  }
+  const em = p.emote && p.emote.t > p.emote.delay ? p.emote : null;
+  if (em && em.win && ['roar','fist','jump','spin'].includes(em.type))
+    G.ell(at(0,-.074,.088),Xh,F,UP,R(.016),R(.004),R(.012),'#613630',MAT.skin);
+
+  if (st === 'spiky') {
+    // 几束方向不同的短发，从颅顶过渡到发梢。
+    for (const [x,y,f,dx,dy,dz] of [
+      [-.048,.092,.027,-.021,.035,-.004],[-.025,.108,.044,-.009,.042,.015],
+      [.002,.121,.017,.012,.045,-.008],[.031,.110,.029,.023,.036,.008],[.057,.089,.020,.022,.035,-.012],
+    ]) {
+      G.tube(at(x,y,f),at(x+dx,y+dy,f+dz),Xh,[R(.025),R(.028),R(.019)],[R(.006),R(.008),R(.010)],hair,MAT.hair);
+    }
+  }
+  const sway = cdir(p,[an.pony,0,0]);
+  if (st === 'pony' || st === 'bun') {
+    const b = at(0,st === 'bun' ? .078 : .032,-.091);
+    G.ell(b,Xh,F,UP,R(.028),R(.026),R(.025),trim,MAT.cloth);
+    if (st === 'bun') {
+      G.ell(at(0,.095,-.119),Xh,F,UP,R(.040),R(.036),R(.041),hair,MAT.hair);
+    } else {
+      const m = add3(at(0,-.013,-.146),sway,.38), e = add3(at(0,-.161,-.146),sway,1);
+      G.surface([[b,Xh,F,R(.020),R(.020)],[m,Xh,F,R(.040),R(.033)],[mix3(m,e,.45),Xh,F,R(.033),R(.025)],
+        [e,Xh,F,R(.007),R(.010)]],hair,MAT.hair);
+    }
+  }
+  if (st === 'bob') {
+    for (const sd of [-1,1]) {
+      const a = at(sd*.064,.042,-.033), b = at(sd*.082,-.078,-.040);
+      const c = add3(at(sd*.073,-.151,-.041),sway,.20);
+      const d = add3(mix3(b,c,.52),sway,.15);
+      G.surface([[a,Xh,F,R(.033),R(.039)],[b,Xh,F,R(.033),R(.047)],
+        [d,Xh,F,R(.041),R(.038)],[c,X0,F0,R(.021),R(.024)],
+        [add3(c,spine,-R(.023)),X0,F0,R(.007),R(.010)]],hair,MAT.hair);
+    }
+  }
   if (st === 'long') {
-    const Lh = (ch.hlen || 0.35) * sc, back = [-chestFwd[0], 0, -chestFwd[2]];
-    const a0 = at(0, -0.06, -0.06), a1 = add3(add3(add3(chest, spine, -Lh * 0.45), back, S(0.13)), sway, 0.4), a2 = add3(add3(add3(chest, spine, -Lh), back, S(0.14)), sway, 1);
-    G.tube(a0, a1, X0, [R(0.088), R(0.05), R(0.05)], [R(0.085), R(0.04), R(0.04)], hair, MAT.hair); G.tube(a1, a2, X0, [R(0.085), R(0.04), R(0.04)], [R(0.05), R(0.025), R(0.03)], hair, MAT.hair);
+    // 披肩发：一整片从发旋长到发梢的头发。每一列是一缕：先贴着头型走（比头皮高出一层发量），
+    // 过了耳朵之后垂下来；正面是刘海，两鬓的发束垂在脸旁，后面的顺着肩背披下去。
+    const NR = 20, EAR = .6, MV = .248;                 // MV：贴图 v 每单位对应的头部高度（米）
+    const drop = (.085 + (ch.hlen || .34) * .5) / MV;     // 过耳后还能垂多长（v 单位）：发梢到肩胛上缘
+    const Xs = dot3(X0, Xh) < 0 ? X0.map(v => -v) : X0, Fs = dot3(F0, F) < 0 ? F0.map(v => -v) : F0;
+    const chestRef = add3(pel, spine, S(.46)), Ae = shW * .5 + S(.012), Be = shD + S(.014);
+    const sm = (x) => { x = clamp(x, 0, 1); return x * x * (3 - 2 * x); };
+    const ringAt = (v) => {                              // 头型在 v 处的截面 [y, w, d, f]
+      let k = 0; while (k < headShape.length - 2 && headShape[k + 1][4] < v) k++;
+      const a = headShape[k], b = headShape[k + 1], u = clamp((v - a[4]) / ((b[4] - a[4]) || 1), 0, 1);
+      return [lerp(a[0], b[0], u), lerp(a[1], b[1], u), lerp(a[2], b[2], u), lerp(a[3], b[3], u)];
+    };
+    const e = ringAt(EAR);
+    const strandLen = (a) => {                           // 每一缕的长度：正面刘海短，两鬓过渡，侧后方到肩背
+      const deg = Math.abs(a) * 180 / Math.PI;
+      const fringe = .315 + .04 * Math.sin((a * 180 / Math.PI + 9) * .065);
+      // 脸旁的发束略短（到锁骨），后面的到肩背；发梢只做很轻的参差
+      const full = (EAR + drop * lerp(.72, 1, sm((deg - 70) / 50))) * (1 + .012 * Math.sin(a * 7) + .01 * Math.sin(a * 13 + 1));
+      return lerp(fringe, full, sm((deg - 36) / 26));
+    };
+    const strand = (a, sn, cs, t) => {
+      const sg = t * strandLen(a);
+      const vol = 1.06 + .075 * sm((sg - .15) / .35);    // 发量：头顶薄，两侧和后脑厚，盖住耳朵
+      if (sg <= EAR) {
+        const [y, w, d, f] = ringAt(sg);
+        return add3(add3(at(0, y + .004, f - .004), Xh, R(w * vol) * sn), F, R(d * vol) * cs);
+      }
+      const h = (sg - EAR) * MV * sc, g = sm(h / S(.13)); // h：垂下的距离；g：从跟随头部过渡到贴着肩背
+      const X = norm(mix3(Xh, Xs, g)), Fd = norm(mix3(F, Fs, g));
+      const tip = sm((t - .8) / .2);                      // 发梢略向内收
+      const w = R(e[1] * 1.135) * (1 + .3 * sm(h / S(.22))) * (1 - .1 * tip), d = R(e[2] * 1.135) * (cs < 0 ? 1 - .22 * sm(h / S(.09)) : .78 - .2 * sm(h / S(.1))) * (1 - .12 * tip);
+      let P = add3(add3(add3(at(0, e[0] + .004, e[3] - .004), UP, -h), X, w * sn), Fd, d * cs);
+      // 贴着肩背/锁骨披下来：落进躯干轮廓里的部分顶到衣服外面
+      const rel = sub3(P, chestRef), us = dot3(rel, spine), m = clamp((S(.135) - us) / S(.06), 0, 1);
+      if (m > 0) {
+        const l = dot3(rel, X0), fz = dot3(rel, F0), q = 1 - (l / Ae) * (l / Ae);
+        if (q > 0) {
+          const edge = Be * Math.sqrt(q) * (cs < .2 ? -1 : 1);
+          if (cs < .2 ? fz > edge : fz < edge) P = add3(P, F0, (edge - fz) * m);
+        }
+      }
+      return add3(P, sway, t * t * .5);
+    };
+    const rows = Array.from({ length: NR }, (_, i) => Math.pow(i / (NR - 1), 1.6));
+    G.surface(rows.map(t => [head, Xh, F, 0, 0, t]), hair, MAT.hair, looseHairTex(ch), (i, a, sn, cs) => sub3(strand(a, sn, cs, rows[i]), head));
   }
-  if (ch.band) G.ell(at(0, 0.05, -0.006), Xh, F, UP, R(0.083 * hv * 1.02), R(0.099 * hv * 1.02), R(0.014), ch.band);
   // --- 球拍 ---
   const hand = armR.end, hc = add3(hand, rdW, 0.58);
   const fwdW = cdir(p, [0, 0, 1]);
@@ -2678,18 +3008,18 @@ function drawPlayerGL(p, J) {
   G.cap(add3(hand, rdW, -0.075), add3(hand, rdW, 0.12), 0.016, 0.014, mulC(ch.racket, 0.5), MAT.cloth);
   G.cap(add3(hand, rdW, -0.085), add3(hand, rdW, -0.07), 0.018, 0.018, '#1e1e1e', MAT.cloth);
   G.cap(add3(hand, rdW, 0.12), add3(hand, rdW, 0.455), 0.006, 0.005, '#3c3f46', MAT.gloss);
-  const SEG = 18; let prev = null;
-  for (let i = 0; i <= SEG; i++) {
-    const a = i / SEG * Math.PI * 2, q = add3(add3(hc, rdW, Math.cos(a) * 0.125), u, Math.sin(a) * 0.1);
-    if (prev) G.cap(prev, q, 0.0058, 0.0058, ch.racket, MAT.gloss);
-    prev = q;
+  const hoop = [];
+  const racketColor = ch.racket === '#151515' || ch.racket === '#1b1b1b' ? '#464c5c' : ch.racket;
+  const squircle = v => Math.sign(v) * Math.pow(Math.abs(v), .88);
+  for (let i = 0; i <= 24; i++) {
+    const a = i / 24 * Math.PI * 2;
+    const C = add3(add3(hc,rdW,squircle(Math.cos(a))*.125),u,squircle(Math.sin(a))*.1);
+    const outward = norm(sub3(C,hc));
+    hoop.push([C,outward,n,.0052,.0045]);
   }
-  G.cap(add3(hand, rdW, 0.455), add3(add3(hc, rdW, -0.118), u, 0.03), 0.005, 0.0045, ch.racket, MAT.gloss);
-  G.cap(add3(hand, rdW, 0.455), add3(add3(hc, rdW, -0.118), u, -0.03), 0.005, 0.0045, ch.racket, MAT.gloss);
-  G.ell(hc, u, n, rdW, 0.098, 0.002, 0.123, '#ffffff', MAT.string); // 拍线面（半透明）
-  // --- 2D 叠加：背后姓名、挥拍拖影、喊话 ---
-  const toCam = norm([CAM.pos[0] - chest[0], CAM.pos[1] - chest[1], CAM.pos[2] - chest[2]]);
-  const facing = chestFwd[0] * toCam[0] + chestFwd[2] * toCam[2];
+  G.surface(hoop,racketColor,MAT.shoe);
+  G.ell(hc,u,n,rdW,.097,.0018,.119,'#dae8f1',MAT.string);
+  // 2D 叠加：挥拍拖影、喊话。
   glPost.push(() => {
     if (an.trail.length > 1) {
       ctx.lineCap = 'round';
@@ -2700,7 +3030,6 @@ function drawPlayerGL(p, J) {
         ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y); ctx.stroke();
       }
     }
-    if (facing < -0.3) backName(ch, add3(add3(pel, spine, S(0.4)), Y0, -cD), add3(add3(pel, spine, S(0.4)), X0, 0.1), sc, clamp((-facing - 0.3) * 4, 0, 1));
     if (p.callT > 0) {
       const t = Pv(add3(head, [0, 1, 0], 0.4));
       ctx.fillStyle = 'rgba(255,255,255,0.92)'; ctx.font = `bold ${Math.max(10, t.s * 0.26)}px sans-serif`; ctx.textAlign = 'center';
@@ -2904,7 +3233,7 @@ function drawPlayer(p) {
     ctx.beginPath(); ctx.moveTo(HL_.x - ex * 0.8, HL_.y + rr * 0.85); ctx.lineTo(HR_.x + ex * 0.8, HR_.y + rr * 0.85); ctx.stroke();
     const c = Pv(mix3(chest, pel, 0.42));
     if (facing < -0.2) {
-      // 背号 + 背后姓名条
+      // 背后姓名与国家缩写
       backName(ch, add3(chest, spine, -0.1 * sc), add3(add3(chest, spine, -0.1 * sc), yawV(0.1, pose.yaw), 1), sc, 1);
       // 后领
       ctx.strokeStyle = trim; ctx.lineWidth = Math.max(0.8, 0.022 * sc * sl.s);
@@ -2915,7 +3244,6 @@ function drawPlayer(p) {
       ctx.fillStyle = shade(skin, 0.95); ctx.beginPath(); ctx.moveTo(nkL.x, nkL.y); ctx.lineTo(v0.x, v0.y); ctx.lineTo(nkR.x, nkR.y); ctx.closePath(); ctx.fill();
       ctx.strokeStyle = trim; ctx.lineWidth = Math.max(0.8, 0.024 * sc * v0.s);
       ctx.beginPath(); ctx.moveTo(nkL.x, nkL.y); ctx.lineTo(v0.x, v0.y); ctx.lineTo(nkR.x, nkR.y); ctx.stroke();
-      // 胸前小号码
     }
   });
   // 手臂：三角肌/袖子 + 上臂 + 前臂 + 手
@@ -2992,24 +3320,28 @@ function drawPlayer(p) {
     ctx.strokeStyle = OUTL; ctx.lineWidth = Math.max(1.2, 0.02 * hcS.s) + olW * 1.2; ctx.stroke();
     ctx.strokeStyle = ch.racket; ctx.lineWidth = Math.max(1, 0.02 * hcS.s); ctx.stroke();
   });
-  // 长发
+  // 同一片披发在 2D 模式使用投影轮廓。
   if (ch.hs === 'long') {
-    const backV = cdir(p, rotY([0, 0, -1], pose.yaw * 0.7));
-    const R3 = 0.108 * sc, L = (ch.hlen || 0.35) * sc;
-    const sway = cdir(p, [p.an.pony * 0.6, 0, 0]);
-    const pts = [add3(add3(head, [0, 1, 0], 0.02 * sc), headFwd, -0.55 * R3), add3(neck, backV, 0.1 * sc)];
-    const n = Math.max(2, Math.round(L / (0.12 * sc)));
-    for (let i = 1; i <= n; i++) {
-      const t = i / n, d = L * t;
-      let q = add3(add3(chest, spine, -d), backV, (0.15 + 0.02 * t) * sc);
-      q = add3(q, sway, t * t);
-      pts.push(q);
-    }
-    const depthPt = add3(add3(chest, spine, -L * 0.4), backV, 0.25 * sc);
-    push(depthPt, () => {
-      for (let i = 0; i < pts.length - 1; i++) {
-        const t0 = i / (pts.length - 1), t1 = (i + 1) / (pts.length - 1);
-        capS(Pv(pts[i]), Pv(pts[i + 1]), (0.105 - 0.03 * t0) * sc, (0.105 - 0.03 * t1) * sc, shade(ch.hair, 0.96 - 0.06 * t1), { ol: i === 0 });
+    const rings = looseHair(p,head,headFwd,chest,spine,chestFwd);
+    const mid = rings[5][0];
+    push(mid, () => {
+      const left = [], right = [];
+      for (const [C,X,F,w,d] of rings) {
+        const samples = Array.from({length:12},(_,i) => {
+          const a = i * Math.PI / 6;
+          return Pv(add3(add3(C,X,w*Math.sin(a)),F,d*Math.cos(a)));
+        }).sort((a,b)=>a.x-b.x);
+        left.push(samples[0]); right.push(samples[samples.length-1]);
+      }
+      const first = left[0], last = right[right.length-1];
+      const grad = ctx.createLinearGradient(first.x,first.y,last.x,last.y);
+      grad.addColorStop(0,mulC(ch.hair,1.03)); grad.addColorStop(.45,mulC(ch.hair,1.16)); grad.addColorStop(1,mulC(ch.hair,.76));
+      polyS(left.concat(right.slice().reverse()),grad,true);
+      for (const t of [.22,.42,.66,.84]) {
+        const start = mix3([left[1].x,left[1].y,0],[right[1].x,right[1].y,0],t);
+        ctx.beginPath(); ctx.moveTo(start[0],start[1]);
+        for (let i=2; i<left.length-1; i++) ctx.lineTo(lerp(left[i].x,right[i].x,t),lerp(left[i].y,right[i].y,t));
+        ctx.strokeStyle = mulC(ch.hair,t < .5 ? 1.24 : .89); ctx.lineWidth = Math.max(.45,Pv(mid).s*.004); ctx.stroke();
       }
     });
   }
@@ -3057,28 +3389,28 @@ function drawHead(p, head, headFwd, neck) {
   if (behind) tail();
   // 后发（波波头/长发垫在头后）
   if (hs === 'bob' || hs === 'long') { ctx.fillStyle = hair; ctx.strokeStyle = OUTL; ctx.lineWidth = olW * 2; ctx.beginPath(); ctx.ellipse(c.x - sideX * R * 0.1, c.y + R * 0.2, R * 1.14, R * 1.2, 0, 0, 7); ctx.stroke(); ctx.fill(); }
-  // 头型：颅顶椭圆 + 偏向朝向一侧的下颌，下巴略尖
-  const hx = R * 0.96, hy = R * 1.02, jx = c.x + sideX * R * 0.16, jy = c.y + R * 0.42, jrx = R * (fem ? 0.66 : 0.72), jry = R * (fem ? 0.74 : 0.76);
-  // 耳朵按真实的头侧位置投影：先画在头后面，正/背面时从轮廓两侧露出
+  // 额头、面颊和下颌共用一个轮廓。
+  const lean = sideX*R*.21, hx = R*.78, hy = R*.98;
+  const outline = () => {
+    ctx.beginPath(); ctx.moveTo(c.x,c.y-hy);
+    ctx.bezierCurveTo(c.x+hx*.84,c.y-hy,c.x+hx,c.y-R*.48,c.x+hx,c.y+R*.08);
+    ctx.bezierCurveTo(c.x+hx*.99,c.y+R*.57,c.x+lean+R*.42,c.y+R*.91,c.x+lean,c.y+R*.94);
+    ctx.bezierCurveTo(c.x+lean-R*.42,c.y+R*.91,c.x-hx*.99,c.y+R*.57,c.x-hx,c.y+R*.08);
+    ctx.bezierCurveTo(c.x-hx,c.y-R*.48,c.x-hx*.84,c.y-hy,c.x,c.y-hy); ctx.closePath();
+  };
   const earV = [headFwd[2], 0, -headFwd[0]];
   const ear = (sd) => {
-    const q = Pv(add3(add3(head, earV, sd * R3 * 0.93), [0, -1, 0], R3 * 0.12));
-    ctx.fillStyle = shade(ch.skin, 0.9); ctx.strokeStyle = OUTL; ctx.lineWidth = olW;
-    ctx.beginPath(); ctx.ellipse(q.x, q.y, R * 0.15, R * 0.23, 0, 0, 7); ctx.stroke(); ctx.fill();
+    const q = Pv(add3(add3(head,earV,sd*R3*.76),[0,-1,0],R3*.13));
+    ctx.fillStyle = shade(ch.skin,.89); ctx.strokeStyle = OUTL; ctx.lineWidth = olW;
+    ctx.beginPath(); ctx.ellipse(q.x,q.y,R*.133,R*.206,0,0,7); ctx.stroke(); ctx.fill();
   };
   if (R > 3) { ear(-1); ear(1); }
-  const volX = c.x - sideX * R * 0.1, volY = c.y - R * 0.1, vol = hs === 'buzz' ? 1.0 : hs === 'crew' ? 1.04 : 1.1;
-  ctx.strokeStyle = OUTL; ctx.lineWidth = olW * 2;
-  ctx.beginPath(); ctx.ellipse(volX, volY, hx * vol, hy * vol, 0, 0, 7); ctx.stroke();           // 发量外轮廓
-  ctx.beginPath(); ctx.ellipse(jx, jy, jrx, jry, 0, 0, 7); ctx.stroke();
-  ctx.fillStyle = hairC; ctx.beginPath(); ctx.ellipse(volX, volY, hx * vol, hy * vol, 0, 0, 7); ctx.fill();
-  const skinG = ctx.createLinearGradient(c.x - R, c.y - R, c.x + R, c.y + R * 1.1);
-  skinG.addColorStop(0, mulC(ch.skin, 1.06)); skinG.addColorStop(0.55, ch.skin); skinG.addColorStop(1, mulC(ch.skin, 0.82));
-  ctx.fillStyle = skinG;
-  ctx.beginPath(); ctx.ellipse(c.x, c.y, hx, hy, 0, 0, 7); ctx.fill();
-  ctx.beginPath(); ctx.ellipse(jx, jy, jrx, jry, 0, 0, 7); ctx.fill();
+  const skinG = ctx.createLinearGradient(c.x-R,c.y-R,c.x+R,c.y+R*1.1);
+  skinG.addColorStop(0,mulC(ch.skin,1.08)); skinG.addColorStop(.55,ch.skin); skinG.addColorStop(1,mulC(ch.skin,.81));
+  ctx.fillStyle = skinG; ctx.strokeStyle = OUTL; ctx.lineWidth = olW*1.6;
+  outline(); ctx.stroke(); ctx.fill();
   // 头发（裁剪到头部）：发际线高度随朝向变化
-  ctx.save(); ctx.beginPath(); ctx.ellipse(c.x, c.y, hx * 1.02, hy * 1.02, 0, 0, 7); ctx.ellipse(jx, jy, jrx, jry, 0, 0, 7); ctx.clip();
+  ctx.save(); outline(); ctx.clip();
   const cover = { crew: 0.05, buzz: 0.0, short: 0.1, spiky: 0.05, swept: 0.12, pony: 0.13, bun: 0.13, bob: 0.36, long: 0.32 }[hs] || 0.1;
   const lineY = c.y + R * lerp(-0.36 + cover * 0.3, 0.75 + cover, (1 - f) / 2);
   const bp = Pv(backPt); const shiftX = (bp.x - c.x) * 0.6;
@@ -3101,7 +3433,16 @@ function drawHead(p, head, headFwd, neck) {
   if (R > 3) for (const sd of [-1, 1]) if (earV[0] * sd * toCam[0] + earV[2] * sd * toCam[2] > 0.5) ear(sd);
   if (hs === 'spiky') {
     ctx.fillStyle = hair; ctx.strokeStyle = OUTL; ctx.lineWidth = olW;
-    for (let i = -2; i <= 2; i++) { const x = c.x + i * R * 0.4 + shiftX * 0.3, tip = i * R * 0.12; ctx.beginPath(); ctx.moveTo(x - R * 0.26, c.y - R * 0.82); ctx.lineTo(x + tip, c.y - R * (1.5 - Math.abs(i) * 0.1)); ctx.lineTo(x + R * 0.26, c.y - R * 0.82); ctx.stroke(); ctx.fill(); }
+    ctx.beginPath();
+    ctx.moveTo(c.x-R*.66,c.y-R*.5);
+    for (let i = -2; i <= 2; i++) {
+      const x = c.x + i * R*.235 + shiftX*.13;
+      const y = c.y - R*(1.26-Math.abs(i)*.09);
+      ctx.quadraticCurveTo(x+i*R*.05-R*.07,y,x+i*R*.05,y+R*.015);
+      ctx.quadraticCurveTo(x+R*.06,y+R*.02,x+R*.12,c.y-R*.89);
+    }
+    ctx.lineTo(c.x+R*.67,c.y-R*.54); ctx.quadraticCurveTo(c.x,c.y-R*.65,c.x-R*.66,c.y-R*.5);
+    ctx.closePath(); ctx.fill();
   }
   // 五官（面向镜头且足够大）
   if (f > 0.2 && R > 3.2) {
@@ -3110,7 +3451,7 @@ function drawHead(p, head, headFwd, neck) {
     const em = p.emote && p.emote.t > p.emote.delay ? p.emote : null;
     if (R > 5) {
       // 眼睛：眼白 + 虹膜 + 高光，上眼线；女生眼睛略大带睫毛
-      const ew = R * (fem ? 0.2 : 0.18), eh = R * (fem ? 0.17 : 0.13);
+      const ew = R * (fem ? 0.19 : 0.177), eh = R * (fem ? 0.115 : 0.095);
       for (const sx of [-1, 1]) {
         const x = c.x + side + sx * exo;
         ctx.fillStyle = '#fbfbfb'; ctx.beginPath(); ctx.ellipse(x, ey, ew, eh, 0, 0, 7); ctx.fill();
@@ -3128,7 +3469,7 @@ function drawHead(p, head, headFwd, neck) {
       ctx.fillStyle = '#2a1c14'; const er = Math.max(0.6, R * 0.1);
       ctx.beginPath(); ctx.arc(c.x + side - exo, ey, er, 0, 7); ctx.arc(c.x + side + exo, ey, er, 0, 7); ctx.fill();
     }
-    const my = c.y + R * 0.7;
+    const my = c.y + R * 0.61;
     if (em && em.win && (em.type === 'roar' || em.type === 'fist' || em.type === 'jump' || em.type === 'spin')) {
       ctx.fillStyle = 'rgba(110,35,35,0.9)'; ctx.beginPath(); ctx.ellipse(c.x + side, my, R * 0.17, R * 0.15, 0, 0, 7); ctx.fill();
     } else {
@@ -3142,27 +3483,37 @@ function drawHead(p, head, headFwd, neck) {
 
 
 // 菜单头像：直接用场上的 3D 模型渲染半身像（和比赛里看到的是同一个人）
+const portraitCache = new Map();
 function drawPortrait(cv2, ch) {
-  const g = cv2.getContext('2d'); const w = cv2.width, h = cv2.height;
+  const w = cv2.width, h = cv2.height, target = cv2.getContext('2d');
+  const key = ch.name + ':' + w + 'x' + h;
+  if (portraitCache.has(key)) { target.drawImage(portraitCache.get(key),0,0); return; }
+  const portrait = document.createElement('canvas'); portrait.width = w; portrait.height = h;
+  const g = portrait.getContext('2d');
   g.clearRect(0, 0, w, h);
   const bg = g.createLinearGradient(0, 0, 0, h); bg.addColorStop(0, shade(ch.shirt, 0.5)); bg.addColorStop(1, shade(ch.shirt, 0.18));
   g.fillStyle = bg; g.fillRect(0, 0, w, h);
-  const save = { ctx, pos: CAM.pos, look: CAM.look, FOC, OX, OY, players, state };
+  const save = { ctx, pos: CAM.pos, look: CAM.look, FOC, OX, OY };
   try {
     const p = makePlayer(1, 0, CHARS.indexOf(ch), false, 'normal');
     p.x = 0; p.z = -1;
     for (let i = 0; i < 4; i++) updateAnim(p, 0.05);
-    const hY = 1.6 * p.sc;
-    ctx = g; CAM.pos = [0.32 * ch.hd, hY + 0.06, 0.25]; CAM.look = [0, hY - 0.1, -1]; setupCam();
-    FOC = h * 2.5; OX = w / 2; OY = h * 0.5;
+    const hY = 1.62 * p.sc;
+    ctx = g; CAM.pos = [0.25 * ch.hd, hY + 0.12, 0.35]; CAM.look = [0, hY - 0.095, -1]; setupCam();
+    FOC = h * 2.35; OX = w / 2; OY = h * 0.40;
     g.lineCap = 'round'; g.lineJoin = 'round';
     if (GLR.ok) {
       if (!GLP) GLP = makeGL(document.createElement('canvas'));
       if (!GLP.ok) { curG = GLP; drawPlayer(p); curG = GLR; }
       else { curG = GLP; glPost.length = 0; GLP.begin(w, h, 1); drawPlayer(p); GLP.end(); g.drawImage(GLP.canvas, 0, 0, w, h); glPost.length = 0; curG = GLR; }
     } else drawPlayer(p);
+    portraitCache.set(key,portrait);
+    target.drawImage(portrait,0,0);
   } catch (e) { console.error(e); }
-  ctx = save.ctx; CAM.pos = save.pos; CAM.look = save.look; setupCam(); FOC = save.FOC; OX = save.OX; OY = save.OY;
+  finally {
+    curG = GLR;
+    ctx = save.ctx; CAM.pos = save.pos; CAM.look = save.look; setupCam(); FOC = save.FOC; OX = save.OX; OY = save.OY;
+  }
 }
 
 function drawShadow(x, z, r, a) {
