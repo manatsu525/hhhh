@@ -125,6 +125,7 @@ h1{margin:0;font-size:30px;letter-spacing:.08em;background:linear-gradient(90deg
     <div><b>按住击球键并拖动 = 选择落点</b>：向左/右拖动 = 落点偏左/右，<b>拖到底 = 压边线</b>（杀边线、打大对角都靠它）；向上拖 = 打得更深（拖到底压底线），向下拖 = 更短更近网，不拖 = 打向中路。<b>落点自动限制在界内</b>，拖出界也只会瞄准贴线位置；只有击球质量很差时才可能出界。场上彩色圈标出预计落点。</div>
     <div><b>只有杀球需要蓄力</b>：按住[杀球]越久，杀球越重；蓄力过半（黄色以上）且球足够高时自动起跳 = <b>跳杀</b>；<b>蓄力后半程球速线性上升，蓄满（红色）跳杀可达 400 km/h 以上</b>。快速杀球落地后会继续向前滑行。其它球不需要蓄力。</div>
     <div><b>网前扑球</b>：对方回球过网时只要球头还高过网带，按[杀球]（或[平抽]）球员会全速蹬跨上网抢高点扑杀；球已经落到网带以下则变成平推。<b>网前搓放</b>：按[吊球]，击球点越高、到位越好，球越贴网。原地/低角度杀球会自动收一点力量保证落在界内。</div>
+    <div><b>技术动作</b>：每种技术有自己的动作——[高远]发球是正手侧身发高远，[吊球]/[平抽]发球是反手发网前/平快；头顶区的高远、吊球、点杀（轻按）、重杀（蓄力）、跳杀（蓄力过半且球够高）、劈杀（杀球时把落点拖向对角）各不相同；网前[吊球]直线是搓球，拖向对角是勾对角。</div>
     <div><b>精彩回放</b>：多拍相持、鱼跃救球、重杀或扑球得分后，会用近景机位慢动作回放最后几拍，点击屏幕可跳过（菜单可关闭）。每位球员得分后有自己的招牌庆祝动作。</div>
     <h3>球员</h3>
     <div>16 名男女球员，身高、左右手、外观各不相同。属性：速度（移动）、力量（杀球球速）、耐力（体力消耗）、技术（击球稳定性）、防守（接杀能力/范围）、网前（搓球贴网程度）、弹跳（跳杀高度与球速）、假动作（吊球/网前让对手反应变慢）。身高越高，击球点越高。菜单里可以分别选择你的球员、对手和双打队友。</div>
@@ -543,7 +544,7 @@ function setupServe() {
     if (p === server) { x = xs * (m.doubles ? 0.45 : 0.55); z = zs * (m.doubles ? 2.35 : 2.95); }
     else if (p === receiver) { x = xs * (m.doubles ? 0.6 : 0.75); z = zs * (m.doubles ? 2.55 : 3.25); }
     else { x = xs * 1.1; z = zs * 4.4; }
-    p.x = x; p.z = z; p.vx = p.vz = 0; p.emote = null; p.jumpV = 0; p.charge = null; p.swing = null; p.lungeT = 0; p.jumpY = 0; p.plan = null; p.leave = false; p.recoverT = 0; p.aiBtn = null;
+    p.x = x; p.z = z; p.vx = p.vz = 0; p.emote = null; p.hl = null; p.jumpV = 0; p.charge = null; p.swing = null; p.lungeT = 0; p.jumpY = 0; p.plan = null; p.leave = false; p.recoverT = 0; p.aiBtn = null;
     if (p.an) p.an.snap = true;
   }
   sh.flying = false; sh.netted = false; sh.isServe = false; sh.slide = null; sh.restDir = null; sh.lastSide = -1; sh.trail = []; sh.lastHitter = null;
@@ -569,8 +570,10 @@ function gamePointSide() {
 }
 function attachShuttleToServer() {
   const p = match.server;
-  const rs = p.side === 0 ? 1 : -1, fs = p.side === 0 ? -1 : 1;
-  sh.x = p.x + rs * 0.28; sh.z = p.z + fs * 0.32; sh.y = 0.98 + (p.charge ? 0.02 : 0);
+  const rs = (p.side === 0 ? 1 : -1) * p.hd, fs = p.side === 0 ? -1 : 1;
+  const h = serveHold(p, serveBtn(p)), t = [h.r, h.y, h.f];
+  p.hl = p.hl ? lerp3(p.hl, t, 0.1) : t; // 换发球方式时持球点平滑移动
+  sh.x = p.x + rs * p.hl[0]; sh.y = p.hl[1]; sh.z = p.z + fs * p.hl[2];
   sh.vx = sh.vy = sh.vz = 0;
 }
 
@@ -647,13 +650,14 @@ function releaseCharge(p, aimX, aimY) {
 }
 function startSwing(p, btn, c, aimX, aimY) {
   const isServe = state === 'serve' && p === match.server;
-  const pr = isServe ? { tech: 'serve', hand: 1, y: 1, r: 0.3, f: 0.3 } : predictStyle(p, SW_HIT);
+  const pr = isServe ? Object.assign({ tech: 'serve', hand: 1 }, serveHold(p, btn)) : predictStyle(p, SW_HIT);
   const tech = isServe ? 'serve' : refineTech(pr.tech, btn);
   const from = p.pose ? clonePose(p.pose) : clonePose(KF.ready);
   p.swing = { t: 0, btn, c, aimX: clamp(aimX, -1, 1), aimY: clamp(aimY, -1, 1), bestD: 1e9, bestT: 0, bestM: null, done: false, tech, hand: TECH[tech].hand, from, serve: isServe,
     contact: [pr.r, pr.y, pr.f] };
   // 起跳：高球必须跳，或蓄满力的杀球
   if (!isServe && p.jumpY <= 0 && p.jumpV <= 0 && p.lungeT <= 0 && p.stamina > 8 && (pr.y > p.maxH - 0.05 || (TECH[tech].jump && btn === 'C' && c > 0.55 && pr.y > 2.35 && p.stamina > 12))) p.jumpV = 2.7;
+  p.swing.style = swingStyle(tech, btn, c, pr.y, crossOf(p, aimX), p.jumpY > 0.02 || p.jumpV > 0);
 }
 
 function shotQualityLabel(q) { return q >= 0.88 ? ['完美!', '#ffd34d'] : q >= 0.68 ? ['很好', '#7dffb2'] : q >= 0.42 ? ['一般', '#cfe0ff'] : ['勉强', '#ff9b7a']; }
@@ -877,7 +881,8 @@ function doHit(p, sw) {
   if (isPow) { p.stats.smash++; p.stats.maxSmash = Math.max(p.stats.maxSmash, kmh); }
   if (p.isHuman || p.side === 0 || isPow || kind === 'frame') {
     const ql = shotQualityLabel(q);
-    let txt = (kind === 'frame' ? '' : TQ.pre) + SHOT_NAME[kind];
+    const nm = kind === 'net' ? (sw.style === 'hook' ? '勾对角' : q >= 0.68 ? '搓球' : '放网') : kind === 'smash' && sw.style === 'chop' ? '劈杀' : kind === 'smash' && sw.style === 'tap' ? '点杀' : SHOT_NAME[kind];
+    let txt = (kind === 'frame' ? '' : TQ.pre) + nm;
     if (isPow) txt += ' ' + kmh + 'km/h';
     if (p.isHuman && isPow && sw.c >= 0.98 && kind !== 'kill' && kind !== 'halfsmash') addPopup('满蓄力!', pos.x, pos.y + 1.25, pos.z, '#ff6a4d', 16);
     addPopup(txt, pos.x, pos.y + 0.45, pos.z, p.side === 0 ? '#ffffff' : '#ffc7c0', 15);
@@ -1958,7 +1963,196 @@ const KF = {
     fol:  { yaw: 0.35, crouch: 0.06, lean: 0.15, tilt: 0, sht: 0.05, rh: [-0.05, 1.58, 0.42], rd: [-0.1, 0.95, 0.25], lh: [-0.38, 1.05, -0.05], el: [0.6, -0.5, 0], ell: [-0.6, -0.6, -0.2] },
   },
 };
-const PCH = ['yaw', 'hip', 'crouch', 'lean', 'tilt', 'sht'], VCH = ['rh', 'rd', 'lh', 'el', 'ell'];
+// ---------- 各项技术的专属动作 ----------
+// 同一个击球区域里，不同技术的引拍幅度、转体、击球瞬间的拍面和随挥都不一样。
+// 每个动作 5 个阶段：back 引拍（侧身、架拍、重心在后脚）→ drop 拍头下落、髋先转 → hit 击球 →
+// f1 随挥前段 → f2 随挥收拍。只写与该区域基础动作不同的通道；sf = 重心前后移动（+ 向球网）。
+const STYLES = {
+  over: {
+    // 高远球：充分侧身后仰，击球点在头顶偏后，拍面向前上方，随挥高而长
+    clear: {
+      back: { yaw: -1.6, hip: -1.2, crouch: 0.14, lean: -0.3, tilt: 0.25, sht: -0.4, sf: -0.1, rh: [0.42, 1.6, -0.26], rd: [0.2, 0.72, -0.66], lh: [-0.1, 2.08, 0.55], el: [1, 0.15, -0.5] },
+      drop: { yaw: -1.05, hip: -0.15, crouch: 0.05, lean: -0.26, tilt: 0.14, sht: -0.15, sf: -0.02, rh: [0.36, 1.78, -0.16], rd: [0.1, -0.96, -0.25], lh: [-0.3, 1.55, 0.3], el: [0.5, 1, 0.3] },
+      hit: { yaw: 0.2, hip: 0.45, crouch: 0, lean: -0.06, tilt: -0.28, sht: 0.5, sf: 0.06, rd: [0.02, 0.97, 0.22], lh: [-0.34, 1.1, -0.1] },
+      f1: { yaw: 0.75, hip: 0.75, crouch: 0.04, lean: 0.18, tilt: -0.2, sht: 0.25, sf: 0.12, rh: [0.05, 1.75, 0.5], rd: [-0.25, 0.35, 0.9], lh: [-0.38, 1.02, -0.25], el: [0.5, 0.2, 0.4] },
+      f2: { yaw: 1.15, hip: 0.95, crouch: 0.12, lean: 0.36, tilt: -0.08, sht: 0.05, sf: 0.14, rh: [-0.36, 1.05, 0.36], rd: [-0.6, -0.6, 0.45], lh: [-0.4, 1.0, -0.3], el: [0.3, -0.7, 0.2] },
+    },
+    // 平高球：动作同高远，拍面更向前、随挥更快更平
+    attclear: {
+      back: { yaw: -1.5, hip: -1.1, crouch: 0.14, lean: -0.24, tilt: 0.22, sht: -0.35, sf: -0.08, lh: [-0.1, 2.05, 0.55] },
+      drop: { yaw: -0.95, hip: -0.05, lean: -0.18, sht: -0.1 },
+      hit: { yaw: 0.3, hip: 0.5, crouch: 0, lean: 0.04, tilt: -0.3, sht: 0.48, sf: 0.08, rd: [0.02, 0.92, 0.38], lh: [-0.34, 1.08, -0.12] },
+      f1: { yaw: 0.85, hip: 0.8, lean: 0.24, sf: 0.14, rh: [0.02, 1.6, 0.55], rd: [-0.25, 0.1, 0.96], lh: [-0.38, 1.02, -0.25], el: [0.5, 0, 0.4] },
+      f2: { yaw: 1.2, hip: 1.0, crouch: 0.14, lean: 0.4, sf: 0.16, rh: [-0.38, 0.98, 0.32], rd: [-0.6, -0.65, 0.4], lh: [-0.4, 1.0, -0.3], el: [0.3, -0.7, 0.2] },
+    },
+    // 重杀：引拍蹬地后仰成反弓，髋先转带动肩，击球点在身体前上方，收腹下压，随挥到对侧腿外
+    smash: {
+      back: { yaw: -1.65, hip: -1.1, crouch: 0.2, lean: -0.4, tilt: 0.28, sht: -0.45, sf: -0.14, rh: [0.46, 1.58, -0.3], rd: [0.22, 0.6, -0.77], lh: [-0.05, 2.1, 0.6], el: [1, 0.1, -0.5] },
+      drop: { yaw: -0.85, hip: 0.25, crouch: 0.08, lean: -0.3, tilt: 0.15, sht: -0.1, sf: 0, rh: [0.38, 1.74, -0.18], rd: [0.12, -0.97, -0.2], lh: [-0.28, 1.5, 0.3], el: [0.45, 1, 0.35] },
+      hit: { yaw: 0.5, hip: 0.75, crouch: 0.02, lean: 0.24, tilt: -0.34, sht: 0.5, sf: 0.12, rd: [0, 0.72, 0.69], lh: [-0.3, 1.02, -0.22] },
+      f1: { yaw: 1.05, hip: 1.0, crouch: 0.14, lean: 0.5, tilt: -0.22, sht: 0.2, sf: 0.2, rh: [0, 1.3, 0.62], rd: [-0.2, -0.35, 0.9], lh: [-0.36, 0.98, -0.3], el: [0.5, -0.2, 0.4] },
+      f2: { yaw: 1.45, hip: 1.2, crouch: 0.24, lean: 0.68, tilt: -0.08, sht: 0, sf: 0.22, rh: [-0.42, 0.78, 0.25], rd: [-0.6, -0.75, 0.25], lh: [-0.38, 0.95, -0.36], el: [0.3, -0.8, 0.1] },
+    },
+    // 跳杀：空中反弓更大，击球后收腹屈体，落地缓冲
+    jsmash: {
+      back: { yaw: -1.7, hip: -1.0, crouch: 0.02, lean: -0.5, tilt: 0.3, sht: -0.5, sf: -0.1, rh: [0.48, 1.6, -0.34], rd: [0.24, 0.55, -0.8], lh: [-0.02, 2.12, 0.6], el: [1, 0.1, -0.5] },
+      drop: { yaw: -0.8, hip: 0.35, crouch: 0, lean: -0.38, tilt: 0.16, sht: -0.1, sf: 0, rh: [0.38, 1.76, -0.2], rd: [0.12, -0.97, -0.2], lh: [-0.26, 1.5, 0.32], el: [0.45, 1, 0.35] },
+      hit: { yaw: 0.55, hip: 0.85, crouch: 0, lean: 0.3, tilt: -0.36, sht: 0.52, sf: 0.1, rd: [0, 0.68, 0.73], lh: [-0.28, 1.0, -0.24] },
+      f1: { yaw: 1.1, hip: 1.05, crouch: 0.1, lean: 0.6, tilt: -0.22, sht: 0.2, sf: 0.16, rh: [0, 1.25, 0.64], rd: [-0.2, -0.45, 0.87], lh: [-0.36, 0.96, -0.3], el: [0.5, -0.2, 0.4] },
+      f2: { yaw: 1.5, hip: 1.25, crouch: 0.3, lean: 0.75, tilt: -0.08, sht: 0, sf: 0.2, rh: [-0.42, 0.72, 0.22], rd: [-0.6, -0.78, 0.2], lh: [-0.38, 0.92, -0.36], el: [0.3, -0.8, 0.1] },
+    },
+    // 点杀：小引拍、靠前臂和手腕闪击，击球后拍子急停回弹，身体几乎不前冲
+    tap: {
+      back: { yaw: -1.1, hip: -0.6, crouch: 0.1, lean: -0.12, tilt: 0.12, sht: -0.2, sf: -0.04, rh: [0.38, 1.7, -0.1], rd: [0.12, 0.8, -0.58], lh: [-0.25, 1.6, 0.4], el: [0.9, 0.3, -0.3] },
+      drop: { yaw: -0.6, hip: -0.1, crouch: 0.08, lean: -0.08, tilt: 0.06, sht: 0, sf: 0, rh: [0.34, 1.82, -0.04], rd: [0.1, -0.6, -0.79], lh: [-0.32, 1.35, 0.25], el: [0.5, 1, 0.3] },
+      hit: { yaw: 0.15, hip: 0.25, crouch: 0.06, lean: 0.1, tilt: -0.18, sht: 0.35, sf: 0.04, rd: [0, 0.8, 0.6], lh: [-0.36, 1.12, 0] },
+      f1: { yaw: 0.3, hip: 0.32, crouch: 0.08, lean: 0.16, tilt: -0.12, sht: 0.25, sf: 0.05, rh: [0.2, 1.78, 0.5], rd: [-0.05, 0.15, 0.99], lh: [-0.38, 1.08, -0.08], el: [0.6, 0.2, 0.3] },
+      f2: { yaw: 0.4, hip: 0.36, crouch: 0.1, lean: 0.18, tilt: -0.05, sht: 0.1, sf: 0.05, rh: [0.22, 1.45, 0.5], rd: [0, 0.6, 0.8], lh: [-0.38, 1.06, -0.1], el: [0.6, -0.3, 0.2] },
+    },
+    // 劈杀：引拍同重杀，击球时拍面斜切球托侧面，随挥迅速横向划过身体
+    chop: {
+      back: { yaw: -1.6, hip: -1.05, crouch: 0.18, lean: -0.36, tilt: 0.26, sht: -0.42, sf: -0.12, rh: [0.46, 1.58, -0.3], rd: [0.22, 0.6, -0.77], lh: [-0.05, 2.1, 0.6], el: [1, 0.1, -0.5] },
+      drop: { yaw: -0.85, hip: 0.2, crouch: 0.08, lean: -0.26, tilt: 0.14, sht: -0.1, sf: 0, rh: [0.4, 1.74, -0.16], rd: [0.2, -0.95, -0.22], lh: [-0.28, 1.5, 0.3], el: [0.45, 1, 0.35] },
+      hit: { yaw: 0.35, hip: 0.65, crouch: 0.02, lean: 0.16, tilt: -0.36, sht: 0.5, sf: 0.1, rd: [0.38, 0.8, 0.46], lh: [-0.3, 1.04, -0.2] },
+      f1: { yaw: 0.9, hip: 0.9, crouch: 0.1, lean: 0.3, tilt: -0.26, sht: 0.2, sf: 0.14, rh: [-0.2, 1.45, 0.45], rd: [-0.75, 0.2, 0.62], lh: [-0.36, 1.0, -0.28], el: [0.5, 0, 0.4] },
+      f2: { yaw: 1.2, hip: 1.05, crouch: 0.16, lean: 0.36, tilt: -0.1, sht: 0, sf: 0.16, rh: [-0.5, 1.0, 0.2], rd: [-0.8, -0.5, 0.3], lh: [-0.38, 0.98, -0.32], el: [0.3, -0.6, 0.2] },
+    },
+    // 劈吊：同劈杀的切击，但出手轻、不压身体
+    slice: {
+      back: { yaw: -1.55, hip: -1.1, crouch: 0.15, lean: -0.3, tilt: 0.24, sht: -0.4, sf: -0.1, lh: [-0.08, 2.08, 0.58] },
+      hit: { yaw: 0.25, hip: 0.5, lean: 0.06, tilt: -0.32, sht: 0.46, sf: 0.06, rd: [0.36, 0.84, 0.4], lh: [-0.34, 1.08, -0.14] },
+      f1: { yaw: 0.6, hip: 0.7, lean: 0.16, tilt: -0.2, sht: 0.2, sf: 0.1, rh: [-0.12, 1.6, 0.46], rd: [-0.7, 0.35, 0.62], lh: [-0.38, 1.02, -0.22], el: [0.5, 0.1, 0.4] },
+      f2: { yaw: 0.85, hip: 0.8, crouch: 0.1, lean: 0.22, sf: 0.1, rh: [-0.4, 1.2, 0.3], rd: [-0.8, -0.2, 0.55], lh: [-0.4, 1.0, -0.28], el: [0.3, -0.5, 0.2] },
+    },
+    // 吊球：引拍与杀球一致（一致性），击球瞬间收力轻送，随挥短
+    drop: {
+      back: { yaw: -1.6, hip: -1.15, crouch: 0.16, lean: -0.32, tilt: 0.25, sht: -0.4, sf: -0.1, lh: [-0.08, 2.08, 0.58] },
+      hit: { yaw: 0.2, hip: 0.42, lean: 0.05, tilt: -0.28, sht: 0.46, sf: 0.05, rd: [0.02, 0.88, 0.47], lh: [-0.34, 1.1, -0.1] },
+      f1: { yaw: 0.45, hip: 0.55, lean: 0.14, tilt: -0.18, sht: 0.28, sf: 0.08, rh: [0.15, 1.8, 0.5], rd: [-0.05, 0.5, 0.86], lh: [-0.38, 1.05, -0.18], el: [0.6, 0.2, 0.3] },
+      f2: { yaw: 0.6, hip: 0.62, crouch: 0.1, lean: 0.2, sf: 0.08, rh: [0.05, 1.35, 0.45], rd: [-0.2, 0.1, 0.97], lh: [-0.38, 1.03, -0.2], el: [0.5, -0.4, 0.2] },
+    },
+  },
+  // 正手挑球：大弓步上网，拍从下后方向前上方大幅度兜起，随挥过肩
+  under: {
+    lift: {
+      back: { yaw: -0.5, hip: -0.2, crouch: 0.28, lean: 0.46, tilt: 0.08, sf: 0.08, rh: [0.46, 0.98, 0.06], rd: [0.3, 0.3, -0.9], lh: [-0.5, 1.05, -0.3] },
+      drop: { yaw: -0.25, hip: -0.05, crouch: 0.3, lean: 0.52, sf: 0.16, rh: [0.42, 0.72, 0.34], rd: [0.3, -0.62, -0.72], lh: [-0.52, 1.02, -0.34] },
+      hit: { yaw: 0.02, hip: 0.08, crouch: 0.3, lean: 0.54, sf: 0.22, rd: [0.2, -0.1, 0.97], lh: [-0.54, 1.0, -0.36] },
+      f1: { yaw: 0.14, hip: 0.12, crouch: 0.26, lean: 0.44, sf: 0.22, rh: [0.22, 1.2, 0.74], rd: [0.1, 0.62, 0.78], lh: [-0.52, 1.02, -0.32], el: [0.6, -0.5, 0.1] },
+      f2: { yaw: 0.2, hip: 0.14, crouch: 0.2, lean: 0.3, sf: 0.16, rh: [0.12, 1.74, 0.44], rd: [-0.1, 0.97, 0.2], lh: [-0.5, 1.05, -0.26], el: [0.6, -0.2, 0.1] },
+    },
+  },
+  underB: {
+    lift: {
+      back: { yaw: 0.7, crouch: 0.28, lean: 0.46, sf: 0.08, rh: [-0.2, 1.06, 0.14], rd: [-0.35, 0.3, -0.89] },
+      drop: { yaw: 0.52, crouch: 0.3, lean: 0.52, sf: 0.16, rh: [-0.38, 0.76, 0.34], rd: [-0.4, -0.58, -0.7] },
+      hit: { yaw: 0.36, crouch: 0.3, lean: 0.54, sf: 0.22, rd: [-0.3, -0.06, 0.95] },
+      f1: { yaw: 0.42, crouch: 0.26, lean: 0.44, sf: 0.22, rh: [-0.42, 1.15, 0.7], rd: [-0.28, 0.62, 0.73], el: [-0.3, 0.5, 0.7] },
+      f2: { yaw: 0.46, crouch: 0.2, lean: 0.32, sf: 0.16, rh: [-0.46, 1.66, 0.46], rd: [-0.25, 0.95, 0.2], el: [-0.25, 0.7, 0.5] },
+    },
+  },
+  // 正手网前
+  netF: {
+    // 搓球：拍面放平托在球下，从外向内横切球托，手指捻动，动作小而柔
+    spin: {
+      back: { yaw: -0.3, hip: -0.1, crouch: 0.28, lean: 0.5, sf: 0.16, rh: [0.44, 1.0, 0.44], rd: [0.6, 0.12, 0.79], lh: [-0.5, 1.05, -0.38] },
+      drop: { yaw: -0.26, hip: -0.08, crouch: 0.3, lean: 0.54, sf: 0.2, rh: [0.44, 0.96, 0.5], rd: [0.5, 0.06, 0.86], lh: [-0.52, 1.03, -0.4] },
+      hit: { yaw: -0.2, hip: -0.05, crouch: 0.3, lean: 0.56, sf: 0.22, rd: [0.24, 0.12, 0.96], lh: [-0.52, 1.02, -0.4] },
+      f1: { yaw: -0.14, hip: -0.02, crouch: 0.3, lean: 0.54, sf: 0.22, rh: [0.32, 0.99, 0.63], rd: [-0.12, 0.2, 0.97], lh: [-0.52, 1.03, -0.38] },
+      f2: { yaw: -0.1, hip: 0, crouch: 0.27, lean: 0.48, sf: 0.18, rh: [0.3, 1.03, 0.62], rd: [-0.22, 0.32, 0.92], lh: [-0.5, 1.04, -0.34] },
+    },
+    // 勾对角：拍面先对着直线，击球瞬间前臂内旋、手腕横拨，把球拨向对角
+    hook: {
+      back: { yaw: -0.36, hip: -0.12, crouch: 0.28, lean: 0.5, sf: 0.16, rh: [0.46, 1.0, 0.44], rd: [0.34, 0.14, 0.93], lh: [-0.5, 1.05, -0.38] },
+      drop: { yaw: -0.34, hip: -0.1, crouch: 0.3, lean: 0.54, sf: 0.2, rh: [0.46, 0.97, 0.5], rd: [0.42, 0.1, 0.9], lh: [-0.52, 1.03, -0.4] },
+      hit: { yaw: -0.1, hip: 0, crouch: 0.3, lean: 0.54, sf: 0.22, rd: [-0.42, 0.2, 0.89], lh: [-0.52, 1.02, -0.38] },
+      f1: { yaw: 0.12, hip: 0.08, crouch: 0.28, lean: 0.5, sf: 0.2, rh: [0.26, 1.02, 0.58], rd: [-0.82, 0.3, 0.48], lh: [-0.5, 1.04, -0.34], el: [0.6, -0.4, 0.1] },
+      f2: { yaw: 0.16, hip: 0.1, crouch: 0.25, lean: 0.45, sf: 0.16, rh: [0.24, 1.08, 0.55], rd: [-0.72, 0.46, 0.52], lh: [-0.5, 1.05, -0.3], el: [0.6, -0.4, 0.1] },
+    },
+  },
+  // 反手网前
+  netB: {
+    spin: {
+      back: { yaw: 0.46, crouch: 0.28, lean: 0.5, sf: 0.16, rh: [-0.26, 1.03, 0.42], rd: [-0.62, 0.12, 0.77] },
+      drop: { yaw: 0.44, crouch: 0.3, lean: 0.54, sf: 0.2, rh: [-0.34, 0.98, 0.5], rd: [-0.54, 0.06, 0.84] },
+      hit: { yaw: 0.4, crouch: 0.3, lean: 0.56, sf: 0.22, rd: [-0.26, 0.12, 0.96] },
+      f1: { yaw: 0.36, crouch: 0.3, lean: 0.54, sf: 0.22, rh: [-0.32, 1.0, 0.62], rd: [0.08, 0.2, 0.98] },
+      f2: { yaw: 0.36, crouch: 0.27, lean: 0.48, sf: 0.18, rh: [-0.32, 1.04, 0.62], rd: [0.18, 0.32, 0.93] },
+    },
+    hook: {
+      back: { yaw: 0.5, crouch: 0.28, lean: 0.5, sf: 0.16, rh: [-0.26, 1.03, 0.42], rd: [-0.36, 0.14, 0.92] },
+      drop: { yaw: 0.5, crouch: 0.3, lean: 0.54, sf: 0.2, rh: [-0.34, 0.98, 0.5], rd: [-0.44, 0.1, 0.89] },
+      hit: { yaw: 0.3, crouch: 0.3, lean: 0.54, sf: 0.22, rd: [0.42, 0.2, 0.89] },
+      f1: { yaw: 0.16, crouch: 0.28, lean: 0.5, sf: 0.2, rh: [-0.24, 1.03, 0.58], rd: [0.82, 0.3, 0.48], el: [-0.2, 0.3, 0.9] },
+      f2: { yaw: 0.14, crouch: 0.25, lean: 0.45, sf: 0.16, rh: [-0.22, 1.08, 0.55], rd: [0.72, 0.46, 0.52], el: [-0.2, 0.3, 0.9] },
+    },
+  },
+  serve: {
+    // 正手发高远球：侧身站立、左脚在前，重心由后脚移向前脚，转髋带动手臂由后下向前上挥，随挥到左肩上方
+    serveF: {
+      back: { yaw: -1.2, hip: -0.9, crouch: 0.1, lean: 0.05, tilt: 0.1, sht: -0.1, sf: -0.12, rh: [0.5, 1.25, -0.38], rd: [0.3, 0.75, -0.59], el: [0.8, -0.2, -0.5], ell: [-0.4, -0.8, 0.3] },
+      drop: { yaw: -0.7, hip: -0.15, crouch: 0.12, lean: 0.1, tilt: 0.06, sht: -0.05, sf: -0.02, rh: [0.5, 0.8, -0.2], rd: [0.25, -0.8, -0.55], el: [0.7, -0.5, -0.3], ell: [-0.4, -0.8, 0.3] },
+      hit: { yaw: -0.05, hip: 0.3, crouch: 0.1, lean: 0.12, tilt: 0, sht: 0, sf: 0.1, rd: [0.15, -0.35, 0.92], lh: [-0.3, 1.1, 0.2], el: [0.5, -0.7, 0], ell: [-0.6, -0.7, 0.1] },
+      f1: { yaw: 0.5, hip: 0.6, crouch: 0.06, lean: 0.1, sht: 0.1, sf: 0.16, rh: [0.1, 1.3, 0.6], rd: [-0.1, 0.6, 0.8], lh: [-0.36, 1.05, 0.02], el: [0.6, -0.5, 0.1], ell: [-0.6, -0.7, 0] },
+      f2: { yaw: 0.9, hip: 0.8, crouch: 0.04, lean: 0.05, sht: 0.15, sf: 0.18, rh: [-0.3, 1.75, 0.25], rd: [-0.45, 0.85, 0.2], lh: [-0.38, 1.0, -0.1], el: [0.5, -0.2, 0.3], ell: [-0.6, -0.7, -0.1] },
+    },
+    // 反手发网前球：正对球网、右脚在前，肘抬起拍头朝下置于腹前，短促前推
+    serveB: {
+      back: { yaw: 0.35, hip: 0.15, crouch: 0.12, lean: 0.2, tilt: 0, sht: 0.1, sf: 0.04, rh: [0.1, 1.2, 0.2], rd: [-0.14, -0.58, 0.8], el: [0.75, 0.35, 0.3], ell: [-0.6, -0.5, 0.4] },
+      drop: { yaw: 0.33, hip: 0.14, crouch: 0.12, lean: 0.2, sht: 0.1, sf: 0.03, rh: [0.11, 1.22, 0.14], rd: [-0.12, -0.64, 0.76], el: [0.75, 0.4, 0.25], ell: [-0.6, -0.5, 0.4] },
+      hit: { yaw: 0.38, hip: 0.16, crouch: 0.12, lean: 0.22, sht: 0.08, sf: 0.06, rd: [-0.12, -0.45, 0.88], lh: [-0.2, 1.12, 0.36], el: [0.75, 0.3, 0.3], ell: [-0.6, -0.5, 0.3] },
+      f1: { yaw: 0.4, hip: 0.17, crouch: 0.12, lean: 0.22, sht: 0.06, sf: 0.07, rh: [0.14, 1.26, 0.3], rd: [-0.1, -0.2, 0.97], lh: [-0.26, 1.08, 0.3], el: [0.75, 0.2, 0.3], ell: [-0.6, -0.6, 0.2] },
+      f2: { yaw: 0.36, hip: 0.15, crouch: 0.12, lean: 0.2, sht: 0.04, sf: 0.05, rh: [0.14, 1.22, 0.34], rd: [-0.1, 0.05, 0.99], lh: [-0.3, 1.05, 0.26], el: [0.7, -0.1, 0.2], ell: [-0.6, -0.6, 0.1] },
+    },
+    // 反手发平快/后场：准备同网前发球，击球时手腕爆发弹击，随挥明显上扬
+    serveK: {
+      back: { yaw: 0.35, hip: 0.15, crouch: 0.12, lean: 0.2, tilt: 0, sht: 0.1, sf: 0.04, rh: [0.1, 1.2, 0.2], rd: [-0.14, -0.58, 0.8], el: [0.75, 0.35, 0.3], ell: [-0.6, -0.5, 0.4] },
+      drop: { yaw: 0.3, hip: 0.12, crouch: 0.13, lean: 0.2, sht: 0.1, sf: 0.02, rh: [0.11, 1.23, 0.1], rd: [-0.12, -0.72, 0.68], el: [0.75, 0.45, 0.2], ell: [-0.6, -0.5, 0.4] },
+      hit: { yaw: 0.42, hip: 0.2, crouch: 0.1, lean: 0.2, sht: 0.08, sf: 0.08, rd: [-0.1, -0.3, 0.95], lh: [-0.2, 1.12, 0.36], el: [0.75, 0.3, 0.3], ell: [-0.6, -0.5, 0.3] },
+      f1: { yaw: 0.48, hip: 0.22, crouch: 0.08, lean: 0.16, sht: 0.06, sf: 0.1, rh: [0.14, 1.4, 0.38], rd: [-0.05, 0.45, 0.89], lh: [-0.28, 1.06, 0.26], el: [0.7, 0.1, 0.3], ell: [-0.6, -0.6, 0.2] },
+      f2: { yaw: 0.44, hip: 0.2, crouch: 0.08, lean: 0.14, sht: 0.04, sf: 0.08, rh: [0.14, 1.5, 0.4], rd: [-0.05, 0.8, 0.6], lh: [-0.32, 1.04, 0.2], el: [0.7, -0.1, 0.2], ell: [-0.6, -0.6, 0.1] },
+    },
+  },
+};
+// 这一拍该用哪套动作
+function crossOf(p, aimX) { return Math.abs(clamp((aimX || 0) * 1.08, -1, 1) * hw() - p.x) > 1.5; }
+function swingStyle(tech, btn, c, y, cross, air) {
+  if (tech === 'serve') return btn === 'A' ? 'serveF' : btn === 'B' ? 'serveB' : 'serveK';
+  if (tech === 'oh' || tech === 'rth') {
+    if (btn === 'A') return 'clear';
+    if (btn === 'D') return 'attclear';
+    if (btn === 'B') return c > 0.75 ? 'slice' : 'drop';
+    if (y < 2.0) return 'tap';
+    if (air) return 'jsmash';
+    if (cross) return 'chop';
+    return c < 0.35 ? 'tap' : 'smash';
+  }
+  if (tech === 'fhn' || tech === 'bhn') return btn === 'B' ? (cross ? 'hook' : 'spin') : 'base';
+  if (tech === 'fhu' || tech === 'bhu') return 'lift';
+  return 'base';
+}
+const _styleKeys = new Map();
+function styleKeys(tech, style) {
+  const id = tech + '|' + style; let k = _styleKeys.get(id); if (k) return k;
+  const gname = (TECH[tech] || TECH.fhd).g, g = KF[gname];
+  k = { back: clonePose(g.back), drop: clonePose(g.drop || lerpP(g.back, g.hit, 0.5)), hit: clonePose(g.hit), f1: lerpP(g.hit, g.fol, 0.55), f2: clonePose(g.fol) };
+  const st = (STYLES[gname === 'overR' ? 'over' : gname] || {})[style];
+  if (st) for (const ph of ['back', 'drop', 'hit', 'f1', 'f2']) {
+    const q = st[ph]; if (!q) continue;
+    for (const c in q) {
+      // 头顶绕头球沿用自己的持拍手路线（拍子从头的另一侧绕过），只换身体发力和随挥
+      if (gname === 'overR' && (c === 'rh' || c === 'rd' || c === 'el') && ph !== 'f1' && ph !== 'f2') continue;
+      k[ph][c] = Array.isArray(q[c]) ? (c === 'rd' ? norm(q[c]) : q[c].slice()) : q[c];
+    }
+  }
+  _styleKeys.set(id, k);
+  return k;
+}
+// 发球持球点（规范坐标，米）：正手发高远在持拍侧前下方；反手发球在腹前
+function serveBtn(p) { return (p.swing && p.swing.serve && p.swing.btn) || (p.charge && p.charge.btn) || 'B'; }
+function serveHold(p, btn) { const sc = p.sc; return btn === 'A' ? { r: 0.2 * sc, y: 0.8 * sc, f: 0.5 * sc } : { r: 0.03 * sc, y: 1.04 * sc, f: 0.6 * sc }; }
+
+const PCH = ['yaw', 'hip', 'crouch', 'lean', 'tilt', 'sht', 'sf'], VCH = ['rh', 'rd', 'lh', 'el', 'ell'];
 // 骨盆转向 hip：关键帧没写时按上身转体的 45% 推算；写了就独立，形成"髋先转、肩后转"的扭转差
 function chv(q, k) { return k === 'hip' ? (q.hip !== undefined ? q.hip : (q.yaw || 0) * 0.45) : (q[k] || 0); }
 function clonePose(a) { const o = {}; for (const k of PCH) o[k] = chv(a, k); for (const k of VCH) o[k] = (a[k] || KF.ready[k]).slice(); return o; }
@@ -1967,7 +2161,7 @@ function lerpP(a, b, t) { const o = {}; for (const k of PCH) o[k] = lerp(chv(a, 
 function ease(t) { return t * t * (3 - 2 * t); }
 function groupOf(tech) { return KF[(TECH[tech] || TECH.fhd).g]; }
 // 挥拍时间轴（秒）：起点、落拍、击球、随挥末、回位
-const SWK = [0, 0.058, SW_HIT, 0.3, 0.56];
+const SWK = [0, 0.058, SW_HIT, 0.2, 0.34, 0.56];
 // 非均匀 Catmull-Rom（Hermite），keys: 值数组，ts: 时间
 function hermite(vals, ts, t, isVec) {
   const n = vals.length;
@@ -1989,8 +2183,8 @@ function hermite(vals, ts, t, isVec) {
 function swingPose(keys, t) {
   const o = {};
   // 动力链：蹬地/髋最先，肩随后，大臂、前臂再后，拍头（rd）最后甩出
-  const th = t + 0.03, tb = t + 0.016, tr = t, tw = t - 0.006;
-  for (const k of PCH) o[k] = hermite(keys.map(q => chv(q, k)), SWK, k === 'hip' || k === 'crouch' ? th : tb, false);
+  const th = t + 0.038, tb = t + 0.016, tr = t, tw = t - 0.006;
+  for (const k of PCH) o[k] = hermite(keys.map(q => chv(q, k)), SWK, k === 'hip' || k === 'crouch' || k === 'sf' ? th : tb, false);
   for (const k of VCH) {
     const v = hermite(keys.map(q => q[k] || KF.ready[k]), SWK, k === 'lh' || k === 'ell' ? tb : k === 'rd' ? tw : tr, true);
     o[k] = k === 'rd' ? norm(v) : v;
@@ -2004,37 +2198,49 @@ function poseOf(p, dt) {
   let pose;
   const sw = p.swing;
   if (sw) {
-    const g = groupOf(sw.tech);
-    let hit = g.hit;
-    if (sw.contact && sw.tech !== 'serve') {
+    const K = styleKeys(sw.tech, sw.style || 'base');
+    const hit = clonePose(K.hit);
+    const dropY = (p.an ? p.an.pelY : 0.97 * sc) - 0.97 * sc;
+    if (sw.contact) {
       // 让拍面到达实际击球点
-      hit = clonePose(g.hit);
-      const d = norm(hit.rd), drop = (p.an ? p.an.pelY : 0.97 * sc) - 0.97 * sc;
-      hit.rh = [sw.contact[0] / sc - d[0] * 0.56, (sw.contact[1] - drop) / sc - d[1] * 0.56, sw.contact[2] / sc - d[2] * 0.56];
+      const d = norm(hit.rd);
+      hit.rh = [(sw.contact[0] - d[0] * 0.56) / sc, (sw.contact[1] - dropY - d[1] * 0.56) / sc, (sw.contact[2] - d[2] * 0.56) / sc];
     }
-    // 起点：从当前姿态出发但已被引拍姿态吸收大半（预备阶段已提前引拍）
-    const start = lerpP(sw.from, g.back, 0.2);
-    // 落拍帧也随击球点平移，保证弧线经过击球点
-    const dropK = clonePose(g.drop || lerpP(g.back, g.hit, 0.5));
-    const off = [hit.rh[0] - g.hit.rh[0], hit.rh[1] - g.hit.rh[1], hit.rh[2] - g.hit.rh[2]];
-    dropK.rh = add3(dropK.rh, off, 0.6);
-    const fol = clonePose(g.fol); fol.rh = add3(fol.rh, off, 0.3);
-    pose = swingPose([start, dropK, hit, fol, KF.ready], sw.t);
+    // 起点：从当前姿态出发（预备阶段已提前引拍，这里只再吸收一点）
+    const start = lerpP(sw.from, K.back, sw.serve ? 0.6 : 0.2);
+    // 落拍帧和随挥也随击球点平移，保证拍头弧线经过击球点
+    const off = sub3(hit.rh, K.hit.rh);
+    const dropK = clonePose(K.drop); dropK.rh = add3(dropK.rh, off, 0.6);
+    const f1 = clonePose(K.f1); f1.rh = add3(f1.rh, off, 0.7);
+    const f2 = clonePose(K.f2); f2.rh = add3(f2.rh, off, 0.25);
+    if (sw.serve && sw.contact) { // 非持拍手捏着球直到击球
+      const hp = [sw.contact[0] / sc - 0.02, (sw.contact[1] - dropY) / sc + 0.07, sw.contact[2] / sc - 0.02];
+      start.lh = hp; dropK.lh = hp;
+    }
+    pose = swingPose([start, dropK, hit, f1, f2, KF.ready], sw.t);
     p.an && (p.an.poseS = clonePose(pose));
   } else {
     pose = clonePose(KF.ready);
     // 预备引拍：根据即将到来的击球时间与位置
     // 预备引拍：按计划好的技术提前做引拍（头顶球侧身举拍、网前举拍上网、反手提前转体）
-    let T = null, tq = null;
-    if (p.isHuman && p.charge && p.charge.plan && p.charge.planKey === pathT0 && state === 'rally') { T = pathT0 + p.charge.plan.t - SW_HIT; tq = refineTech(p.charge.plan.tech, p.charge.btn); }
-    else if (!p.isHuman && p.plan && p.plan.releaseAt) { T = p.plan.releaseAt; tq = refineTech(p.plan.tech, p.aiBtn || (p.charge && p.charge.btn) || 'A'); }
-    else if (p.charge && state === 'serve' && match && match.server === p) { T = simT + 0.15; tq = 'serve'; }
+    let T = null, tq = null, ps = 'base';
+    const airNow = p.jumpY > 0.02 || p.jumpV > 0;
+    if (p.isHuman && p.charge && p.charge.plan && p.charge.planKey === pathT0 && state === 'rally') { T = pathT0 + p.charge.plan.t - SW_HIT; tq = refineTech(p.charge.plan.tech, p.charge.btn);
+      const b = p.charge.btn; ps = swingStyle(tq, b, b === 'C' ? Math.min(p.charge.t / 0.72, 1) : b === 'B' ? 0.5 : 0.9, p.charge.plan.y, crossOf(p, cmdAim(p.charge)[0]), airNow); }
+    else if (!p.isHuman && p.plan && p.plan.releaseAt) { T = p.plan.releaseAt; const b = p.aiBtn || (p.charge && p.charge.btn) || 'A'; tq = refineTech(p.plan.tech, b);
+      ps = swingStyle(tq, b, p.aiCharge || 0.7, p.plan.y, crossOf(p, p.aiAim ? p.aiAim[0] : 0), airNow); }
+    else if (p.charge && state === 'serve' && match && match.server === p) { T = simT; tq = 'serve'; ps = swingStyle('serve', p.charge.btn); }
     if (T !== null && tq) {
       const k = clamp(1 - (T - simT) / (tq === 'oh' || tq === 'rth' || tq === 'bho' ? 0.6 : 0.42), 0, 1);
-      if (k > 0) pose = lerpP(pose, groupOf(tq).back, ease(k));
+      if (k > 0) pose = lerpP(pose, styleKeys(tq, ps).back, ease(k));
       if (p.an) { p.an.prepTech = tq; p.an.prepK = k; }
     } else if (p.an) p.an.prepK = 0;
     const an = p.an;
+    // 发球员：非持拍手在持球点捏着球
+    if (state === 'serve' && match && match.server === p) {
+      const h = p.hl || [0.03 * sc, 1.04 * sc, 0.6 * sc], dy = (an ? an.pelY : 0.97 * sc) - 0.97 * sc;
+      pose.lh = [h[0] / sc - 0.02, (h[1] - dy) / sc + 0.07, h[2] / sc - 0.02];
+    }
     // 跑动：后退时侧身，双臂摆动，身体倾向加速方向
     const sp = Math.hypot(p.vx, p.vz);
     const rs = (p.side === 0 ? 1 : -1) * p.hd, fs = p.side === 0 ? -1 : 1;
@@ -2144,6 +2350,10 @@ function footTargets(p) {
     const d = lungeWorldDir(p);
     out[1] = [p.x + d[0] * 0.82 * sc, p.z + d[2] * 0.82 * sc];
     out[0] = [p.x - d[0] * 0.4 * sc, p.z - d[2] * 0.4 * sc];
+  } else if (p.jumpY <= 0.01 && ((p.swing && p.swing.serve) || (!p.swing && state === 'serve' && match && match.server === p))) {
+    // 发球站位：正手发高远侧身、左脚在前；反手发球正对球网、右脚在前
+    if (serveBtn(p) === 'A') { out[1] = at(0.2, -0.26); out[0] = at(-0.12, 0.26); }
+    else { out[1] = at(0.1, 0.2); out[0] = at(-0.2, -0.14); }
   } else if (!p.swing && p.an && p.an.prepK > 0.3 && (p.an.prepTech === 'oh' || p.an.prepTech === 'rth') && p.jumpY <= 0.01) {
     // 头顶球引拍阶段就侧身站好：右脚在后承重，左脚在前，脚连线大致垂直球网
     if (p.an.prepTech === 'oh') { out[1] = at(0.26, -0.3); out[0] = at(-0.16, 0.22); }
@@ -2184,7 +2394,7 @@ function updateAnim(p, dt) {
     for (let i = 0; i < 2; i++) {
       const k = i === 1 ? -jt : jt * 0.6; // 剪刀腿
       an.feet[i].x = tg[i][0] + f[0] * k; an.feet[i].z = tg[i][1] + f[2] * k;
-      an.feet[i].y = Math.max(0, p.jumpY - 0.05 + (i === 1 ? 0.14 : 0.06) * (1 - Math.abs(jt)));
+      an.feet[i].y = Math.max(0, p.jumpY - 0.05 + (i === 1 ? 0.3 : 0.1) * (1 - Math.abs(jt))); // 腾空时后腿屈膝后摆
       an.feet[i].st = false;
     }
   } else {
@@ -2216,6 +2426,8 @@ function updateAnim(p, dt) {
   let pel = [p.x, p.z];
   if (p.lungeT > 0) { const d = lungeWorldDir(p); const k = lungeK(p); const sh_ = p.dive ? 0.45 : 0.3; pel = [p.x + d[0] * sh_ * sc * k, p.z + d[2] * sh_ * sc * k]; }
   else pel = [(an.feet[0].x + an.feet[1].x) / 2 * 0.55 + p.x * 0.45, (an.feet[0].z + an.feet[1].z) / 2 * 0.55 + p.z * 0.45];
+  const sfv = chv(pose, 'sf'); // 重心随发力前后移动
+  if (sfv) { const fw = cdir(p, [0, 0, 1]); pel = [pel[0] + fw[0] * sfv * sc, pel[1] + fw[2] * sfv * sc]; }
   an.pel = pel;
   const legL = 0.9 * sc;
   // 跑动时随步伐的上下起伏
