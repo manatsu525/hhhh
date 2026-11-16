@@ -1000,13 +1000,15 @@ function endRally(winSide, reason, x, z) {
   }
   // 精彩球回放：多拍相持、鱼跃救球、重杀/扑球得分
   const hl = m.hl || { s: 0 };
-  let hs = hl.s + (m.rally >= 16 ? 3.2 : m.rally >= 11 ? 2 : m.rally >= 7 ? 1 : 0);
-  if (reason === 'in' && lh && POWER[sh.kind]) hs += sh.kind === 'jsmash' ? 1.6 : 1;
+  let hs = hl.s + (m.rally >= 12 ? 3.2 : m.rally >= 8 ? 2 : m.rally >= 5 ? 1 : 0);
+  // 杀球/扑球直接得分：己方的每一个都回放，对方的要再加上别的看点才回放
+  const powWin = reason === 'in' && lh && POWER[sh.kind], mine = powWin && lh.side === 0;
+  if (powWin) hs += (mine ? 3.4 : 1.8) + (sh.kind === 'jsmash' ? 0.6 : 0);
   const wins = m.score[winSide] + 1, ls = m.score[loser];
   if ((wins >= m.target && wins - ls >= 2) || wins >= m.cap) hs += 2.2;
-  // 至少隔 3 分才回放一次（局点/赛点的制胜球除外）
+  // 其它精彩球不连着两分回放（己方杀球得分、局点/赛点的制胜球除外）
   const gap = m.totalRallies - (m.lastReplay || -9);
-  m.replayPending = settings.replay === '1' && reason === 'in' && m.rally >= 3 && hs >= 3.2 && (gap > 3 || hs >= 5.2) && rec.length > 30;
+  m.replayPending = settings.replay === '1' && reason === 'in' && m.rally >= 2 && hs >= 3.2 && (gap > 1 || mine || hs >= 4.6) && rec.length > 30;
   if (m.replayPending) m.lastReplay = m.totalRallies;
   if (window.__log) window.__log.push({ winSide, reason, rally: m.rally, kind: sh.kind, hitter: lh ? lh.side : -1, x, z });
 }
