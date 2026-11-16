@@ -2519,17 +2519,19 @@ void main(){
       put(C, C, X, Y, Z, s, s, col, mat || MAT.cloth);
     },
     // 截面沿骨骼排布，共用顶点和法线。角度从背部接缝开始，正面位于 u=0.5。
-    surface(rings, col, mat, tex, deform) {
+    // warp(a) 可重新分配各列的角度（例如把更多列集中到正脸），贴图坐标随之对应。
+    surface(rings, col, mat, tex, deform, warp) {
+      const tab = warp ? (warp.tab || (warp.tab = angles.map(([a]) => { const b = warp(a); return [b, Math.sin(b), Math.cos(b)]; }))) : angles;
       const count = rings.length * pitch * 8;
       const last = rings.length - 1;
       for (let i = 0; i <= last; i++) {
         const [C, X, F, width, depth, v = i / last] = rings[i];
         for (let j = 0; j <= columns; j++) {
-          const [ang, sn, cs] = angles[j];
+          const [ang, sn, cs] = tab[j];
           const q = (i * pitch + j) * 8;
           const D = deform ? deform(i, ang, sn, cs) : null;
           for (let k = 0; k < 3; k++) coords[q + k] = C[k] + X[k] * width * sn + F[k] * depth * cs + (D ? D[k] : 0);
-          coords[q + 6] = j / columns; coords[q + 7] = v;
+          coords[q + 6] = warp ? ang / (Math.PI * 2) + 0.5 : j / columns; coords[q + 7] = v;
         }
       }
       for (let i = 0; i <= last; i++) for (let j = 0; j <= columns; j++) {
@@ -2541,7 +2543,7 @@ void main(){
         const tx = coords[b] - coords[a], ty = coords[b+1] - coords[a+1], tz = coords[b+2] - coords[a+2];
         const sx = coords[d] - coords[c], sy = coords[d+1] - coords[c+1], sz = coords[d+2] - coords[c+2];
         const nx = ty * sz - tz * sy, ny = tz * sx - tx * sz, nz = tx * sy - ty * sx;
-        const [, X, F] = rings[i], [, sn, cs] = angles[j];
+        const [, X, F] = rings[i], [, sn, cs] = tab[j];
         const direction = nx * (X[0] * sn + F[0] * cs) + ny * (X[1] * sn + F[1] * cs) + nz * (X[2] * sn + F[2] * cs);
         const length = Math.hypot(nx, ny, nz) || 1;
         const sign = (direction < 0 ? -1 : 1) / length;
@@ -2605,22 +2607,23 @@ function modelTexture(id, w, h, paint) {
   return modelTextures.get(id);
 }
 function faceTex(ch) {
-  return modelTexture('face:' + ch.name, 512, 256, (g, w, h) => {
-    const fem = ch.g === 'f', kind = ch.hs;
-    const X = deg => w * (0.5 + deg / 360), Y = v => h * v;
+  return modelTexture('face:' + ch.name, 1024, 512, (g, w, h) => {
+    const fem = ch.g === 'f', kind = ch.hs, k = w / 512;
+    const X = deg => w * (0.5 + deg / 360), Y = v => h * v, DX = w / 360;
+    const dot = (x, y, r, color) => { g.fillStyle = color; g.beginPath(); g.arc(x, y, r, 0, 7); g.fill(); };
     const box = (x, y, rx, ry, color) => {
-      g.fillStyle = color; g.beginPath(); g.ellipse(X(x), Y(y), rx * w / 360, ry * h, 0, 0, 7); g.fill();
+      g.fillStyle = color; g.beginPath(); g.ellipse(X(x), Y(y), rx * DX, ry * h, 0, 0, 7); g.fill();
     };
     const wash = (x,y,rx,ry,color) => {
-      g.save(); g.translate(X(x), Y(y)); g.scale(rx * w / 360, ry * h);
+      g.save(); g.translate(X(x), Y(y)); g.scale(rx * DX, ry * h);
       const grad = g.createRadialGradient(0, 0, 0, 0, 0, 1);
-      grad.addColorStop(0, color); grad.addColorStop(1, 'transparent');
+      grad.addColorStop(0, color); grad.addColorStop(1, color.replace(/[\d.]+\)$/, '0)'));
       g.fillStyle = grad; g.fillRect(-1,-1,2,2); g.restore();
     };
     const curve = (points, color, width) => {
       g.beginPath(); g.moveTo(X(points[0]), Y(points[1]));
       g.quadraticCurveTo(X(points[2]), Y(points[3]), X(points[4]), Y(points[5]));
-      g.strokeStyle = color; g.lineWidth = width; g.lineCap = 'round'; g.stroke();
+      g.strokeStyle = color; g.lineWidth = width * k; g.lineCap = 'round'; g.stroke();
     };
     const tone = g.createLinearGradient(0, 0, 0, h);
     tone.addColorStop(0, mulC(ch.skin, 1.09)); tone.addColorStop(0.55, ch.skin); tone.addColorStop(1, mulC(ch.skin, 0.82));
@@ -2628,30 +2631,92 @@ function faceTex(ch) {
     const spread = ({crew: 25, buzz: 24, spiky: 23, swept: 24, pony: 23, bun: 23, bob: 24})[kind] || 23;
     const eye = fem ? 0.465 : 0.47;
     const eyeHalf = fem ? 10.5 : 9.5, lid = fem ? 0.026 : 0.022;
+    // 面部立体感：额头与下巴提亮，颧骨下、脸侧和下颌收暗
+    wash(0, .36, 24, .07, 'rgba(255,238,215,.18)');
+    wash(0, .86, 9, .035, 'rgba(255,235,210,.2)');
     for (const side of [-1, 1]) {
-      const x = side * spread;
-      wash(side * 36, 0.60, 23, 0.12, fem ? 'rgba(196,75,59,.23)' : 'rgba(172,81,48,.19)');
-      wash(x, eye - 0.026, 14, .055, 'rgba(96,44,28,.23)');
-      g.beginPath(); g.moveTo(X(x-eyeHalf), Y(eye + .003));
-      g.quadraticCurveTo(X(x), Y(eye - lid * 1.6), X(x+eyeHalf), Y(eye));
-      g.quadraticCurveTo(X(x), Y(eye + lid * 1.2), X(x-eyeHalf), Y(eye + .003));
-      g.fillStyle = '#fff1de'; g.fill();
-      g.save(); g.clip();
-      box(x, eye - .003, 5.5, lid * .76, '#573a2c');
-      box(x, eye - .004, 3.5, lid * .57, '#241b19');
-      box(x - 1.6, eye - lid * .27, 1.15, .006, '#ffeacf');
-      g.restore();
-      curve([x-eyeHalf,eye+.003,x,eye-lid*1.66,x+eyeHalf,eye], '#32211d', fem ? 2.4 : 2);
-      const browY = eye - (kind === 'crew' || kind === 'spiky' ? .064 : .075);
-      curve([x-side*10,browY+.013,x+side*1,browY-.018,x+side*12,browY+.007],mulC(ch.hair, .76),fem ? 2.9 : 3.7);
-      box(side*6, .616, 3, .009, 'rgba(105,52,37,.51)');
+      wash(side * 62, .62, 17, .24, 'rgba(90,45,28,.22)');
+      wash(side * 44, .7, 12, .09, 'rgba(100,50,32,.13)');
+      wash(side * 36, 0.60, 23, 0.12, fem ? 'rgba(206,85,75,.24)' : 'rgba(172,81,48,.17)');
+      wash(side * 7.5, .53, 4.5, .08, 'rgba(110,60,40,.17)');   // 鼻梁两侧
     }
-    wash(0,.578,10,.063,'rgba(255,232,195,.39)');
-    wash(0,.654,13,.031,'rgba(113,56,38,.18)');
-    wash(0,.738,17,.058, fem ? 'rgba(169,55,57,.24)' : 'rgba(157,73,58,.20)');
-    const mouth = fem ? 13.6 : 15;
-    curve([-mouth,.73,0,.756,mouth,.729], 'rgba(103,46,39,.77)', 2.2);
-    curve([-8,.754,0,.765,8,.754], 'rgba(255,200,171,.48)', 1.8);
+    wash(0, .5, 3.6, .08, 'rgba(255,240,220,.24)');            // 鼻梁高光
+    wash(0, .59, 6, .03, 'rgba(255,240,220,.34)');             // 鼻尖高光
+    wash(0, .648, 12, .022, 'rgba(95,45,30,.3)');              // 鼻底阴影
+    const browC = mulC(ch.hair[0] === '#' ? ch.hair : '#2a2a2a', .68);
+    const m3 = browC.match(/\d+/g);
+    for (const side of [-1, 1]) {
+      const x = side * spread, cx = X(x), cy = Y(eye), hw = eyeHalf * DX, lh = lid * h;
+      wash(x, eye - .03, 15, .06, 'rgba(96,44,28,.27)');       // 眼窝
+      wash(x, eye + .04, 12, .03, 'rgba(96,50,40,.13)');       // 下眼睑阴影
+      // 杏仁眼：内眼角略低，外眼角略上挑
+      const inX = cx - side * hw, outX = cx + side * hw * 1.03, inY = cy + lh * .22, outY = cy - lh * .14;
+      const upC = [cx - side * hw * .1, cy - lh * 1.8], loC = [cx + side * hw * .15, cy + lh * 1.25];
+      const lidPath = () => { g.beginPath(); g.moveTo(inX, inY); g.quadraticCurveTo(upC[0], upC[1], outX, outY); g.quadraticCurveTo(loC[0], loC[1], inX, inY); };
+      lidPath(); g.fillStyle = '#f3ebe3'; g.fill();
+      g.save(); lidPath(); g.clip();
+      const ir = lh * 1.14, iy = cy - lh * .14;
+      const ig = g.createRadialGradient(cx, iy, ir * .12, cx, iy, ir);
+      ig.addColorStop(0, '#70482b'); ig.addColorStop(.55, '#4b2b18'); ig.addColorStop(.86, '#2a1810'); ig.addColorStop(1, '#120a07');
+      dot(cx, iy, ir, ig); dot(cx, iy, ir * .42, '#090504');
+      const sg = g.createLinearGradient(0, cy - lh * 1.8, 0, cy - lh * .3);  // 上眼睑在眼球上的投影
+      sg.addColorStop(0, 'rgba(35,18,10,.6)'); sg.addColorStop(1, 'rgba(35,18,10,0)');
+      g.fillStyle = sg; g.fillRect(cx - hw * 1.2, cy - lh * 1.9, hw * 2.4, lh * 1.7);
+      dot(cx - ir * .32, iy - ir * .36, ir * .2, 'rgba(255,255,255,.95)');
+      dot(cx + ir * .3, iy + ir * .28, ir * .1, 'rgba(255,255,255,.45)');
+      g.restore();
+      dot(inX + side * hw * .08, inY - lh * .04, lh * .2, 'rgba(214,140,125,.7)');  // 泪阜
+      // 上睫毛线（外侧加粗上挑）、双眼皮褶、下睑
+      g.lineCap = 'round'; g.strokeStyle = '#1b110e'; g.lineWidth = (fem ? 3.3 : 2.5) * k;
+      g.beginPath(); g.moveTo(inX, inY); g.quadraticCurveTo(upC[0], upC[1], outX, outY); g.stroke();
+      const onLid = (t) => [(1 - t) * (1 - t) * inX + 2 * t * (1 - t) * upC[0] + t * t * outX, (1 - t) * (1 - t) * inY + 2 * t * (1 - t) * upC[1] + t * t * outY];
+      g.lineWidth = (fem ? 1.5 : 1.1) * k;
+      for (let j = 0; j < (fem ? 7 : 3); j++) {
+        const t = (fem ? .38 : .7) + j * (fem ? .1 : .14), q = onLid(Math.min(1, t)), len = lh * (fem ? .5 : .3) * (.6 + .4 * t);
+        g.beginPath(); g.moveTo(q[0], q[1]); g.lineTo(q[0] + side * len * (.25 + .9 * t), q[1] - len * (1 - .45 * t)); g.stroke();
+      }
+      g.strokeStyle = 'rgba(100,55,38,.5)'; g.lineWidth = 1.3 * k;
+      g.beginPath(); g.moveTo(inX + side * hw * .16, inY - lh * .95); g.quadraticCurveTo(cx, cy - lh * 2.7, outX - side * hw * .02, outY - lh * .6); g.stroke();
+      g.strokeStyle = 'rgba(110,62,45,.4)'; g.lineWidth = 1.1 * k;
+      g.beginPath(); g.moveTo(inX + side * hw * .22, inY + lh * .4); g.quadraticCurveTo(loC[0], loC[1] + lh * .2, outX - side * hw * .05, outY + lh * .35); g.stroke();
+      // 眉：先铺一层底色，再画一根根眉毛（眉头粗、眉尾细）
+      const browY = eye - (kind === 'crew' || kind === 'spiky' ? .064 : .075);
+      const B0 = [X(x - side * 10), Y(browY + .013)], B1 = [X(x + side * 1), Y(browY - (fem ? .024 : .018))], B2 = [X(x + side * 12.5), Y(browY + .008)];
+      const onBrow = (t) => [(1 - t) * (1 - t) * B0[0] + 2 * t * (1 - t) * B1[0] + t * t * B2[0], (1 - t) * (1 - t) * B0[1] + 2 * t * (1 - t) * B1[1] + t * t * B2[1]];
+      const thick = (t) => (fem ? 2.5 : 3.7) * k * (t < .22 ? .65 + 1.6 * t : 1 - .78 * (t - .22) / .78);
+      g.fillStyle = `rgba(${m3[0]},${m3[1]},${m3[2]},.78)`; g.beginPath();
+      for (let j = 0; j <= 20; j++) { const q = onBrow(j / 20); g.lineTo(q[0], q[1] - thick(j / 20)); }
+      for (let j = 20; j >= 0; j--) { const q = onBrow(j / 20); g.lineTo(q[0], q[1] + thick(j / 20)); }
+      g.fill();
+      g.strokeStyle = `rgba(${m3[0]},${m3[1]},${m3[2]},.55)`; g.lineWidth = .9 * k;
+      for (let j = 0; j < 36; j++) {  // 眉毛丝：顺着眉形生长，只略微出边
+        const t = j / 35, q = onBrow(t), th = thick(t), o = ((j * 7919) % 11 / 10 - .5) * 1.6 * th, len = (3.2 - 1.2 * t) * k;
+        g.beginPath(); g.moveTo(q[0], q[1] + o); g.lineTo(q[0] + side * len, q[1] + o - len * (.45 - .7 * t)); g.stroke();
+      }
+      // 鼻孔与鼻翼沟、人中
+      box(side * 6, .618, 3.2, .0105, 'rgba(66,28,20,.72)');
+      wash(side * 6, .616, 6, .022, 'rgba(95,45,30,.2)');
+      curve([side * 9.6, .582, side * 12, .61, side * 8.2, .634], 'rgba(105,55,38,.4)', 1.6);
+      curve([side * 2.2, .656, side * 2.9, .68, side * 2.6, .702], 'rgba(110,60,42,.16)', 1.3);
+    }
+    // 嘴唇：上唇有唇峰、下唇更饱满，嘴角略收
+    const mouth = fem ? 13.6 : 15, lipA = fem ? 1 : .55, lip = fem ? [192, 82, 92] : [160, 86, 74];
+    const lipCol = (a, m = 1) => `rgba(${Math.round(lip[0] * m)},${Math.round(lip[1] * m)},${Math.round(lip[2] * m)},${a * lipA})`;
+    wash(0, .738, 18, .06, fem ? 'rgba(169,55,57,.2)' : 'rgba(157,73,58,.15)');
+    g.beginPath(); g.moveTo(X(-mouth), Y(.731));
+    g.bezierCurveTo(X(-mouth * .6), Y(.716), X(-mouth * .3), Y(.703), X(-mouth * .17), Y(.704));
+    g.quadraticCurveTo(X(0), Y(.714), X(mouth * .17), Y(.704));
+    g.bezierCurveTo(X(mouth * .3), Y(.703), X(mouth * .6), Y(.716), X(mouth), Y(.731));
+    g.quadraticCurveTo(X(0), Y(.74), X(-mouth), Y(.731));
+    g.fillStyle = lipCol(.9, .86); g.fill();
+    g.beginPath(); g.moveTo(X(-mouth * .93), Y(.733)); g.quadraticCurveTo(X(0), Y(.741), X(mouth * .93), Y(.733));
+    g.bezierCurveTo(X(mouth * .55), Y(.776), X(-mouth * .55), Y(.776), X(-mouth * .93), Y(.733));
+    const lg = g.createLinearGradient(0, Y(.735), 0, Y(.775)); lg.addColorStop(0, lipCol(.85, .92)); lg.addColorStop(.5, lipCol(.9, 1.08)); lg.addColorStop(1, lipCol(.7, .9));
+    g.fillStyle = lg; g.fill();
+    curve([-mouth, .731, 0, .742, mouth, .731], 'rgba(78,30,28,.82)', 1.7);
+    wash(0, .754, 6, .009, 'rgba(255,228,214,.42)');           // 下唇高光
+    wash(0, .792, 10, .017, 'rgba(95,45,30,.26)');             // 唇下阴影
+    for (const side of [-1, 1]) wash(side * (mouth + 1), .733, 2.6, .012, 'rgba(80,35,28,.3)');
 
     // 发际线按头部周向绘制，眼睛所在的正面保持露出。
     const fringe = ({buzz:.265, crew:.272, short:.293, spiky:.295, swept:.33, pony:.287, bun:.271, bob:.35, long:.329})[kind];
@@ -2766,6 +2831,7 @@ function looseHairTex(ch) {
   });
 }
 
+const faceWarp = (a) => a - .55 * Math.sin(a); // 正脸每列约 5°，后脑稀一些
 function drawPlayerGL(p, J) {
   const { sc, ch, fem, pel, spine, chest, shL, shR, neck, head, headFwd, chestFwd, legs, armL, armR, rdW, latC, latH, shW, hipW, an } = J;
   const G = curG, bw = ch.build || 1, S = v => v * sc, UP = [0,1,0];
@@ -2904,15 +2970,33 @@ function drawPlayerGL(p, J) {
     [-.049,.077,.091,.006,.624],[-.078,.065*jaw,.074,.013,.748],[-.101,.045*jaw,.050,.016,.846],
     [-.114,.021,.028,.018,.926],[-.117,.0005,.0006,.017,1],
   ];
-  G.surface(headShape.map(([y,w,d,f,v])=>[at(0,y,f),Xh,F,R(w),R(d),v]),skin,MAT.skin,faceTex(ch),(i,a,sn,cs) => {
-    // 鼻梁和眉骨与脸部网格连成一体。
-    const nose = [0,0,0,0,.003,.014,.019,.002,0,0,0][i] * Math.exp(-a*a*48);
-    const brow = i === 4 ? .004 * Math.exp(-Math.pow((Math.abs(a)-.42)*7,2)) : 0;
-    const crown = [1,.93,.53,.15,0,0,0,0,0,0,0][i];
+  // 脸部加密：五官所在的几圈截面细分一倍（Catmull-Rom），并把更多的列集中到正脸
+  const crom = (p0,p1,p2,p3,u) => .5*((2*p1)+(-p0+p2)*u+(2*p0-5*p1+4*p2-p3)*u*u+(-p0+3*p1-3*p2+p3)*u*u*u);
+  const fineHead = [];
+  for (let q = 0; q < headShape.length - 1; q++) {
+    const n = q >= 3 && q <= 8 ? 2 : 1;
+    const P0 = headShape[Math.max(0,q-1)], P1 = headShape[q], P2 = headShape[q+1], P3 = headShape[Math.min(headShape.length-1,q+2)];
+    for (let e = 0; e < n; e++) fineHead.push(e === 0 ? P1 : P1.map((_, c) => crom(P0[c],P1[c],P2[c],P3[c],e/n)));
+  }
+  fineHead.push(headShape[headShape.length - 1]);
+  const bump = (x,c,w) => Math.exp(-((x-c)/w)*((x-c)/w)), ss = (x) => { x = clamp(x,0,1); return x*x*(3-2*x); };
+  const crownAt = (v) => v < .091 ? lerp(1,.93,v/.091) : v < .18 ? lerp(.93,.53,(v-.091)/.089) : v < .278 ? lerp(.53,.15,(v-.18)/.098) : v < .407 ? lerp(.15,0,(v-.278)/.129) : 0;
+  G.surface(fineHead.map(([y,w,d,f,v])=>[at(0,y,f),Xh,F,R(w),R(d),v]),skin,MAT.skin,faceTex(ch),(i,a,sn,cs) => {
+    const v = fineHead[i][4], aa = Math.abs(a);
+    // 鼻：鼻梁窄、向下渐宽渐高到鼻尖，再收回到鼻底；两侧鼻翼
+    const nh = v < .42 ? 0 : v < .6 ? lerp(.003,.022,ss((v-.42)/.18)) : lerp(.022,0,ss((v-.6)/.06));
+    const nw = lerp(.085,.14,ss((v-.44)/.16));
+    let f = nh * Math.exp(-(a/nw)*(a/nw)) + .006 * bump(v,.605,.03) * bump(aa,.13,.06);
+    f += .004 * bump(v,.405,.035) * bump(aa,.42,.16);        // 眉骨
+    f -= .0035 * bump(v,.47,.04) * bump(aa,.40,.14);         // 眼窝
+    f += .0025 * bump(v,.58,.07) * bump(aa,.75,.25);         // 颧骨
+    f += .0035 * bump(v,.737,.033) * Math.exp(-(a/.2)*(a/.2)); // 唇
+    f += .004 * bump(v,.86,.05) * Math.exp(-(a/.22)*(a/.22));  // 下巴
+    const crown = crownAt(v);
     const lift = st === 'swept' ? .022 + .012*Math.sin(a+.7) : st === 'short' ? .011 : st === 'spiky' ? .010 : .003;
     const wave = st === 'swept' ? .006*Math.sin(a*5+.5) : st === 'short' ? .004*Math.cos(a*5) : 0;
-    return add3([0,R((lift+wave)*crown),0],F,R(nose+brow));
-  });
+    return add3([0,R((lift+wave)*crown),0],F,R(f));
+  }, faceWarp);
   if (st !== 'long') for (const sd of [-1,1]) {
     G.ell(at(sd*.082,-.014,-.002),Xh,F,UP,R(.012),R(.019),R(.026),skin,MAT.skin);
     G.ell(at(sd*.089,-.017,.009),Xh,F,UP,R(.005),R(.007),R(.012),darkSkin,MAT.skin);
@@ -2956,7 +3040,7 @@ function drawPlayerGL(p, J) {
     // 披肩发：一整片从发旋长到发梢的头发。每一列是一缕：先贴着头型走（比头皮高出一层发量），
     // 过了耳朵之后垂下来；正面是刘海，两鬓的发束垂在脸旁，后面的顺着肩背披下去。
     const NR = 20, EAR = .6, MV = .248;                 // MV：贴图 v 每单位对应的头部高度（米）
-    const drop = (.085 + (ch.hlen || .34) * .5) / MV;     // 过耳后还能垂多长（v 单位）：发梢到肩胛上缘
+    const drop = (.23 + (ch.hlen || .34) * .5) / MV;      // 过耳后还能垂多长（v 单位）：发梢接近腰部
     const Xs = dot3(X0, Xh) < 0 ? X0.map(v => -v) : X0, Fs = dot3(F0, F) < 0 ? F0.map(v => -v) : F0;
     const chestRef = add3(pel, spine, S(.46)), Ae = shW * .5 + S(.012), Be = shD + S(.014);
     const sm = (x) => { x = clamp(x, 0, 1); return x * x * (3 - 2 * x); };
@@ -2970,8 +3054,8 @@ function drawPlayerGL(p, J) {
       const deg = Math.abs(a) * 180 / Math.PI;
       const fringe = .315 + .04 * Math.sin((a * 180 / Math.PI + 9) * .065);
       // 脸旁的发束略短（到锁骨），后面的到肩背；发梢只做很轻的参差
-      const full = (EAR + drop * lerp(.72, 1, sm((deg - 70) / 50))) * (1 + .012 * Math.sin(a * 7) + .01 * Math.sin(a * 13 + 1));
-      return lerp(fringe, full, sm((deg - 36) / 26));
+      const full = (EAR + drop * lerp(.42, 1, sm((deg - 62) / 40))) * (1 + .012 * Math.sin(a * 7) + .01 * Math.sin(a * 13 + 1));
+      return lerp(fringe, full, sm((deg - 36) / 14));
     };
     const strand = (a, sn, cs, t) => {
       const sg = t * strandLen(a);
