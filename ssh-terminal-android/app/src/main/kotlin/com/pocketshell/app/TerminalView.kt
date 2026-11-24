@@ -120,6 +120,7 @@ class TerminalView(context: Context) : View(context) {
         override fun onDown(e: MotionEvent): Boolean {
             scroller.forceFinished(true)
             scrollPx = 0f
+            wheelAcc = 0
             return true
         }
 
@@ -177,8 +178,10 @@ class TerminalView(context: Context) : View(context) {
         return true
     }
 
+    private var wheelAcc = 0
+
     /** dy>0 表示手指上滑（看更新的内容） */
-    private fun scrollByPixels(dy: Float) {
+    internal fun scrollByPixels(dy: Float) {
         val s = session ?: return
         val emu = s.emulator
         scrollPx += dy
@@ -188,20 +191,34 @@ class TerminalView(context: Context) : View(context) {
         val up = rows < 0
         val n = minOf(kotlin.math.abs(rows), 50)
         when {
-            // 开了鼠标上报的程序（如 htop、带鼠标的 vim/tmux）：发滚轮事件
-            emu.isMouseTrackingActive -> repeat(n) {
-                emu.sendMouseEvent(
-                    if (up) TerminalEmulator.MOUSE_WHEELUP_BUTTON else TerminalEmulator.MOUSE_WHEELDOWN_BUTTON,
-                    emu.mColumns / 2, emu.mRows / 2, true
-                )
+            // 开了鼠标上报的程序（tmux 的 mouse on、htop、带鼠标的 vim）：发滚轮事件。
+            // 这些程序每个滚轮事件通常滚 3~5 行，所以手指每划过 3 行发一个
+            emu.isMouseTrackingActive -> {
+                wheelAcc += rows
+                val events = wheelAcc / 3
+                wheelAcc -= events * 3
+                repeat(minOf(kotlin.math.abs(events), 20)) {
+                    emu.sendMouseEvent(
+                        if (events < 0) TerminalEmulator.MOUSE_WHEELUP_BUTTON else TerminalEmulator.MOUSE_WHEELDOWN_BUTTON,
+                        emu.mColumns / 2, emu.mRows / 2, true
+                    )
+                }
             }
-            // 全屏程序（less、vim 等）没有本地历史可翻：发上下方向键
             emu.isAlternateBufferActive -> {
-                val code = KeyHandler.getCode(
-                    if (up) KeyEvent.KEYCODE_DPAD_UP else KeyEvent.KEYCODE_DPAD_DOWN,
-                    0, emu.isCursorKeysApplicationMode, emu.isKeypadApplicationMode
-                )
-                if (code != null) repeat(n) { s.write(code) }
+                if (s.tmuxProbeNeeded()) {
+                    // 先查一下是不是在 tmux 里（一个网络来回），查到之前的滑动先忽略，免得误发方向键
+                    s.probeTmux()
+                    if (s.inTmux != true) return
+                }
+                if (s.inTmux == true) s.tmuxScroll(rows)
+                else {
+                    // 全屏程序（less、vim 等）没有本地历史可翻：发上下方向键
+                    val code = KeyHandler.getCode(
+                        if (up) KeyEvent.KEYCODE_DPAD_UP else KeyEvent.KEYCODE_DPAD_DOWN,
+                        0, emu.isCursorKeysApplicationMode, emu.isKeypadApplicationMode
+                    )
+                    if (code != null) repeat(n) { s.write(code) }
+                }
             }
             else -> {
                 val t = (topRow + rows).coerceIn(-emu.screen.activeTranscriptRows, 0)

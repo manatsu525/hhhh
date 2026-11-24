@@ -77,6 +77,17 @@ class TermSession(val server: Server) : TerminalOutput() {
     private var generation = 0
     private val writer = Executors.newSingleThreadExecutor()
 
+    /** 当前终端是否是一个 tmux 客户端（null = 还不知道） */
+    @Volatile
+    var inTmux: Boolean? = null
+        private set
+
+    @Volatile
+    private var tmuxCheckedAt = 0L
+
+    @Volatile
+    private var tmuxProbing = false
+
     private val lock = Object()
     private val pending = ByteArrayOutputStream()
     private var scheduled = false
@@ -88,6 +99,8 @@ class TermSession(val server: Server) : TerminalOutput() {
         if (state != State.CLOSED) return
         state = State.CONNECTING
         val gen = ++generation
+        tmuxCheckedAt = 0L
+        inTmux = null
         emulator.reset()
         local("正在连接 ${server.user}@${server.host}:${server.port} ...\r\n")
         listener?.onStateChanged()
@@ -258,6 +271,101 @@ class TermSession(val server: Server) : TerminalOutput() {
         emulator.resize(cols, rows)
         val ch = channel ?: return
         writer.execute { try { ch.setPtySize(cols, rows, 0, 0) } catch (_: Exception) {} }
+    }
+
+    // ---------- tmux 滚动 ----------
+    //
+    // tmux 没开鼠标模式时，手机终端拿不到 tmux 里的历史，滑动只能变成方向键（翻命令历史）。
+    // 这里不往终端里敲按键（tmux 会把一串快速到达的按键当成粘贴，前缀键会失效），
+    // 而是通过同一条 SSH 连接另开 exec 通道直接调用 tmux 命令：找到尺寸和本终端一致的
+    // tmux 客户端所在窗格，进入复制模式（-e：滚回底部自动退出）并按行滚动。
+    // 不修改服务器上的任何 tmux 配置。
+
+    private val tmuxExec = Executors.newSingleThreadExecutor()
+    private val tmuxLock = Object()
+    private var tmuxPendingLines = 0
+    private var tmuxBusy = false
+
+    /** 还没检测过，或上次没检测到且已过一段时间（期间可能刚启动了 tmux） */
+    fun tmuxProbeNeeded(): Boolean =
+        inTmux == null || (inTmux == false && System.currentTimeMillis() - tmuxCheckedAt > 15000)
+
+    fun probeTmux() {
+        if (tmuxProbing || ssh == null || state != State.CONNECTED) return
+        tmuxProbing = true
+        val cols = emulator.mColumns
+        val rows = emulator.mRows
+        tmuxExec.execute {
+            try {
+                inTmux = runTmuxScript(cols, rows, "true") == 0
+                tmuxCheckedAt = System.currentTimeMillis()
+            } catch (_: Exception) {
+                // 网络问题：保持"未知"，下次滑动再试
+            } finally {
+                tmuxProbing = false
+            }
+        }
+    }
+
+    /** lines<0 往上翻（看更早的内容），>0 往下 */
+    fun tmuxScroll(lines: Int) {
+        synchronized(tmuxLock) {
+            tmuxPendingLines = (tmuxPendingLines + lines).coerceIn(-500, 500)
+            if (tmuxBusy) return
+            tmuxBusy = true
+        }
+        tmuxExec.execute {
+            while (true) {
+                val n: Int
+                synchronized(tmuxLock) {
+                    n = tmuxPendingLines
+                    tmuxPendingLines = 0
+                    if (n == 0) {
+                        tmuxBusy = false
+                        return@execute
+                    }
+                }
+                val action = if (n < 0) {
+                    "tmux copy-mode -e -t \"\$p\" \\; send-keys -X -t \"\$p\" -N ${-n} scroll-up"
+                } else {
+                    "tmux if-shell -F -t \"\$p\" '#{pane_in_mode}' \"send-keys -X -t \$p -N $n scroll-down\""
+                }
+                try {
+                    if (runTmuxScript(emulator.mColumns, emulator.mRows, action) == 3) inTmux = false
+                } catch (_: Exception) {
+                }
+            }
+        }
+    }
+
+    /**
+     * 在服务器上用 sh 执行脚本（脚本走标准输入，和用户的登录 shell 是 bash/zsh/fish 无关）。
+     * 脚本里 $p 是本终端对应的 tmux 窗格；找不到时退出码 3。
+     */
+    private fun runTmuxScript(cols: Int, rows: Int, action: String): Int {
+        val s = ssh ?: return -1
+        val script = """
+            PATH="${'$'}PATH:/usr/local/bin:/opt/homebrew/bin:/usr/bin:/bin:${'$'}HOME/.local/bin:${'$'}HOME/bin"
+            p=${'$'}(tmux list-clients -F '#{client_width}x#{client_height} #{client_activity} #{pane_id}' 2>/dev/null | awk '${'$'}1=="${cols}x$rows"' | sort -k2,2n | tail -n 1 | cut -d' ' -f3)
+            [ -n "${'$'}p" ] || exit 3
+            $action
+        """.trimIndent() + "\n"
+        val ch = s.openChannel("exec") as ChannelExec
+        try {
+            ch.setCommand("sh -s")
+            val o = ch.outputStream
+            val i = ch.inputStream
+            ch.connect(10000)
+            o.write(script.toByteArray())
+            o.flush()
+            o.close()
+            i.readBytes()
+            val end = System.currentTimeMillis() + 3000
+            while (!ch.isClosed && System.currentTimeMillis() < end) Thread.sleep(10)
+            return ch.exitStatus
+        } finally {
+            ch.disconnect()
+        }
     }
 
     // ---------- 运行脚本 ----------

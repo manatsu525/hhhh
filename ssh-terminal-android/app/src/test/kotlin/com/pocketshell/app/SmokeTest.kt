@@ -49,7 +49,7 @@ class SmokeTest {
             idle()
             if (cond()) return
             if (System.currentTimeMillis() > end) {
-                SessionManager.sessions.values.forEach { println("TRANSCRIPT AT TIMEOUT:\n" + text(it)) }
+                SessionManager.sessions.values.forEach { println("TRANSCRIPT AT TIMEOUT:\n" + text(it) + "\nSCREEN AT TIMEOUT:\n" + screen(it)) }
                 fail("等待超时：$what")
             }
             Thread.sleep(40)
@@ -182,6 +182,59 @@ class SmokeTest {
         assertNull(s.pendingPrompt)
         SessionManager.close(server.id)
         assertEquals(TermSession.State.CLOSED, s.state)
+    }
+
+    private fun screen(s: TermSession): String {
+        val e = s.emulator
+        return (0 until e.mRows).joinToString("\n") { r -> e.screen.getSelectedText(0, r, e.mColumns, r).trimEnd() }
+    }
+
+    /** 在 tmux 里上下滑动：没开鼠标模式时进入复制模式翻历史，开了鼠标模式时发滚轮；都不能变成翻历史命令 */
+    @Test
+    fun tmuxSwipeScrollsHistory() {
+        assumeTrue(port != null && File("/usr/bin/tmux").exists())
+        val server = Server(name = "tmux", host = "127.0.0.1", port = port!!, user = user, password = pass)
+        val (a, s) = openTerminal(server)
+        val term = find(a.window.decorView, TerminalView::class.java)!!
+        acceptHostKey(s)
+        waitFor("连接") { s.state == TermSession.State.CONNECTED }
+        waitFor("提示符") { text(s).contains("$") }
+        Runtime.getRuntime().exec(arrayOf("su", user, "-c", "tmux -L pshelltest kill-server; rm -f /tmp/tmux-\$(id -u)/default")).waitFor()
+        val rowPx = term.height / s.emulator.mRows.toFloat()
+
+        term.sendText("tmux -L pshelltest -f /dev/null new -s t\n")
+        waitFor("tmux 启动") { s.emulator.isAlternateBufferActive && screen(s).contains("[t]") }
+        term.sendText("seq 1 300\n")
+        waitFor("seq 输出") { screen(s).contains("300") }
+        // 测试用独立 socket（不碰默认 tmux）；App 查询走默认 socket，所以把默认 socket 链接过来
+        term.sendText("export X=1; ln -sf /tmp/tmux-\$(id -u)/pshelltest /tmp/tmux-\$(id -u)/default\n")
+        Thread.sleep(500)
+
+        // 第一次滑动触发探测
+        term.scrollByPixels(-rowPx * 3)
+        waitFor("tmux 探测") { s.inTmux == true }
+        // 往上滑 40 行
+        repeat(40) { term.scrollByPixels(-rowPx) }
+        waitFor("进入复制模式并看到历史") { Regex("""\[\d+/\d+]""").containsMatchIn(screen(s)) && screen(s).lines().any { it.trim() == "250" } }
+        shot(a, "tmux_copy_mode")
+        // 往下滑到底：自动退出复制模式
+        repeat(80) { term.scrollByPixels(rowPx) }
+        waitFor("退出复制模式") { !Regex("""\[\d+/\d+]""").containsMatchIn(screen(s)) }
+        // 不在复制模式时往下滑不应发送任何按键
+        repeat(10) { term.scrollByPixels(rowPx) }
+        term.sendText("echo marker-\$((3*3))\n")
+        waitFor("提示符干净") { screen(s).lines().any { it.trim() == "marker-9" } }
+        assertTrue(screen(s).lines().none { it.contains("$ seq 1 300") && it.contains("marker") })
+
+        // 开启 tmux 鼠标模式后，滑动走滚轮事件
+        term.sendText("tmux -L pshelltest set -g mouse on; seq 1000 1300\n")
+        waitFor("鼠标模式") { s.emulator.isMouseTrackingActive && screen(s).contains("1300") }
+        repeat(60) { term.scrollByPixels(-rowPx) }
+        waitFor("滚轮进入复制模式") { Regex("""\[\d+/\d+]""").containsMatchIn(screen(s)) }
+        println("TMUX MOUSE SCREEN:\n" + screen(s))
+        term.sendText("q")
+        Runtime.getRuntime().exec(arrayOf("su", user, "-c", "tmux -L pshelltest kill-server; rm -f /tmp/tmux-\$(id -u)/default")).waitFor()
+        SessionManager.close(server.id)
     }
 
     @Test
